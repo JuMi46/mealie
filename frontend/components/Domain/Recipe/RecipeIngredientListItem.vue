@@ -2,6 +2,7 @@
   <div class="ma-0 pa-0 text-subtitle-1 dense-markdown ingredient-item">
     <SafeMarkdown v-if="parsedIng.quantity" class="d-inline" :source="parsedIng.quantity" />
     <template v-if="parsedIng.unit">{{ parsedIng.unit }} </template>
+    <SafeMarkdown v-if="parsedIng.alternativeMeasurment" class="d-inline" :source="parsedIng.alternativeMeasurment" />
     <SafeMarkdown v-if="parsedIng.note && !parsedIng.name" class="text-bold d-inline" :source="parsedIng.note" />
     <template v-else>
       <SafeMarkdown v-if="parsedIng.name" class="text-bold d-inline" :source="parsedIng.name" />
