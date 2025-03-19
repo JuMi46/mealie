@@ -2,10 +2,13 @@
   <div v-if="value && value.length > 0">
     <div v-if="!isCookMode" class="d-flex justify-start" >
       <h2 class="mb-2 mt-1">{{ $t("recipe.ingredients") }}</h2>
+      <!-- TODO: Change label to translation $t;
+           Style label better with better placement -->
+      <v-checkbox v-model="sortIngredientsByLabelName" class="my-auto ml-auto" color="secondary" label="Sort by label"/>
       <AppButtonCopy btn-class="ml-auto" :copy-text="ingredientCopyText" />
     </div>
     <div>
-      <div v-for="(ingredient, index) in value" :key="'ingredient' + index">
+      <div v-for="(ingredient, index) in !isCookMode && sortIngredientsByLabelName ? sortedIngredientsByLabel : value" :key="'ingredient' + index">
         <template v-if="!isCookMode">
           <h3 v-if="showTitleEditor[index]" class="mt-2">{{ ingredient.title }}</h3>
           <v-divider v-if="showTitleEditor[index]"></v-divider>
@@ -55,6 +58,7 @@ export default defineComponent({
     const state = reactive({
       checked: props.value.map(() => false),
       showTitleEditor: computed(() => props.value.map((x) => validateTitle(x.title))),
+      sortIngredientsByLabelName: true // TODO: Save default value as a household setting
     });
 
     const ingredientCopyText = computed(() => {
@@ -86,6 +90,20 @@ export default defineComponent({
       toggleChecked,
     };
   },
+  computed: {
+    sortedIngredientsByLabel: function() {
+      // TODO: Add support for food.label.sortOrder in the database instead of sorting by name
+      return [...this.value].sort((a,b) =>
+        {
+          if (a.food?.label?.name < b.food?.label?.name)
+            return -1;
+          if (a.food?.label?.name > b.food?.label?.name)
+            return 1;
+          return 0;
+        }
+      )
+    }
+  }
 });
 </script>
 
