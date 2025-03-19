@@ -20,7 +20,7 @@ RUN yarn generate
 ###############################################
 # Base Image - Python
 ###############################################
-FROM python:3.12-slim as python-base
+FROM python:3.12-slim AS python-base
 
 ENV MEALIE_HOME="/app"
 
@@ -119,7 +119,7 @@ RUN . $VENV_PATH/bin/activate \
 ###############################################
 # Production Image
 ###############################################
-FROM python-base as production
+FROM python-base AS production
 LABEL org.opencontainers.image.source="https://github.com/mealie-recipes/mealie"
 ENV PRODUCTION=true
 ENV TESTING=false
@@ -148,7 +148,7 @@ EXPOSE ${APP_PORT}
 
 HEALTHCHECK CMD python -m mealie.scripts.healthcheck || exit 1
 
-ENV HOST 0.0.0.0
+ENV HOST=0.0.0.0
 
 EXPOSE ${APP_PORT}
 COPY ./docker/entry.sh $MEALIE_HOME/run.sh
