@@ -52,7 +52,7 @@ export function useParsedIngredientText(ingredient: RecipeIngredient, disableAmo
   const returnUnit = unit && JSON.parse(JSON.stringify(unit)) as IngredientUnit;
 
   // TODO: Store unit values in better place?
-  const massUnitConverter: {[key: string]: number} = { "ounce": 30, "pound": 500 };
+  const massUnitConverter: {[key: string]: number} = { "ounce": 31.25, "pound": 500 };
   const volumeUnitConverter: {[key: string]: number} = { teaspoon: 5, tablespoon: 15, "fluid ounce": 30, cup: 236.6, pint: 473.18, gallon: 3785.4 };
   const tablespoonBreakpoint = 14.375;
   const cupBreakpoint = 58.125;
