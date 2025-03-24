@@ -164,3 +164,7 @@ dev/code-generation/openapi.json
 
 .run/
 .task/*
+
+# Misc
+todo.txt
+.todo

@@ -8,7 +8,7 @@
       <AppButtonCopy btn-class="ml-auto" :copy-text="ingredientCopyText" />
     </div>
     <div>
-      <div v-for="(ingredient, index) in !isCookMode && sortIngredientsByLabelName ? sortedIngredientsByLabel : value" :key="'ingredient' + index">
+      <div v-for="(ingredient, index) in !isCookMode && sortIngredientsByLabelName ? sortedIngredientsByLabel : groupedIngredients" :key="'ingredient' + index">
         <template v-if="!isCookMode">
           <h3 v-if="showTitleEditor[index]" class="mt-2">{{ ingredient.title }}</h3>
           <v-divider v-if="showTitleEditor[index]"></v-divider>
@@ -91,9 +91,12 @@ export default defineComponent({
     };
   },
   computed: {
+    groupedIngredients: function() {
+      return this.groupIngredients(this.value);
+    },
     sortedIngredientsByLabel: function() {
       // TODO: Add support for food.label.sortOrder in the database instead of sorting by name
-      return [...this.value].sort((a,b) =>
+      return this.groupIngredients(this.value).sort((a,b) =>
         {
           if (a.food?.label?.name < b.food?.label?.name)
             return -1;
@@ -102,6 +105,45 @@ export default defineComponent({
           return 0;
         }
       )
+    }
+  },
+  methods: {
+    groupIngredients: function(allIngredients: RecipeIngredient[]) {
+      const ingredientIds: string[] = [];
+      for (const ingredient of allIngredients) {
+        if (!ingredient.food?.id) continue;
+
+        if (!ingredientIds.includes(ingredient.food?.id)) {
+          ingredientIds.push(ingredient.food?.id);
+        } else {
+          // TODO: Better place to store this, 2nd time it's used.
+          const volumeUnitConverter: {[key: string]: number} = { teaspoon: 5, tablespoon: 15, "fluid ounce": 30, cup: 236.6, pint: 473.18, gallon: 3785.4 };
+          const indexes: {[key:string]: number} = {};
+
+          return allIngredients.reduce(function(res, ingredient) {
+            const id = ingredient.food?.id;
+            if (id) {
+              if (!indexes[id]) {
+                indexes[id] = res.length;
+                res.push(JSON.parse(JSON.stringify(ingredient)) as RecipeIngredient);
+              } else {
+                const index = indexes[id];
+                if (ingredient.unit?.name === res[index].unit?.name && res[index].quantity && !isNaN(res[index].quantity)) {
+                  res[index].quantity += ingredient.quantity || 0;
+                } else if (ingredient.unit && res[index].unit && volumeUnitConverter[ingredient.unit.name] && volumeUnitConverter[res[index].unit.name]
+                  && res[index].quantity && !isNaN(res[index].quantity) && ingredient.quantity && !isNaN(ingredient.quantity)) {
+                  res[index].quantity += ingredient.quantity * volumeUnitConverter[ingredient.unit.name] / volumeUnitConverter[res[index].unit.name];
+                }
+              }
+            } else {
+              res.push(JSON.parse(JSON.stringify(ingredient)) as RecipeIngredient);
+            }
+            return res;
+          }, [] as RecipeIngredient[]);
+        }
+      }
+
+      return allIngredients;
     }
   }
 });
