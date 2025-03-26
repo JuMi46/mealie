@@ -154,25 +154,6 @@ export function parseIngredientText(ingredient: RecipeIngredient, disableAmount:
   return sanitizeIngredientHTML(text);
 }
 
-export enum VolumeUnitValues {
-  milliliter = 1,
-  deciliter = 10,
-  liter = 1000,
-  teaspoon = 5,
-  tablespoon = 15,
-  "fluid ounce" = 30,
-  cup = 236.6,
-  pint = 473.2,
-  gallon = 3785.4,
-};
-
-export enum MassUnitValues {
-  gram = 1,
-  kilogram = 1000,
-  ounce = 31.25,
-  pound = 500
-};
-
 export const volumeUnitBreakpoints: Array<[number, [unitName: UnitNames, overrideQuantity: any]]> = [
   [0, [UnitNames.teaspoon, undefined]],
   [Breakpoints.halfTablespoon, [UnitNames.tablespoon, 0.5]],
@@ -229,25 +210,22 @@ export const commonUnits: { [key: string]: IngredientUnit } = {
   }
 }
 
-export const massUnitValues: { [key: string]: number } = { ounce: 31.25, "pound": 500 };
+export const massUnitValues: { [key: string]: number } = { ounce: 31.25, pound: 500 };
 export const volumeUnitValues: { [key: string]: number } = { teaspoon: 5, tablespoon: 15, "fluid ounce": 30, cup: 236.6, pint: 473.18, gallon: 3785.4 };
-export function convertUnit() {
-  console.log(UnitNames.ounce);
-}
 
-export function convertToMilliliter(quantity: number, unitName: string | undefined) {
+export function convertToMilliliter(quantity: number | null | undefined, unitName: string | undefined) {
   return quantity && unitName && volumeUnitValues[unitName] && quantity * volumeUnitValues[unitName];
 }
 
-export function convertToGram(quantity: number, unitName: string | undefined) {
+export function convertToGram(quantity: number | null | undefined, unitName: string | undefined) {
   return quantity && unitName && massUnitValues[unitName] && quantity * massUnitValues[unitName];
 }
 
-export function convertMilliliterToUnit(quantity: number, unitName: string | undefined) {
+export function convertMilliliterToUnit(quantity: number | null | undefined, unitName: string | undefined) {
   return quantity && unitName && volumeUnitValues[unitName] && quantity / volumeUnitValues[unitName]
 }
 
-export function convertGramToUnit(quantity: number, unitName: string | undefined) {
+export function convertGramToUnit(quantity: number | null | undefined, unitName: string | undefined) {
   return quantity && unitName && massUnitValues[unitName] && quantity / massUnitValues[unitName];
 }
 

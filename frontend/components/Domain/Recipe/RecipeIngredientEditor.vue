@@ -97,6 +97,12 @@
               {{ $globals.icons.arrowUpDown }}
             </v-icon>
           </v-text-field>
+          <BaseButton  v-if="value.unit && massUnitValues[value.unit.name]" @click="convertUnit()">
+            <template #icon>
+              {{ $globals.icons.units }}
+            </template>
+            g
+          </BaseButton>
           <BaseButtonGroup
             hover
             :large="false"
@@ -122,6 +128,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, ref, toRefs, useContext } from "@nuxtjs/composition-api";
+import { convertToGram, massUnitValues, UnitNames } from "~/composables/recipes/use-recipe-ingredients";
 import { useFoodStore, useFoodData, useUnitStore, useUnitData } from "~/composables/store";
 import { validators } from "~/composables/use-validators";
 import { RecipeIngredient } from "~/lib/api/types/recipe";
@@ -278,6 +285,12 @@ export default defineComponent({
       }
     }
 
+    function convertUnit() {
+      // TODO: convert to desired unit based on setting
+      props.value.quantity = Number(convertToGram(props.value.quantity, props.value.unit?.name));
+      props.value.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram);
+    }
+
     return {
       ...toRefs(state),
       quantityFilter,
@@ -298,6 +311,8 @@ export default defineComponent({
       validators,
       workingUnitData: unitsData.data,
       btns,
+      convertUnit,
+      massUnitValues
     };
   },
 });
