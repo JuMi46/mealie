@@ -1,6 +1,8 @@
 /* frac.js (C) 2012-present SheetJS -- http://sheetjs.com */
 /* https://developer.aliyun.com/mirror/npm/package/frac/v/0.3.0 Apache license */
 
+import { findClosestValue } from "../use-utils";
+
 function frac(x: number, D: number, mixed: boolean) {
   let n1 = Math.floor(x);
   let d1 = 1;
@@ -48,26 +50,28 @@ function simpleFrac(x: number, includeThirds: boolean) {
       return [floor, 0, 0];
     }
     if (quarters === 4) {
-      return [floor+1, 0, 0];
+      return [floor + 1, 0, 0];
     }
-    const fraction = {1: [1,4], 2: [1,2], 3: [3,4]}[quarters];
+    const fraction = { 1: [1, 4], 2: [1, 2], 3: [3, 4] }[quarters];
     return fraction ? [floor, fraction[0], fraction[1]] : [x, 0, 0];
   }
 
-  const levels = [[0, 0, 0], [0.25, 1, 4], [0.33, 1, 3], [0.50, 1, 2], [0.66, 2, 3], [0.75, 3, 4], [1, 0, 0]];
-  for (let i = 1; i < levels.length; i++) {
-    if (levels[i][0] > rest) {
-      if (rest === levels[i-1][0]) {
-        return [floor + (levels[i-1][0] === 1 ? 1 : 0), levels[i-1][1], levels[i-1][2]];
-      } else {
-        const diffDown = rest - levels[i-1][0];
-        const diffUp = levels[i][0] - rest;
-        const fraction = diffDown < diffUp ? levels[i-1] : levels[i];
-        return [floor + (fraction[0] === 1 ? 1 : 0), fraction[1], fraction[2]];
-      }
-    }
-  }
-  return [x, 0, 0]
+  const fractions: Array<[number, number[]]> = [[0, [0, 0]], [0.25, [1, 4]], [0.33, [1, 3]], [0.50, [1, 2]], [0.66, [2, 3]], [0.75, [3, 4]], [1, [0, 0]]];
+  const fraction = findClosestValue(rest, fractions) as [number, number[]];
+  return [floor + (fraction[0] === 1 ? 1 : 0), fraction[1][0], fraction[1][1]];
+  // for (let i = 1; i < levels.length; i++) {
+  //   if (levels[i][0] > rest) {
+  //     if (rest === levels[i - 1][0]) {
+  //       return [floor + (levels[i - 1][0] === 1 ? 1 : 0), levels[i - 1][1], levels[i - 1][2]];
+  //     } else {
+  //       const diffDown = rest - levels[i - 1][0];
+  //       const diffUp = levels[i][0] - rest;
+  //       const fraction = diffDown < diffUp ? levels[i - 1] : levels[i];
+  //       return [floor + (fraction[0] === 1 ? 1 : 0), fraction[1], fraction[2]];
+  //     }
+  //   }
+  // }
+  // return [x, 0, 0]
 }
 function cont(x: number, D: number, mixed: boolean) {
   const sgn = x < 0 ? -1 : 1;

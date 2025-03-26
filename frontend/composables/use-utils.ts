@@ -107,3 +107,27 @@ export function downloadAsJson(data: any, filename: string) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+export function findPassedBreakpoint(value: number, breakpoints: Array<[number, any]>) {
+  for (let i = 1; i < breakpoints.length; i++) {
+    if (value < breakpoints[i][0]) {
+      return breakpoints[i - 1];
+    }
+  }
+  return breakpoints[breakpoints.length - 1];
+}
+
+export function findClosestValue(value: number, values: Array<[number, any]>) {
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] > value) {
+      if (value === values[i - 1][0]) {
+        return values[i - 1];
+      } else {
+        const diffDown = value - values[i - 1][0];
+        const diffUp = values[i][0] - value;
+        return diffDown < diffUp ? values[i - 1] : values[i];
+      }
+    }
+  }
+  return values[values.length - 1];
+}
