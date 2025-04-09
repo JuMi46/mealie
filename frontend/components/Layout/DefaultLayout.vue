@@ -278,6 +278,11 @@ export default defineComponent({
           },
         ],
       },
+      {
+        title: "Serving calculator",
+        to: "/serving-calculator",
+        restricted: true,
+      },
     ]);
 
     return {
