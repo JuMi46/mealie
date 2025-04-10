@@ -138,8 +138,11 @@ import RecipeIngredientListItem from "./RecipeIngredientListItem.vue";
 import { useUserApi } from "~/composables/api";
 import { alert } from "~/composables/use-toast";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
-import { RecipeIngredient, ShoppingListAddRecipeParamsBulk, ShoppingListSummary } from "~/lib/api/types/household";
+import { IngredientUnit, RecipeIngredient, ShoppingListAddRecipeParamsBulk, ShoppingListSummary } from "~/lib/api/types/household";
 import { Recipe } from "~/lib/api/types/recipe";
+import { convertToGram, convertToMilliliter, massUnitValues, UnitNames, volumeUnitValues } from "~/composables/recipes/use-recipe-ingredients";
+import { useUnitStore } from "~/composables/store";
+
 
 export interface RecipeWithScale extends Recipe {
   scale: number;
@@ -238,7 +241,6 @@ export default defineComponent({
           recipeSectionMap.get(recipe.slug).recipeScale += recipe.scale;
           continue;
         }
-
         if (!(recipe.id && recipe.name && recipe.recipeIngredient)) {
           const { data } = await api.recipes.getOne(recipe.slug);
           if (!data?.recipeIngredient?.length) {
@@ -257,7 +259,7 @@ export default defineComponent({
             checked: !householdsWithFood.includes(userHousehold.value),
             ingredient: ing,
             disableAmount: recipe.settings?.disableAmount || false,
-          }
+          } as ShoppingListIngredient
         });
 
         let currentTitle = "";
@@ -341,6 +343,8 @@ export default defineComponent({
       });
     }
 
+    const unitStore = useUnitStore();
+
     async function addRecipesToList() {
       if (!selectedShoppingList.value) {
         return;
@@ -352,7 +356,17 @@ export default defineComponent({
         section.ingredientSections.forEach((ingSection) => {
           ingSection.ingredients.forEach((ing) => {
             if (ing.checked) {
-              ingredients.push(ing.ingredient);
+              const ingredient: RecipeIngredient = {... ing.ingredient};
+              if (ingredient.unit?.name) {
+                if (massUnitValues[ingredient.unit.name]) {
+                  ingredient.quantity = Number(convertToGram(ingredient.quantity, ingredient.unit.name));
+                  ingredient.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram) as IngredientUnit;
+                } else if (volumeUnitValues[ingredient.unit.name]) {
+                  ingredient.quantity = Number(convertToMilliliter(ingredient.quantity, ingredient.unit.name));
+                  ingredient.unit = unitStore.store.value.find(unit => unit.name === UnitNames.milliliter) as IngredientUnit;
+                }
+              }
+              ingredients.push(ingredient);
             }
           });
         });

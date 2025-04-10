@@ -124,13 +124,14 @@ export function useParsedIngredientText(ingredient: RecipeIngredient, disableAmo
 
   let alternativeMeasurment;
 
-  if (scaledQuantity && returnUnit && volumeUnitValues[returnUnit.name]) {
+  if (scaledQuantity && returnUnit && (returnUnit.name === UnitNames.milliliter || volumeUnitValues[returnUnit.name])) {
     if (food?.description?.startsWith("[")) {
       // TODO: Save ingredient density in a better way in database, food.density
       const densityMatch = /(?<=\[)\d+(|\.\d+)(?=\])/.exec(food?.description);
       if (densityMatch) {
         // TODO: convert to desired unit based on setting
-        alternativeMeasurment = `(${Number(Math.ceil(scaledQuantity * volumeUnitValues[returnUnit.name] * Number(densityMatch[0]))).toString()} g)`;
+        alternativeMeasurment = `(${Number(Math.ceil(scaledQuantity * (returnUnit.name !== UnitNames.milliliter ? volumeUnitValues[returnUnit.name] : 1)
+          * Number(densityMatch[0]))).toString()} g)`;
       }
     } else if (quantityInMl && returnUnit.name !== UnitNames.milliliter) {
       // TODO: convert to desired unit based on setting
