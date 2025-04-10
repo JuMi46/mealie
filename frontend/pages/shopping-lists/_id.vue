@@ -126,7 +126,7 @@
             <v-icon>
               {{ labelOpenState[key] ? $globals.icons.chevronDown : $globals.icons.chevronRight }}
             </v-icon>
-            {{ key }}
+            {{ key.toString().includes("_") ? key.toString().split("_")[1] : key }}
           </v-btn>
         <v-divider/>
         <v-expand-transition group>
