@@ -48,6 +48,11 @@
                     event: 'check',
                   },
                   {
+                    icon: $globals.icons.printer,
+                    text: $tc('general.print'),
+                    event: 'print',
+                  },
+                  {
                     icon: $globals.icons.dotsVertical,
                     text: '',
                     event: 'three-dot',
@@ -73,6 +78,7 @@
                 @edit="edit = true"
                 @three-dot="threeDot = true"
                 @check="openCheckAll"
+                @print="print"
                 @sort-by-labels="sortByLabels"
                 @copy-plain="copyListItems('plain')"
                 @copy-markdown="copyListItems('markdown')"
@@ -291,14 +297,15 @@ import { useCopyList } from "~/composables/use-copy";
 import { useUserApi } from "~/composables/api";
 import MultiPurposeLabelSection from "~/components/Domain/ShoppingList/MultiPurposeLabelSection.vue"
 import ShoppingListItem from "~/components/Domain/ShoppingList/ShoppingListItem.vue";
-import { ShoppingListItemOut, ShoppingListMultiPurposeLabelOut, ShoppingListOut } from "~/lib/api/types/household";
+import { RecipeIngredient, ShoppingListItemOut, ShoppingListMultiPurposeLabelOut, ShoppingListOut } from "~/lib/api/types/household";
 import RecipeList from "~/components/Domain/Recipe/RecipeList.vue";
 import ShoppingListItemEditor from "~/components/Domain/ShoppingList/ShoppingListItemEditor.vue";
 import { useFoodStore, useLabelStore, useUnitStore } from "~/composables/store";
 import { useShoppingListItemActions } from "~/composables/use-shopping-list-item-actions";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
 import { getTextColor } from "~/composables/use-text-color";
-import { uuid4 } from "~/composables/use-utils";
+import { printFromNewWindow, uuid4 } from "~/composables/use-utils";
+import { useParsedIngredientText } from "~/composables/recipes";
 
 type CopyTypes = "plain" | "markdown";
 
@@ -1034,6 +1041,33 @@ export default defineComponent({
       refresh();
     }
 
+    function print() {
+      let printableList = "";
+      Object.entries(itemsByLabel.value).forEach(([labelName, items]) => {
+        printableList += `<p class="label-name">- ${labelName.includes("_") ? labelName.split("_")[1] : labelName}</p>`
+        for (const item of items) {
+          const parsedIng = useParsedIngredientText(item as RecipeIngredient, false, 1, false);
+          printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.alternativeMeasurment)}${parseText(parsedIng.name)}</p>`
+        }
+      });
+
+      printFromNewWindow(printableList, `
+        p {
+          font-size: 16px;
+          font-weight: 600;
+        }
+        .label-name {
+          margin: 15px 0 0 0;
+        }
+        .ingredient-item {
+          margin: 5px 0 0 0;
+        }`)
+
+      function parseText(t: string | undefined) {
+        return t ? t.trim() + " " : "";
+      }
+    }
+
     return {
       ...toRefs(state),
       addRecipeReferenceToList,
@@ -1081,6 +1115,7 @@ export default defineComponent({
       allUnits,
       allFoods,
       getTextColor,
+      print
     };
   },
   head() {

@@ -131,3 +131,23 @@ export function findClosestValue(value: number, values: Array<[number, any]>) {
   }
   return values[values.length - 1];
 }
+
+export function printFromNewWindow(content: string, style?: string) {
+  const printWindow = window.open("", "", "left=0,top=0,width=100,height=100,toolbar=0,scrollbars=0,status=0");
+  if (printWindow) {
+    printWindow.document.writeln(`<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+        ${style ?? ""}
+    </style>
+  </head>
+  <body>
+    ${content}
+  </body>
+</html>`);
+    printWindow.document.close();
+    printWindow.print();
+    printWindow.close();
+  }
+}
