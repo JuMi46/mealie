@@ -1042,19 +1042,25 @@ export default defineComponent({
     }
 
     function print() {
-      let printableList = "";
+      let printableList = shoppingList.value?.name ? `<p class="header">${shoppingList.value?.name}</p>` : "";
       Object.entries(itemsByLabel.value).forEach(([labelName, items]) => {
         printableList += `<p class="label-name">- ${labelName.includes("_") ? labelName.split("_")[1] : labelName}</p>`
         for (const item of items) {
-          const parsedIng = useParsedIngredientText(item as RecipeIngredient, false, 1, false);
-          printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.alternativeMeasurment)}${parseText(parsedIng.name)}</p>`
+          if (item.isFood) {
+            const parsedIng = useParsedIngredientText(item as RecipeIngredient, false, 1, false);
+            printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.alternativeMeasurment)}${parseText(parsedIng.name)}</p>`
+          } else {
+            printableList += `<p class="ingredient-item">${parseNumber(item.quantity)}${parseText(item.note)}</p>`
+          }
         }
       });
 
       printFromNewWindow(printableList, `
         p {
           font-size: 16px;
-          font-weight: 600;
+        }
+        .header {
+          margin: 15px 0 0 0;
         }
         .label-name {
           margin: 15px 0 0 0;
@@ -1063,8 +1069,11 @@ export default defineComponent({
           margin: 5px 0 0 0;
         }`)
 
-      function parseText(t: string | undefined) {
+      function parseText(t: string | null | undefined) {
         return t ? t.trim() + " " : "";
+      }
+      function parseNumber(n: number |  undefined) {
+        return n && n > 0 ? n : "";
       }
     }
 
