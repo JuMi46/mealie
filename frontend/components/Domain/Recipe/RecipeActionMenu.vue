@@ -90,6 +90,7 @@ const DELETE_EVENT = "delete";
 const CLOSE_EVENT = "close";
 const JSON_EVENT = "json";
 const PARSE_EVENT = "parse";
+const LINK_EVENT = "linkIngredients";
 
 export default defineComponent({
   components: { RecipeContextMenu, RecipeFavoriteBadge, RecipeTimelineBadge },
@@ -154,43 +155,61 @@ export default defineComponent({
 
     const editorButtons = computed(() => {
       const buttons = [
-      {
-        text: i18n.t("general.delete"),
-        icon: $globals.icons.delete,
-        event: DELETE_EVENT,
-        color: "error",
-      },
-      {
-        text: i18n.t("general.json"),
-        icon: $globals.icons.codeBraces,
-        event: JSON_EVENT,
-        color: "accent",
-      },
-      {
-        text: i18n.t("general.close"),
-        icon: $globals.icons.close,
-        event: CLOSE_EVENT,
-        color: "",
-      },
-      {
-        text: i18n.t("general.save"),
-        icon: $globals.icons.save,
-        event: SAVE_EVENT,
-        color: "success",
-      },
-    ];
+        {
+          text: i18n.t("general.delete"),
+          icon: $globals.icons.delete,
+          event: DELETE_EVENT,
+          color: "error",
+        },
+        {
+          text: i18n.t("general.json"),
+          icon: $globals.icons.codeBraces,
+          event: JSON_EVENT,
+          color: "accent",
+        },
+        {
+          text: i18n.t("general.close"),
+          icon: $globals.icons.close,
+          event: CLOSE_EVENT,
+          color: "",
+        },
+        {
+          text: i18n.t("general.save"),
+          icon: $globals.icons.save,
+          event: SAVE_EVENT,
+          color: "success",
+        },
+      ];
 
-    if (!props.recipe.settings?.disableAmount && !hasFoodOrUnit()) {
-      buttons.unshift({
-        text: i18n.t("recipe.parse"),
-        icon: $globals.icons.foods,
-        event: PARSE_EVENT,
-        color: "accent"
-      });
-    }
+      if (props.recipe.recipeInstructions) {
+        let recipeHasLinkedIngredients = false;
+        for (const step of props.recipe.recipeInstructions) {
+          if (step.ingredientReferences && step.ingredientReferences.length > 0) {
+            recipeHasLinkedIngredients = true;
+            break;
+          }
+        }
 
-    return buttons;
-  });
+        if (!recipeHasLinkedIngredients) {
+          buttons.unshift({
+            text: i18n.t("recipe.link-ingredients"),
+            icon: $globals.icons.wrench,
+            event: LINK_EVENT,
+            color: "accent"
+          });
+        }
+      }
+
+      if (!props.recipe.settings?.disableAmount && !hasFoodOrUnit()) {
+        buttons.unshift({
+          text: i18n.t("recipe.parse"),
+          icon: $globals.icons.foods,
+          event: PARSE_EVENT,
+          color: "accent"
+        });
+      }
+      return buttons;
+    });
 
     function emitHandler(event: string) {
       switch (event) {
@@ -205,7 +224,10 @@ export default defineComponent({
           if (props.recipe.slug) {
             router.push({path: `/g/${groupSlug}/r/${props.recipe.slug}/ingredient-parser`});
           }
-        break;
+          break;
+        case LINK_EVENT:
+          context.emit(LINK_EVENT);
+          break;
         default:
           context.emit(event);
           break;

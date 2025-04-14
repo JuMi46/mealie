@@ -8,6 +8,7 @@
           :landscape="landscape"
           @save="saveRecipe"
           @delete="deleteRecipe"
+          @linkIngredients="linkIngredients"
         />
         <LazyRecipeJsonEditor v-if="isEditJSON" v-model="recipe" class="mt-10" :options="EDITOR_OPTIONS" />
         <v-card-text v-else>
@@ -98,6 +99,7 @@
         <RecipePageScale :recipe="recipe" :scale.sync="scale"/>
       </div>
       <RecipePageInstructions
+        ref="recipePageInstructions"
         v-model="recipe.recipeInstructions"
         class="overflow-y-hidden mt-n5 px-2 px-md-4"
         :assets.sync="recipe.assets"
@@ -142,7 +144,8 @@ import {
   ref,
   onMounted,
   onUnmounted,
-useRoute,
+  useRoute,
+  Ref
 } from "@nuxtjs/composition-api";
 import { invoke, until } from "@vueuse/core";
 import RecipeIngredients from "../RecipeIngredients.vue";
@@ -340,6 +343,14 @@ export default defineComponent({
       router.push(`/g/${groupSlug.value}?${itemType}=${item.id}`);
     }
 
+    const recipePageInstructions: Ref<any> = ref(null);
+    function linkIngredients() {
+      console.log("Link ingredients");
+      if (props.recipe.recipeInstructions[0]?.text) {
+        recipePageInstructions.value.openDialog(0, props.recipe.recipeInstructions[0].text, props.recipe.recipeInstructions[0].ingredientReferences)
+      }
+    }
+
     return {
       user,
       isOwnGroup,
@@ -363,6 +374,8 @@ export default defineComponent({
       hasLinkedIngredients,
       notLinkedIngredients,
       chipClicked,
+      recipePageInstructions,
+      linkIngredients
     };
   },
   head: {},

@@ -18,6 +18,7 @@
       @save="$emit('save')"
       @delete="$emit('delete')"
       @print="printRecipe"
+      @linkIngredients="$emit('linkIngredients')"
     />
   </div>
 </template>
