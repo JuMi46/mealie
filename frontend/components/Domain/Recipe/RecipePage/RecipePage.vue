@@ -22,7 +22,6 @@
             data management and mutation system we're using.
           -->
           <RecipePageInfoEditor v-if="isEditMode" :recipe="recipe" :landscape="landscape" />
-          <RecipePageEditorToolbar v-if="isEditForm" :recipe="recipe" />
           <RecipePageIngredientEditor v-if="isEditForm" :recipe="recipe" />
           <RecipePageScale :recipe="recipe" :scale.sync="scale" />
 
@@ -60,6 +59,7 @@
               <RecipeNotes v-model="recipe.notes" :edit="isEditForm" />
             </v-col>
           </v-row>
+          <RecipePageEditorToolbar v-if="isEditForm" :recipe="recipe" />
           <RecipePageFooter :recipe="recipe" />
         </v-card-text>
       </v-card>
