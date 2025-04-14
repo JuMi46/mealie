@@ -360,7 +360,7 @@ export default defineComponent({
       const { response } = await api.recipes.updateOne(recipe.value.slug, recipe.value);
 
       if (response?.status === 200) {
-        router.push(`/g/${groupSlug.value}/r/${recipe.value.slug}`);
+        router.push(`/g/${groupSlug.value}/r/${recipe.value.slug}?edit=true`);
       }
     }
 
