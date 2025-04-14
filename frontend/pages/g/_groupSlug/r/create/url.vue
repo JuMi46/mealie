@@ -152,6 +152,7 @@ export default defineComponent({
 
     onMounted(() => {
       if (!recipeUrl.value) {
+        router.replace({ query: { ...route.value.query, edit:"1" } }); // TODO: Should be a household setting about default value
         return;
       }
 
