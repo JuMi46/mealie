@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-form ref="domUrlForm" @submit.prevent="createByUrl(recipeUrl, importKeywordsAsTags, stayInEditMode)">
+    <v-form ref="domUrlForm" @submit.prevent="createByUrl(recipeUrl, importKeywordsAsTags, stayInEditMode, parseIngredients)">
       <div>
         <v-card-title class="headline"> {{ $t('recipe.scrape-recipe') }} </v-card-title>
         <v-card-text>
@@ -28,6 +28,7 @@
           ></v-text-field>
           <v-checkbox v-model="importKeywordsAsTags" hide-details :label="$t('recipe.import-original-keywords-as-tags')" />
           <v-checkbox v-model="stayInEditMode" hide-details :label="$t('recipe.stay-in-edit-mode')" />
+          <v-checkbox v-model="parseIngredients" hide-details :label="$t('recipe.parse-ingredients')" />
         </v-card-text>
         <v-card-actions class="justify-center">
           <div style="width: 250px">
@@ -104,7 +105,7 @@ export default defineComponent({
     const bulkImporterTarget = computed(() => `/g/${groupSlug.value}/r/create/bulk`);
     const htmlOrJsonImporterTarget = computed(() => `/g/${groupSlug.value}/r/create/html`);
 
-    function handleResponse(response: AxiosResponse<string> | null, edit = false, refreshTags = false) {
+    function handleResponse(response: AxiosResponse<string> | null, edit = false, refreshTags = false, parse = false) {
       if (response?.status !== 201) {
         state.error = true;
         state.loading = false;
@@ -116,7 +117,13 @@ export default defineComponent({
 
       // we clear the query params first so if the user hits back, they don't re-import the recipe
       router.replace({ query: {} }).then(
-        () => router.push(`/g/${groupSlug.value}/r/${response.data}?edit=${edit.toString()}`)
+        () => {
+          if (!parse) {
+            router.push(`/g/${groupSlug.value}/r/${response.data}?edit=${edit.toString()}`)
+          } else {
+            router.push(`/g/${groupSlug.value}/r/${response.data}/ingredient-parser?edit=${edit.toString()}`)
+          }
+        }
       );
     }
 
@@ -150,20 +157,30 @@ export default defineComponent({
       },
     });
 
+    const parseIngredients = computed({
+      get() {
+        return route.value.query.parse === "1";
+      },
+      set(v: boolean) {
+        router.replace({ query: { ...route.value.query, parse: v ? "1" : "0" } });
+      },
+    });
+
     onMounted(() => {
       if (!recipeUrl.value) {
         router.replace({ query: { ...route.value.query, edit:"1" } }); // TODO: Should be a household setting about default value
+        router.replace({ query: { ...route.value.query, parse:"1" } });
         return;
       }
 
       if (recipeUrl.value.includes("https")) {
-        createByUrl(recipeUrl.value, importKeywordsAsTags.value, stayInEditMode.value);
+        createByUrl(recipeUrl.value, importKeywordsAsTags.value, stayInEditMode.value, parseIngredients.value);
       }
     });
 
     const domUrlForm = ref<VForm | null>(null);
 
-    async function createByUrl(url: string | null, importKeywordsAsTags: boolean, stayInEditMode: boolean) {
+    async function createByUrl(url: string | null, importKeywordsAsTags: boolean, stayInEditMode: boolean, parseIngredients: boolean) {
       if (url === null) {
         return;
       }
@@ -174,7 +191,7 @@ export default defineComponent({
       }
       state.loading = true;
       const { response } = await api.recipes.createOneByUrl(url, importKeywordsAsTags);
-      handleResponse(response, stayInEditMode, importKeywordsAsTags);
+      handleResponse(response, stayInEditMode, importKeywordsAsTags, parseIngredients);
     }
 
     return {
@@ -183,6 +200,7 @@ export default defineComponent({
       recipeUrl,
       importKeywordsAsTags,
       stayInEditMode,
+      parseIngredients,
       domUrlForm,
       createByUrl,
       ...toRefs(state),
