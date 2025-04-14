@@ -86,6 +86,9 @@
             </v-expansion-panel>
           </draggable>
         </v-expansion-panels>
+        <div class="d-flex mt-n3 mb-4 justify-end" style="gap: 5px; margin-top: 20px !important;">
+          <BaseButton save :disabled="parserLoading" @click="saveAll" />
+        </div>
       </div>
     </v-container>
   </v-container>
