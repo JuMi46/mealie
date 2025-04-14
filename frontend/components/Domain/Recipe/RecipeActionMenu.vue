@@ -79,7 +79,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, useContext } from "@nuxtjs/composition-api";
+import { computed, defineComponent, ref, useContext, useRoute, useRouter } from "@nuxtjs/composition-api";
 import RecipeContextMenu from "./RecipeContextMenu.vue";
 import RecipeFavoriteBadge from "./RecipeFavoriteBadge.vue";
 import RecipeTimelineBadge from "./RecipeTimelineBadge.vue";
@@ -89,6 +89,7 @@ const SAVE_EVENT = "save";
 const DELETE_EVENT = "delete";
 const CLOSE_EVENT = "close";
 const JSON_EVENT = "json";
+const PARSE_EVENT = "parse";
 
 export default defineComponent({
   components: { RecipeContextMenu, RecipeFavoriteBadge, RecipeTimelineBadge },
@@ -126,11 +127,33 @@ export default defineComponent({
       default: false,
     },
   },
-  setup(_, context) {
+  setup(props, context) {
     const deleteDialog = ref(false);
 
-    const { i18n, $globals } = useContext();
-    const editorButtons = [
+    const { $auth, i18n, $globals } = useContext();
+
+    const router = useRouter();
+    const route = useRoute();
+    const groupSlug = route.value.params.groupSlug || $auth.user?.groupSlug || "";
+
+
+    function hasFoodOrUnit() {
+      if (!props.recipe) {
+        return false;
+      }
+      if (props.recipe.recipeIngredient) {
+        for (const ingredient of props.recipe.recipeIngredient) {
+          if (ingredient.food || ingredient.unit) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
+
+    const editorButtons = computed(() => {
+      const buttons = [
       {
         text: i18n.t("general.delete"),
         icon: $globals.icons.delete,
@@ -157,6 +180,18 @@ export default defineComponent({
       },
     ];
 
+    if (!props.recipe.settings?.disableAmount && !hasFoodOrUnit()) {
+      buttons.unshift({
+        text: i18n.t("recipe.parse"),
+        icon: $globals.icons.foods,
+        event: PARSE_EVENT,
+        color: "accent"
+      });
+    }
+
+    return buttons;
+  });
+
     function emitHandler(event: string) {
       switch (event) {
         case CLOSE_EVENT:
@@ -166,6 +201,11 @@ export default defineComponent({
         case DELETE_EVENT:
           deleteDialog.value = true;
           break;
+        case PARSE_EVENT:
+          if (props.recipe.slug) {
+            router.push({path: `/g/${groupSlug}/r/${props.recipe.slug}/ingredient-parser`});
+          }
+        break;
         default:
           context.emit(event);
           break;
