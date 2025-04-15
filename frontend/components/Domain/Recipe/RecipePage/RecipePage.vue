@@ -262,10 +262,14 @@ export default defineComponent({
     type BooleanString = "true" | "false" | "";
 
     const edit = useRouteQuery<BooleanString>("edit", "");
+    const link = useRouteQuery<BooleanString>("link", "");
 
     onMounted(() => {
       if (edit.value === "true") {
         setMode(PageMode.EDIT);
+        if (link.value === "true") {
+          linkIngredients();
+        }
       }
     });
 

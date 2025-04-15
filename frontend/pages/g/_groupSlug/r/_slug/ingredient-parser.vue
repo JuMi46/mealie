@@ -24,6 +24,7 @@
           {{ $tc("recipe.parser.parse-all") }}
         </BaseButton>
         <BaseButton save :disabled="parserLoading" @click="saveAll" />
+        <BaseButton save text="Save and Link Ingredients" :disabled="parserLoading" @click="saveAll(true)" /> <!-- TODO: Needs translation -->
       </div>
 
       <div v-if="parserLoading">
@@ -88,6 +89,7 @@
         </v-expansion-panels>
         <div class="d-flex mt-n3 mb-4 justify-end" style="gap: 5px; margin-top: 20px !important;">
           <BaseButton save :disabled="parserLoading" @click="saveAll" />
+          <BaseButton save text="Save and Link Ingredients" :disabled="parserLoading" @click="saveAll(true)" /> <!-- TODO: Needs translation -->
         </div>
       </div>
     </v-container>
@@ -335,7 +337,7 @@ export default defineComponent({
 
     // =========================================================
     // Save All Logic
-    async function saveAll() {
+    async function saveAll(linkIngredients = false) {
       const ingredients = parsedIng.value.map((ing) => {
         if (!checkForFood(ing.ingredient.food)) {
           ing.ingredient.food = undefined;
@@ -363,7 +365,7 @@ export default defineComponent({
       const { response } = await api.recipes.updateOne(recipe.value.slug, recipe.value);
 
       if (response?.status === 200) {
-        router.push(`/g/${groupSlug.value}/r/${recipe.value.slug}?edit=true`);
+        router.push(`/g/${groupSlug.value}/r/${recipe.value.slug}?edit=true${linkIngredients ? "&link=true" : ""}`);
       }
     }
 
