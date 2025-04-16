@@ -14,6 +14,9 @@
           </v-card-title>
           <v-divider class="my-2" />
           <SafeMarkdown :source="recipe.description" />
+          <p v-if="ovenTemperature.length !== 0">Oven temperature: {{ ovenTemperature }}</p>
+          <router-link v-for="link in ingredientLinks" :key="link.text" :to="link.path" target="_blank"> {{
+            link.text }} </router-link>
           <v-divider v-if="recipe.description" />
           <v-container class="d-flex flex-row flex-wrap justify-center">
             <div class="mx-6">
@@ -55,7 +58,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, useContext } from "@nuxtjs/composition-api";
+import { computed, defineComponent, onMounted, reactive, toRefs, useContext, useRoute } from "@nuxtjs/composition-api";
 import { useLoggedInState } from "~/composables/use-logged-in-state";
 import RecipeRating from "~/components/Domain/Recipe/RecipeRating.vue";
 import RecipeLastMade from "~/components/Domain/Recipe/RecipeLastMade.vue";
@@ -86,15 +89,53 @@ export default defineComponent({
       required: true,
     },
   },
-  setup() {
+  setup(props) {
     const { $vuetify } = useContext();
+    const route = useRoute();
     const useMobile = computed(() => $vuetify.breakpoint.smAndDown);
 
     const { isOwnGroup } = useLoggedInState();
 
+    const state = reactive({
+      ingredientLinks: [] as {
+        text: string;
+        path: string;
+      }[],
+      ovenTemperature: ""
+    });
+
+    onMounted(() => {
+      const basePath = route.value.fullPath.substring(0, route.value.fullPath.lastIndexOf("/")+1);
+      for (const ingredient of props.recipe.recipeIngredient) {
+        if (ingredient.food?.description.includes("@")) {
+          state.ingredientLinks.push({
+            text: ingredient.food.name,
+            path: basePath + ingredient.food.name.toLowerCase().replaceAll(" ", "-")
+          });
+        }
+      }
+
+      for (const step of props.recipe.recipeInstructions) {
+        const tempMatch = /\d+°(F|C)/.exec(step.text);
+        if (tempMatch) {
+          const temp = Number(tempMatch[0].split("°")[0]);
+          const tempUnit = tempMatch[0].split("°")[1];
+          if (tempUnit === "C") {
+            const f = Math.ceil((temp * 9 / 5) + 32);
+            state.ovenTemperature = `${f}°F / ${temp}°C`
+          } else {
+            const c = Math.ceil((temp - 32) * 5 / 9);
+            state.ovenTemperature = `${temp}°F / ${c}°C`
+          }
+          break;
+        }
+      }
+    });
+
     return {
       isOwnGroup,
       useMobile,
+      ...toRefs(state),
     };
   }
 });
