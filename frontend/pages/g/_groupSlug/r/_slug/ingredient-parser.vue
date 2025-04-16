@@ -75,12 +75,20 @@
                     {{ errors[index].unitErrorMessage }}
                   </BaseButton>
                   <BaseButton
-                    v-if="errors[index].foodError && errors[index].foodErrorMessage !== ''"
+                    v-if="errors[index].foodError && errors[index].foodErrorMessage !== '' && ing.ingredient.food && errors[index].foodErrorIngredientName === ing.ingredient.food.name"
                     color="warning"
                     small
                     @click="createFood(ing.ingredient.food, index)"
                   >
                     {{ errors[index].foodErrorMessage }}
+                  </BaseButton>
+                  <BaseButton
+                    v-if="errors[index].foodError && ing.ingredient.food && ing.ingredient.food.name && errors[index].foodErrorIngredientName !== ing.ingredient.food.name"
+                    color="warning"
+                    small
+                    @click="createAlias(ing.ingredient.food, index)"
+                  >
+                    {{ errors[index].foodErrorAliasMessage }}
                   </BaseButton>
                 </v-card-actions>
               </v-expansion-panel-content>
@@ -123,6 +131,8 @@ interface Error {
   unitErrorMessage: string;
   foodError: boolean;
   foodErrorMessage: string;
+  foodErrorIngredientName: string;
+  foodErrorAliasMessage: string;
 }
 
 export default defineComponent({
@@ -187,6 +197,8 @@ export default defineComponent({
 
       let unitErrorMessage = "";
       let foodErrorMessage = "";
+      let foodErrorIngredientName = "";
+      let foodErrorAliasMessage = "";
 
       if (unitError || foodError) {
         if (unitError) {
@@ -200,6 +212,8 @@ export default defineComponent({
           if (ing?.ingredient?.food?.name) {
             const food = ing.ingredient.food.name || i18n.tc("recipe.parser.no-food");
             foodErrorMessage = i18n.t("recipe.parser.missing-food", { food }).toString();
+            foodErrorIngredientName = ing.ingredient.food.name;
+            foodErrorAliasMessage = `${i18n.t("data-pages.create-alias").toString()}: ${food} `; // TODO: Make it include food name in end as foodErrorMessage i18n.t("data-pages.create-alias", { food }).toString()
           }
         }
       }
@@ -211,6 +225,8 @@ export default defineComponent({
         unitErrorMessage,
         foodError,
         foodErrorMessage,
+        foodErrorIngredientName,
+        foodErrorAliasMessage
       } as Error;
     }
 
@@ -303,6 +319,20 @@ export default defineComponent({
       unitData.reset();
     }
 
+    async function createAlias(food: CreateIngredientFood | undefined, index: number) {
+      if (!parsedIng.value[index].ingredient.food || !food) {
+        return;
+      }
+
+      if (!parsedIng.value[index].ingredient.food?.aliases) {
+        parsedIng.value[index].ingredient.food.aliases = [];
+      }
+
+      parsedIng.value[index].ingredient.food.aliases.push({ name: errors.value[index].foodErrorIngredientName })
+      await foodStore.actions.updateOne(parsedIng.value[index].ingredient.food as IngredientFood);
+      errors.value[index].foodError = false;
+    }
+
     function insertIngredient(index: number) {
       if (!recipe.value?.recipeIngredient) {
         return;
@@ -375,6 +405,7 @@ export default defineComponent({
       saveAll,
       createFood,
       createUnit,
+      createAlias,
       deleteIngredient,
       insertIngredient,
       errors,
