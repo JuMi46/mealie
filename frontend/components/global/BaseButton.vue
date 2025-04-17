@@ -12,12 +12,12 @@
     v-on="$listeners"
     @click="download ? downloadFile() : undefined"
   >
-    <v-icon v-if="!iconRight" left>
+    <v-icon v-if="!iconRight && !onlyText" left>
       <slot name="icon">
         {{ icon || btnAttrs.icon }}
       </slot>
     </v-icon>
-    <slot name="default">
+    <slot :v-if="!onlyIcon" name="default">
       {{ text || btnAttrs.text }}
     </slot>
     <v-icon v-if="iconRight" right>
@@ -115,6 +115,14 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    onlyIcon: {
+      type: Boolean,
+      default: false,
+    },
+    onlyText: {
+      type: Boolean,
+      default: false,
+    },
   },
   setup(props) {
     const { $globals, i18n } = useContext();
@@ -154,6 +162,16 @@ export default defineComponent({
         icon: $globals.icons.download,
         color: "info",
       },
+      onlyIcon: {
+        text: null,
+        icon: null,
+        color: "success",
+      },
+      onlyText: {
+        text: null,
+        icon: null,
+        color: "success",
+      },
     };
 
     const btnAttrs = computed(() => {
@@ -169,6 +187,10 @@ export default defineComponent({
         return buttonOptions.save;
       } else if (props.download) {
         return buttonOptions.download;
+      } else if (props.onlyIcon) {
+        return buttonOptions.onlyIcon;
+      } else if (props.onlyText) {
+        return buttonOptions.onlyText;
       }
       return buttonOptions.create;
     });

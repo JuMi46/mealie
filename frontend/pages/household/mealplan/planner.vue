@@ -1,6 +1,7 @@
 <template>
   <v-container>
-    <v-menu
+    <div class="d-flex flex-wrap align-center justify-space-between mb-2">
+      <v-menu
       v-model="state.picker"
       :close-on-content-click="false"
       transition="scale-transition"
@@ -37,6 +38,13 @@
       </v-date-picker>
     </v-menu>
 
+      <div>
+        <BaseButton class="mx-1" :icon="$globals.icons.arrowLeftBold" :only-icon="true" color="primary" @click="changePeriod(true)"/>
+        <BaseButton class="mx-1" text="This week" :only-text="true" color="primary" @click="showThisWeek" /> <!-- TODO: Needs translations for "this week" -->
+        <BaseButton class="mx-1" :icon="$globals.icons.arrowRightBold" :only-icon="true" :icon-right="true" color="primary" @click="changePeriod(false)" />
+      </div>
+    </div>
+
     <div class="d-flex flex-wrap align-center justify-space-between mb-2">
       <v-tabs style="width: fit-content;">
         <v-tab :to="`/household/mealplan/planner/view`">{{ $t('meal-plan.meal-planner') }}</v-tab>
@@ -54,8 +62,8 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, useRoute, useRouter, watch } from "@nuxtjs/composition-api";
-import { isSameDay, addDays, parseISO } from "date-fns";
+import { computed, defineComponent, reactive, ref, useRoute, useRouter, watch } from "@nuxtjs/composition-api";
+import { isSameDay, addDays, parseISO, differenceInDays } from "date-fns";
 import { useHouseholdSelf } from "~/composables/use-households";
 import { useMealplans } from "~/composables/use-group-mealplan";
 import { useUserMealPlanPreferences } from "~/composables/use-users/preferences";
@@ -87,7 +95,7 @@ export default defineComponent({
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
 
-    const state = ref({
+    const state = reactive({
       range: [fmtYYYYMMDD(new Date()), fmtYYYYMMDD(addDays(new Date(), adjustForToday(numberOfDays.value)))] as [string, string],
       start: new Date(),
       picker: false,
@@ -99,7 +107,7 @@ export default defineComponent({
     });
 
     const weekRange = computed(() => {
-      const sorted = state.value.range.sort((a, b) => {
+      const sorted = state.range.sort((a, b) => {
         return parseYYYYMMDD(a).getTime() - parseYYYYMMDD(b).getTime();
       });
 
@@ -153,6 +161,21 @@ export default defineComponent({
       });
     });
 
+    function changePeriod(previous = false) {
+      const firstDayOfPeriod = parseYYYYMMDD(state.range[0]);
+      const numberOfDaysInRange = differenceInDays(weekRange.value.end, weekRange.value.start) + 1;
+      firstDayOfPeriod.setDate(!previous ? firstDayOfPeriod.getDate() + numberOfDaysInRange : firstDayOfPeriod.getDate() - numberOfDaysInRange);
+      state.range = [fmtYYYYMMDD(firstDayOfPeriod), fmtYYYYMMDD(addDays(firstDayOfPeriod, adjustForToday(numberOfDaysInRange)))];
+    }
+
+    function showThisWeek() {
+      const date = new Date();
+      if (date.getDay() !== firstDayOfWeek.value) {
+        date.setDate(date.getDate() - date.getDay() + firstDayOfWeek.value);
+      }
+      state.range = [fmtYYYYMMDD(date), fmtYYYYMMDD(addDays(date, adjustForToday(7)))];
+    }
+
     return {
       state,
       actions,
@@ -160,6 +183,8 @@ export default defineComponent({
       weekRange,
       firstDayOfWeek,
       numberOfDays,
+      showThisWeek,
+      changePeriod
     };
   },
   head() {
@@ -177,5 +202,11 @@ export default defineComponent({
 
 .bottom-color-border {
   border-bottom: 2px solid var(--v-primary-base) !important;
+}
+</style>
+
+<style scoped>
+.container {
+  max-width: initial !important;
 }
 </style>
