@@ -6,17 +6,17 @@
         :key="index"
         cols="12"
         sm="12"
-        md="4"
-        lg="4"
+        md="3"
+        lg="3"
         xl="2"
         class="col-borders my-1 d-flex flex-column"
       >
-        <v-card class="mb-2 border-left-primary rounded-sm px-2">
+        <v-card class="mb-2 border-left-primary rounded-sm px-2" :color="isSameDay(day.date, todaysDate) ? 'info' : null">
           <v-container class="px-0">
             <v-row no-gutters style="width: 100%;">
               <v-col cols="10">
                 <p class="pl-2 my-1">
-                  {{ $d(day.date, "short") }}
+                  {{ isSameDay(day.date, todaysDate) ? "Today" : $d(day.date, "short") }} <!-- TODO: "Today" needs transaltion -->
                 </p>
               </v-col>
               <v-col class="d-flex justify-top" cols="2">
@@ -52,6 +52,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, useContext } from "@nuxtjs/composition-api";
+import { isSameDay } from "date-fns";
 import { MealsByDate } from "./types";
 import { ReadPlanEntry } from "~/lib/api/types/meal-plan";
 import GroupMealPlanDayContextMenu from "~/components/Domain/Household/GroupMealPlanDayContextMenu.vue";
@@ -121,8 +122,12 @@ export default defineComponent({
       }, [] as Days[]);
     });
 
+    const todaysDate = computed(() => new Date());
+
     return {
       plan,
+      todaysDate,
+      isSameDay
     };
   },
 });
