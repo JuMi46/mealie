@@ -5,6 +5,7 @@
       v-model="shoppingListDialog"
       :recipes="recipesWithScales"
       :shopping-lists="shoppingLists"
+      :group-ingredients="groupIngredients"
     />
     <v-menu
       offset-y
@@ -75,6 +76,10 @@ export default defineComponent({
       type: String,
       default: null,
     },
+    groupIngredients: {
+      type: Boolean,
+      default: false,
+    }
   },
   setup(props, context) {
     const { $globals, i18n } = useContext();

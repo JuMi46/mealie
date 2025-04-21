@@ -108,6 +108,49 @@
             </div>
           </div>
         </v-card>
+        <v-card v-for="(listSection, recipeSectionIndex) in recipeGroupedIngredients" :key="recipeSectionIndex" elevation="0" height="fit-content" width="100%">
+          <v-divider v-if="recipeSectionIndex > 0" class="mt-3" />
+          <v-card-title v-if="listSection.section" class="justify-center text-h5" width="100%">
+            {{ listSection.section }}
+          </v-card-title>
+          <div>
+            <div v-for="(label, labelIndex) in listSection.labels" :key="recipeSectionIndex + label.label">
+              <v-card-title v-if="label.label" class="ingredient-title mt-2 pb-0 text-h6">
+                {{ label.label.split("_")[1] }}
+              </v-card-title>
+              <div
+                :class="$vuetify.breakpoint.smAndDown ? '' : 'ingredient-grid'"
+                :style="$vuetify.breakpoint.smAndDown ? '' : { gridTemplateRows: `repeat(${Math.ceil(label.ingredients.length / 2)}, min-content)` }"
+              >
+                <v-list-item
+                  v-for="(ingredientData, ingredientIndex) in label.ingredients"
+                  :key="recipeSectionIndex + label.label + ingredientIndex"
+                  dense
+                  @click="recipeGroupedIngredients[recipeSectionIndex]
+                    .labels[labelIndex]
+                    .ingredients[ingredientIndex].checked =
+                    !recipeGroupedIngredients[recipeSectionIndex]
+                    .labels[labelIndex]
+                    .ingredients[ingredientIndex].checked"
+                >
+                  <v-checkbox
+                    hide-details
+                    :input-value="ingredientData.checked"
+                    class="pt-0 my-auto py-auto"
+                    color="secondary"
+                  />
+                  <v-list-item-content :key="ingredientData.ingredientSum.quantity">
+                    <RecipeIngredientListItem
+                      :ingredient="ingredientData.ingredientSum"
+                      :disable-amount="false"
+                      :scale="1" />
+                  </v-list-item-content>
+                </v-list-item>
+              </div>
+            </div>
+          </div>
+        </v-card>
+
       </div>
       <div class="d-flex justify-end mb-4 mt-2">
         <BaseButtonGroup
@@ -166,6 +209,34 @@ export interface ShoppingListRecipeIngredientSection {
   ingredientSections: ShoppingListIngredientSection[];
 }
 
+export interface ShoppingListRecipe {
+  id: string;
+  scale: number;
+  disableAmount: boolean;
+}
+
+export interface ShoppingListGroupedIngredientItem {
+  checked: boolean;
+  ingredient: RecipeIngredient;
+  recipe: ShoppingListRecipe;
+}
+
+export interface ShoppingListGroupedIngredient {
+  checked: boolean;
+  ingredientSum: RecipeIngredient;
+  ingredientItems: ShoppingListGroupedIngredientItem[];
+}
+
+export interface ShoppingListGroupedIngredientLabel {
+  label: string;
+  ingredients: ShoppingListGroupedIngredient[];
+}
+
+export interface ShoppingListGroupedIngredientLabels {
+  section: string;
+  labels: ShoppingListGroupedIngredientLabel[];
+}
+
 export default defineComponent({
   components: {
     RecipeIngredientListItem,
@@ -183,6 +254,10 @@ export default defineComponent({
       type: Array as () => ShoppingListSummary[],
       default: () => [],
     },
+    groupIngredients: {
+      type: Boolean,
+      default: false,
+    }
   },
   setup(props, context) {
     const { $auth, i18n } = useContext();
@@ -217,6 +292,7 @@ export default defineComponent({
 
     const recipeIngredientSections = ref<ShoppingListRecipeIngredientSection[]>([]);
     const selectedShoppingList = ref<ShoppingListSummary | null>(null);
+    const recipeGroupedIngredients = ref<ShoppingListGroupedIngredientLabels[]>([]);
 
     watchEffect(
       () => {
@@ -228,6 +304,130 @@ export default defineComponent({
         }
       },
     );
+
+    async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
+      recipeGroupedIngredients.value = [{ section: "", labels: [] }, { section: "On hand", labels: [] }];
+      const recipeMap = new Map<string, ShoppingListRecipe>();
+      const recipeGroupedIngredientMap = new Map<string, ShoppingListGroupedIngredient>();
+
+      for (const recipe of recipes) {
+        if (!recipe.slug) {
+          continue;
+        }
+
+        if (recipeMap.has(recipe.slug)) {
+          // @ts-ignore not undefined, see above
+          recipeMap.get(recipe.slug).scale += recipe.scale;
+          continue;
+        }
+
+        if (!(recipe.id && recipe.name && recipe.recipeIngredient)) {
+          const { data } = await api.recipes.getOne(recipe.slug);
+          if (!data?.recipeIngredient?.length) {
+            continue;
+          }
+          recipe.id = data.id || "";
+          recipe.name = data.name || "";
+          recipe.recipeIngredient = data.recipeIngredient;
+        } else if (!recipe.recipeIngredient.length) {
+          continue;
+        }
+
+        const recipeItem: ShoppingListRecipe = {
+          id: recipe.id,
+          scale: recipe.scale,
+          disableAmount: recipe.settings?.disableAmount || false
+        }
+
+        recipeMap.set(recipe.slug, recipeItem);
+
+        recipe.recipeIngredient.forEach((ing) => {
+          const checked = ing.food && ing.food.name ? !ing.food?.householdsWithIngredientFood?.includes(userHousehold.value) && true : true;
+
+          if (ing.unit?.name) {
+            if (massUnitValues[ing.unit.name]) {
+              ing.quantity = Number(convertToGram(ing.quantity, ing.unit.name));
+              ing.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram) as IngredientUnit;
+            } else if (volumeUnitValues[ing.unit.name]) {
+              ing.quantity = Number(convertToMilliliter(ing.quantity, ing.unit.name));
+              ing.unit = unitStore.store.value.find(unit => unit.name === UnitNames.milliliter) as IngredientUnit;
+            }
+          }
+
+          const groupedIngredientMapKey = (ing.food && ing.food.name ? ing.food.name : ing.referenceId || "") + (ing.unit?.name || "");
+
+          if (recipeGroupedIngredientMap.has(groupedIngredientMapKey)) {
+            const mapItem = recipeGroupedIngredientMap.get(groupedIngredientMapKey);
+            if (mapItem) {
+              if (ing.note) {
+                mapItem.ingredientSum.note = mapItem.ingredientSum.note ? `${mapItem.ingredientSum.note} | ${ing.note}` : ing.note;
+              }
+              mapItem.ingredientItems.push({
+                checked,
+                ingredient: ing,
+                recipe: recipeItem
+              });
+            }
+          } else {
+            recipeGroupedIngredientMap.set(groupedIngredientMapKey, {
+              checked,
+              checkedPartial: false,
+              ingredientSum: { ...ing },
+              ingredientItems: [{
+                checked: true,
+                ingredient: ing,
+                recipe: recipeItem
+              }]
+            });
+          }
+        })
+      }
+
+      const recipeGroupedIngredientLabelMap = new Map<string, ShoppingListGroupedIngredientLabel>();
+      const recipeGroupedIngredientLabelOnHandMap = new Map<string, ShoppingListGroupedIngredientLabel>();
+
+      recipeGroupedIngredientMap.forEach((ing, key) => {
+        ing.ingredientItems.forEach((ingItem, index) => {
+          if (index === 0) {
+            if (ingItem.ingredient.quantity) {
+              ing.ingredientSum.quantity = ingItem.ingredient.quantity * ingItem.recipe.scale;
+            }
+          } else if (ingItem.ingredient.quantity) {
+            ing.ingredientSum.quantity = ing.ingredientSum.quantity || 0  + (ingItem.ingredient.quantity * ingItem.recipe.scale);
+          }
+        })
+
+        let label: string;
+        if (ing.ingredientItems[0].ingredient.food) {
+          if (ing.ingredientItems[0].ingredient.food.label) {
+            label = ing.ingredientItems[0].ingredient.food.label.name;
+          } else {
+            label = "998_No label"
+          }
+        } else {
+          label = "999_Note"
+        }
+
+        if (ing.checked) {
+          if (recipeGroupedIngredientLabelMap.has(label)) {
+            recipeGroupedIngredientLabelMap.get(label)?.ingredients.push(ing);
+          } else {
+            recipeGroupedIngredientLabelMap.set(label, {label, ingredients: [ing]});
+          }
+        } else if (recipeGroupedIngredientLabelOnHandMap.has(label)) {
+          recipeGroupedIngredientLabelOnHandMap.get(label)?.ingredients.push(ing);
+        } else {
+          recipeGroupedIngredientLabelOnHandMap.set(label, { label, ingredients: [ing] });
+        }
+      })
+
+      recipeGroupedIngredients.value[0].labels = Array.from(recipeGroupedIngredientLabelMap.values()).sort((a, b) => {
+        return a.label < b.label ? -1 : 1;
+      });
+      recipeGroupedIngredients.value[1].labels = Array.from(recipeGroupedIngredientLabelOnHandMap.values()).sort((a, b) => {
+        return a.label < b.label ? -1 : 1;
+      });
+    }
 
     async function consolidateRecipesIntoSections(recipes: RecipeWithScale[]) {
       const recipeSectionMap = new Map<string, ShoppingListRecipeIngredientSection>();
@@ -314,6 +514,7 @@ export default defineComponent({
       state.shoppingListShowAllToggled = false;
       recipeIngredientSections.value = [];
       selectedShoppingList.value = null;
+      recipeGroupedIngredients.value = [];
     }
 
     initState();
@@ -324,7 +525,11 @@ export default defineComponent({
       }
 
       selectedShoppingList.value = list;
-      await consolidateRecipesIntoSections(props.recipes);
+      if (!props.groupIngredients) {
+        await consolidateRecipesIntoSections(props.recipes);
+      } else {
+        await consolidateRecipesIntoGroups(props.recipes);
+      }
       state.shoppingListDialog = false;
       state.shoppingListIngredientDialog = true;
     }
@@ -351,6 +556,7 @@ export default defineComponent({
       }
 
       const recipeData: ShoppingListAddRecipeParamsBulk[] = [];
+      if (!props.groupIngredients) {
       recipeIngredientSections.value.forEach((section) => {
         const ingredients: RecipeIngredient[] = [];
         section.ingredientSections.forEach((ingSection) => {
@@ -383,6 +589,29 @@ export default defineComponent({
           }
         );
       });
+      } else {
+        const recipeDataIndexes: {[key: string]: number} = {};
+        recipeGroupedIngredients.value.forEach(section => {
+          section.labels.forEach((label) => {
+            label.ingredients.forEach((ingObject) => {
+              ingObject.ingredientItems.forEach((ing) => {
+                if (ing.checked) {
+                  if (recipeDataIndexes[ing.recipe.id]) {
+                    recipeData[recipeDataIndexes[ing.recipe.id]].recipeIngredients?.push(ing.ingredient);
+                  } else {
+                    recipeDataIndexes[ing.recipe.id] = recipeData.length;
+                    recipeData.push({
+                      recipeId: ing.recipe.id,
+                      recipeIncrementQuantity: ing.recipe.scale,
+                      recipeIngredients: [ing.ingredient],
+                    });
+                  }
+                }
+              })
+            })
+          })
+        });
+      }
 
       const { error } = await api.shopping.lists.addRecipes(selectedShoppingList.value.id, recipeData);
       error ? alert.error(i18n.tc("recipe.failed-to-add-recipes-to-list"))
@@ -405,6 +634,7 @@ export default defineComponent({
       setShowAllToggled,
       recipeIngredientSections,
       selectedShoppingList,
+      recipeGroupedIngredients
     }
   },
 })

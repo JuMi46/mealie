@@ -50,7 +50,10 @@
         <v-tab :to="`/household/mealplan/planner/view`">{{ $t('meal-plan.meal-planner') }}</v-tab>
         <v-tab :to="`/household/mealplan/planner/edit`">{{ $t('general.edit') }}</v-tab>
       </v-tabs>
-      <ButtonLink :icon="$globals.icons.calendar" :to="`/household/mealplan/settings`" :text="$tc('general.settings')" />
+      <div class="d-flex">
+        <GroupMealPlanDayContextMenu v-if="recipesForPeriod.length" :recipes="recipesForPeriod" :group-ingredients="true" />
+        <ButtonLink :icon="$globals.icons.calendar" :to="`/household/mealplan/settings`" :text="$tc('general.settings')" />
+      </div>
     </div>
 
     <div>
@@ -67,8 +70,13 @@ import { isSameDay, addDays, parseISO, differenceInDays } from "date-fns";
 import { useHouseholdSelf } from "~/composables/use-households";
 import { useMealplans } from "~/composables/use-group-mealplan";
 import { useUserMealPlanPreferences } from "~/composables/use-users/preferences";
+import GroupMealPlanDayContextMenu from "~/components/Domain/Household/GroupMealPlanDayContextMenu.vue";
+import { Recipe } from "~/lib/api/types/recipe";
 
 export default defineComponent({
+  components: {
+    GroupMealPlanDayContextMenu,
+  },
   middleware: ["auth"],
   setup() {
     const route = useRoute();
@@ -161,6 +169,10 @@ export default defineComponent({
       });
     });
 
+    const recipesForPeriod = computed(() => {
+      return mealplans.value ? mealplans.value.map(({ recipe }) => recipe as Recipe) : [];
+    })
+
     function changePeriod(previous = false) {
       const firstDayOfPeriod = parseYYYYMMDD(state.range[0]);
       const numberOfDaysInRange = differenceInDays(weekRange.value.end, weekRange.value.start) + 1;
@@ -184,7 +196,8 @@ export default defineComponent({
       firstDayOfWeek,
       numberOfDays,
       showThisWeek,
-      changePeriod
+      changePeriod,
+      recipesForPeriod
     };
   },
   head() {
