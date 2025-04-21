@@ -257,6 +257,10 @@ export default defineComponent({
     groupIngredients: {
       type: Boolean,
       default: false,
+    },
+    listForPeriod: {
+      type: String,
+      default: "",
     }
   },
   setup(props, context) {
@@ -295,8 +299,20 @@ export default defineComponent({
     const recipeGroupedIngredients = ref<ShoppingListGroupedIngredientLabels[]>([]);
 
     watchEffect(
-      () => {
-        if (shoppingListChoices.value.length === 1 && !state.shoppingListShowAllToggled) {
+      async () => {
+        if (props.listForPeriod) {
+          console.log(props.listForPeriod);
+          for (const list of shoppingListChoices.value) {
+            if (list.name === props.listForPeriod) {
+              selectedShoppingList.value = list;
+              openShoppingListIngredientDialog(selectedShoppingList.value);
+              return;
+            }
+          }
+          const { data } = await api.shopping.lists.createOne({ name: props.listForPeriod });
+          selectedShoppingList.value = data as ShoppingListSummary;
+          openShoppingListIngredientDialog(selectedShoppingList.value);
+        } else if (shoppingListChoices.value.length === 1 && !state.shoppingListShowAllToggled) {
           selectedShoppingList.value = shoppingListChoices.value[0];
           openShoppingListIngredientDialog(selectedShoppingList.value);
         } else {

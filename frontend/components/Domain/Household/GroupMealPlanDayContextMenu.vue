@@ -6,6 +6,7 @@
       :recipes="recipesWithScales"
       :shopping-lists="shoppingLists"
       :group-ingredients="groupIngredients"
+      :list-for-period="listForPeriod"
     />
     <v-menu
       offset-y
@@ -79,6 +80,10 @@ export default defineComponent({
     groupIngredients: {
       type: Boolean,
       default: false,
+    },
+    listForPeriod: {
+      type: String,
+      default: "",
     }
   },
   setup(props, context) {

@@ -51,7 +51,7 @@
         <v-tab :to="`/household/mealplan/planner/edit`">{{ $t('general.edit') }}</v-tab>
       </v-tabs>
       <div class="d-flex">
-        <GroupMealPlanDayContextMenu v-if="recipesForPeriod.length" :recipes="recipesForPeriod" :group-ingredients="true" />
+        <GroupMealPlanDayContextMenu v-if="recipesForPeriod.length" :recipes="recipesForPeriod" :group-ingredients="true" :list-for-period="listForPeriod" />
         <ButtonLink :icon="$globals.icons.calendar" :to="`/household/mealplan/settings`" :text="$tc('general.settings')" />
       </div>
     </div>
@@ -66,7 +66,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, reactive, ref, useRoute, useRouter, watch } from "@nuxtjs/composition-api";
-import { isSameDay, addDays, parseISO, differenceInDays } from "date-fns";
+import { isSameDay, addDays, parseISO, differenceInDays, format } from "date-fns";
 import { useHouseholdSelf } from "~/composables/use-households";
 import { useMealplans } from "~/composables/use-group-mealplan";
 import { useUserMealPlanPreferences } from "~/composables/use-users/preferences";
@@ -188,6 +188,17 @@ export default defineComponent({
       state.range = [fmtYYYYMMDD(date), fmtYYYYMMDD(addDays(date, adjustForToday(7)))];
     }
 
+    const listForPeriod = computed(() => {
+      if (weekRange.value.start.getFullYear() === weekRange.value.end.getFullYear()) {
+        if (weekRange.value.start.getMonth() === weekRange.value.end.getMonth()) {
+          return `${weekRange.value.start.getDate()} - ${weekRange.value.end.getDate()} ${format(weekRange.value.start, "MMM")}`;
+        } else {
+          return `${format(weekRange.value.start, "d MMM")} - ${format(weekRange.value.end, "d MMM")}`;
+        }
+      }
+      return `${format(weekRange.value.start, "d MMM y")} - ${format(weekRange.value.end, "d MMM y")}`;
+    })
+
     return {
       state,
       actions,
@@ -197,7 +208,8 @@ export default defineComponent({
       numberOfDays,
       showThisWeek,
       changePeriod,
-      recipesForPeriod
+      recipesForPeriod,
+      listForPeriod
     };
   },
   head() {
