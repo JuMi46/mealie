@@ -52,9 +52,6 @@
             <RecipePageInfoEditor v-if="isEditMode" v-model="recipe" />
           </div>
           <div>
-            <RecipePageEditorToolbar v-if="isEditForm" v-model="recipe" />
-          </div>
-          <div>
             <RecipePageIngredientEditor v-if="isEditForm" v-model="recipe" />
           </div>
           <div>
@@ -97,6 +94,9 @@
               <RecipeNotes v-model="recipe.notes" :edit="isEditForm" />
             </v-col>
           </v-row>
+          <div>
+            <RecipePageEditorToolbar v-if="isEditForm" v-model="recipe" />
+          </div>
           <RecipePageFooter v-model="recipe" />
         </v-card-text>
       </v-card>
