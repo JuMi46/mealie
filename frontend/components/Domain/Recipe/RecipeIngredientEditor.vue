@@ -202,6 +202,12 @@
             class="mb-auto"
             @click="$emit('clickIngredientField', 'note')"
           />
+          <BaseButton v-if="model.unit && model.unit?.gram && model.unit?.name !== UnitNames.gram" @click="convertUnit()">
+            <template #icon>
+              {{ $globals.icons.units }}
+            </template>
+            g
+          </BaseButton>
           <BaseButtonGroup
             v-if="enableContextMenu"
             hover
@@ -235,6 +241,8 @@ import { useNuxtApp } from "#app";
 import type { RecipeIngredient } from "~/lib/api/types/recipe";
 import { usePublicExploreApi, useUserApi } from "~/composables/api";
 import { useRecipeSearch } from "~/composables/recipes/use-recipe-search";
+import { convertToGram } from "~/composables/recipes/use-recipe-ingredients";
+import { UnitNames } from "~/composables/use-unit";
 
 // defineModel replaces modelValue prop
 const model = defineModel<RecipeIngredient>({ required: true });
@@ -426,6 +434,12 @@ function quantityFilter(e: KeyboardEvent) {
   if (e.key === "-" || e.key === "+" || e.key === "e") {
     e.preventDefault();
   }
+}
+
+function convertUnit() {
+  // TODO: convert to desired unit based on setting
+  model.value.quantity = Number(convertToGram(model.value.quantity, model.value.unit));
+  model.value.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram);
 }
 
 const { showTitle } = toRefs(state);
