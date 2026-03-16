@@ -1,4 +1,5 @@
 import type { ShoppingListItemOut } from "~/lib/api/types/household";
+import type { IngredientUnit, RecipeIngredient } from "~/lib/api/types/recipe";
 import { useShoppingListState } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-state";
 import { useShoppingListData } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-data";
 import { useShoppingListSorting } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-sorting";
@@ -7,11 +8,14 @@ import { useShoppingListCopy } from "~/composables/shopping-list-page/sub-compos
 import { useShoppingListCrud } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-crud";
 import { useShoppingListRecipes } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-recipes";
 import { extendLabel, compareLabel } from "~/composables/use-extend-object";
+import { printFromNewWindow } from "~/composables/use-utils";
+import { useIngredientTextParser } from "~/composables/recipes";
 
 /**
  * Main composable that orchestrates all shopping list page functionality
  */
-export function useShoppingListPage(listId: string) {
+export function useShoppingListPage(listId: string, allUnits?: globalThis.Ref<IngredientUnit[], IngredientUnit[]>,
+  unitsWithRange?: globalThis.Ref<IngredientUnit[], IngredientUnit[]>) {
   // Initialize state
   const state = useShoppingListState();
   const {
@@ -169,6 +173,45 @@ export function useShoppingListPage(listId: string) {
     });
   }
 
+  const { useParsedIngredientText } = useIngredientTextParser();
+
+  function print() {
+    let printableList = shoppingList.value?.name ? `<p class="header">${shoppingList.value?.name}</p>` : "";
+    Object.entries(itemsByLabel.value).forEach(([labelName, items]) => {
+      printableList += `<p class="label-name">- ${labelName}</p>`;
+      for (const item of items) {
+        if (item.food) {
+          const parsedIng = useParsedIngredientText(item as RecipeIngredient, 1, false, undefined, allUnits, unitsWithRange);
+          printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.alternativeMeasurement)}${parseText(parsedIng.name)}</p>`;
+        }
+        else {
+          printableList += `<p class="ingredient-item">${parseNumber(item.quantity)}${parseText(item.note)}</p>`;
+        }
+      }
+    });
+
+    printFromNewWindow(printableList, `
+        p {
+          font-size: 16px;
+        }
+        .header {
+          margin: 15px 0 0 0;
+        }
+        .label-name {
+          margin: 15px 0 0 0;
+        }
+        .ingredient-item {
+          margin: 5px 0 0 0;
+        }`);
+
+    function parseText(t: string | null | undefined) {
+      return t ? t.trim() + " " : "";
+    }
+    function parseNumber(n: number | undefined) {
+      return n && n > 0 ? n : "";
+    }
+  }
+
   // Lifecycle management
   onMounted(() => {
     startPolling(updateListItemOrder);
@@ -206,5 +249,7 @@ export function useShoppingListPage(listId: string) {
 
     // Data refresh
     refresh,
+
+    print,
   };
 }

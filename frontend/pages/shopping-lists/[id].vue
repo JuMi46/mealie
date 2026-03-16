@@ -115,6 +115,11 @@
                     event: 'check',
                   },
                   {
+                    icon: $globals.icons.printer,
+                    text: $t('general.print'),
+                    event: 'print',
+                  },
+                  {
                     icon: $globals.icons.dotsVertical,
                     text: '',
                     event: 'three-dot',
@@ -135,6 +140,7 @@
                 @edit="edit = true"
                 @three-dot="threeDot = true"
                 @check="openCheckAll"
+                @print="print"
                 @copy-plain="copyListItems('plain')"
                 @copy-markdown="copyListItems('markdown')"
                 @reorder-labels="toggleReorderLabelsDialog()"
@@ -338,7 +344,7 @@ import MultiPurposeLabelSection from "~/components/Domain/ShoppingList/MultiPurp
 import ShoppingListItem from "~/components/Domain/ShoppingList/ShoppingListItem.vue";
 import ShoppingListItemEditor from "~/components/Domain/ShoppingList/ShoppingListItemEditor.vue";
 import { useShoppingListPage } from "~/composables/shopping-list-page/use-shopping-list-page";
-import { useFoodStore, useLabelStore, useUnitStore } from "~/composables/store";
+import { useFoodStore, useLabelStore, useUnitStore, unitsWithRange } from "~/composables/store";
 import { getTextColor } from "~/composables/use-text-color";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
 
@@ -364,10 +370,10 @@ export default defineNuxtComponent({
     const groupSlug = computed(() => route.params.groupSlug as string || auth.user.value?.groupSlug || "");
     const id = route.params.id as string;
 
-    const shoppingListPage = useShoppingListPage(id);
     const { store: allLabels } = useLabelStore();
     const { store: allUnits } = useUnitStore();
     const { store: allFoods } = useFoodStore();
+    const shoppingListPage = useShoppingListPage(id, allUnits, unitsWithRange);
 
     return {
       groupSlug,
