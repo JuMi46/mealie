@@ -179,13 +179,22 @@
       </div>
       <!-- Review -->
       <div v-else>
-        <BaseButton
-          create
-          :text="$t('general.save')"
-          :icon="$globals.icons.save"
-          :loading="state.loading.save"
-          @click="saveIngs"
-        />
+        <v-card-actions>
+          <BaseButton
+            create
+            :text="$t('general.save')"
+            :icon="$globals.icons.save"
+            :loading="state.loading.save"
+            @click="saveIngs(false)"
+          />
+          <BaseButton
+            create
+            :text="$t('general.save') + ' + ' + $t('recipe.link-ingredients')"
+            :icon="$globals.icons.save"
+            :loading="state.loading.save"
+            @click="saveIngs(true)"
+          />
+        </v-card-actions>
       </div>
     </template>
   </BaseDialog>
@@ -212,7 +221,7 @@ const { parseIngredientText } = useIngredientTextParser();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
-  (e: "save", value: NoUndefinedField<RecipeIngredient[]>): void;
+  (e: "save", value: NoUndefinedField<RecipeIngredient[]>, linkIngredientsAfter: boolean): void;
 }>();
 
 const { $appInfo } = useNuxtApp();
@@ -547,8 +556,8 @@ function insertNewIngredient(index: number) {
   parsedIngs.value.splice(index, 0, ing);
 }
 
-function saveIngs() {
-  emit("save", parsedIngs.value.map(x => x.ingredient as NoUndefinedField<RecipeIngredient>));
+function saveIngs(linkIngredientsAfter: boolean = false) {
+  emit("save", parsedIngs.value.map(x => x.ingredient as NoUndefinedField<RecipeIngredient>), linkIngredientsAfter);
   state.loading.save = true;
 }
 </script>

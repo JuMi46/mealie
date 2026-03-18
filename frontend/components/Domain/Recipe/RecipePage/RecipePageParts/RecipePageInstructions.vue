@@ -792,6 +792,10 @@ function openImageUpload(index: number) {
   };
   input.click();
 }
+
+defineExpose({
+  openDialog,
+});
 </script>
 
 <style lang="css" scoped>

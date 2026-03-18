@@ -103,12 +103,15 @@
 import RecipeContextMenu from "./RecipeContextMenu/RecipeContextMenu.vue";
 import RecipeFavoriteBadge from "./RecipeFavoriteBadge.vue";
 import RecipeTimelineBadge from "./RecipeTimelineBadge.vue";
+import { usePageState } from "~/composables/recipe-page/shared-state";
 import type { Recipe } from "~/lib/api/types/recipe";
 
 const SAVE_EVENT = "save";
 const DELETE_EVENT = "delete";
 const CLOSE_EVENT = "close";
 const JSON_EVENT = "json";
+const PARSE_EVENT = "parse";
+const LINK_EVENT = "link-ingredients";
 
 interface Props {
   recipe: Recipe;
@@ -120,45 +123,91 @@ interface Props {
   recipeId: string;
   canEdit?: boolean;
 }
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
   loggedIn: false,
   canEdit: false,
 });
 
-const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "edit"]);
+const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "edit", "link-ingredients"]);
 
 const deleteDialog = ref(false);
 
 const i18n = useI18n();
 const { $globals } = useNuxtApp();
+const { toggleIsParsing } = usePageState(props.recipe.slug as string);
 
-const editorButtons = [
-  {
-    text: i18n.t("general.delete"),
-    icon: $globals.icons.delete,
-    event: DELETE_EVENT,
-    color: "error",
-  },
-  {
-    text: i18n.t("general.json"),
-    icon: $globals.icons.codeBraces,
-    event: JSON_EVENT,
-    color: "accent",
-  },
-  {
-    text: i18n.t("general.close"),
-    icon: $globals.icons.close,
-    event: CLOSE_EVENT,
-    color: "",
-  },
-  {
-    text: i18n.t("general.save"),
-    icon: $globals.icons.save,
-    event: SAVE_EVENT,
-    color: "success",
-  },
-];
+function hasFoodOrUnit() {
+  if (!props.recipe) {
+    return false;
+  }
+  if (props.recipe.recipeIngredient) {
+    for (const ingredient of props.recipe.recipeIngredient) {
+      if (ingredient.food || ingredient.unit) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+const editorButtons = computed(() => {
+  const buttons = [
+    {
+      text: i18n.t("general.delete"),
+      icon: $globals.icons.delete,
+      event: DELETE_EVENT,
+      color: "error",
+    },
+    {
+      text: i18n.t("general.json"),
+      icon: $globals.icons.codeBraces,
+      event: JSON_EVENT,
+      color: "accent",
+    },
+    {
+      text: i18n.t("general.close"),
+      icon: $globals.icons.close,
+      event: CLOSE_EVENT,
+      color: "",
+    },
+    {
+      text: i18n.t("general.save"),
+      icon: $globals.icons.save,
+      event: SAVE_EVENT,
+      color: "success",
+    },
+  ];
+  if (props.recipe.recipeInstructions) {
+    let recipeHasLinkedIngredients = false;
+    for (const step of props.recipe.recipeInstructions) {
+      if (step.ingredientReferences && step.ingredientReferences.length > 0) {
+        recipeHasLinkedIngredients = true;
+        break;
+      }
+    }
+
+    if (!recipeHasLinkedIngredients) {
+      buttons.unshift({
+        text: i18n.t("recipe.link-ingredients"),
+        icon: $globals.icons.wrench,
+        event: LINK_EVENT,
+        color: "accent",
+      });
+    }
+  }
+
+  if (!hasFoodOrUnit()) {
+    buttons.unshift({
+      text: i18n.t("recipe.parse"),
+      icon: $globals.icons.foods,
+      event: PARSE_EVENT,
+      color: "accent",
+    });
+  }
+  return buttons;
+});
 
 function emitHandler(event: string) {
   switch (event) {
@@ -168,6 +217,14 @@ function emitHandler(event: string) {
       break;
     case DELETE_EVENT:
       deleteDialog.value = true;
+      break;
+    case PARSE_EVENT:
+      if (props.recipe.slug) {
+        toggleIsParsing(true);
+      }
+      break;
+    case LINK_EVENT:
+      emit("link-ingredients");
       break;
     default:
       emit(event as any);

@@ -100,7 +100,7 @@ interface Props {
   landscape: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
 });
 

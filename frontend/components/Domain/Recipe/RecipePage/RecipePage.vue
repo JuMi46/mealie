@@ -29,6 +29,7 @@
           @save="saveRecipe"
           @delete="deleteRecipe"
           @close="closeEditor"
+          @link-ingredients="linkIngredients"
         />
         <RecipeJsonEditor
           v-if="isEditJSON"
@@ -77,6 +78,7 @@
             -->
             <v-col cols="12" sm="12" :md="8 + (isCookMode ? 1 : 0) * 4" :lg="8 + (isCookMode ? 1 : 0) * 4">
               <RecipePageInstructions
+                ref="recipePageInstructions"
                 v-model="recipe.recipeInstructions"
                 v-model:assets="recipe.assets"
                 :recipe="recipe"
@@ -351,9 +353,9 @@ watch(isParsing, () => {
  * Recipe Save Delete
  */
 
-async function saveRecipe() {
+async function saveRecipe(stayInEditMode: boolean = false) {
   const { data, error } = await api.recipes.updateOne(recipe.value.slug, recipe.value);
-  if (!error) {
+  if (!error && !stayInEditMode) {
     setMode(PageMode.VIEW);
   }
   if (data?.slug) {
@@ -364,10 +366,13 @@ async function saveRecipe() {
   }
 }
 
-async function saveParsedIngredients(ingredients: NoUndefinedField<RecipeIngredient[]>) {
+async function saveParsedIngredients(ingredients: NoUndefinedField<RecipeIngredient[]>, linkIngredientsAfter: boolean = false) {
   recipe.value.recipeIngredient = ingredients;
-  await saveRecipe();
+  await saveRecipe(true);
   toggleIsParsing(false);
+  if (linkIngredientsAfter) {
+    linkIngredients();
+  }
 }
 
 async function deleteRecipe() {
@@ -431,6 +436,13 @@ function chipClicked(item: RecipeTag | RecipeCategory | RecipeTool, itemType: st
     return;
   }
   router.push(`/g/${groupSlug.value}?${itemType}=${item.id}`);
+}
+
+const recipePageInstructions: Ref<any> = ref(null);
+function linkIngredients() {
+  if (recipe.value.recipeInstructions && recipe.value.recipeInstructions[0]?.text) {
+    recipePageInstructions.value.openDialog(0, recipe.value.recipeInstructions[0].text, recipe.value.recipeInstructions[0].ingredientReferences);
+  }
 }
 
 const scale = ref(1);
