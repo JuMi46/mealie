@@ -287,6 +287,11 @@ export default defineNuxtComponent({
           },
         ],
       },
+      {
+        title: "Serving calculator",
+        to: "/serving-calculator",
+        restricted: true,
+      },
     ]);
 
     return {
