@@ -216,6 +216,7 @@ import RecipeDialogBulkAdd from "~/components/Domain/Recipe/RecipeDialogBulkAdd.
 import RecipeNotes from "~/components/Domain/Recipe/RecipeNotes.vue";
 import { useLoggedInState } from "~/composables/use-logged-in-state";
 import { useNavigationWarning } from "~/composables/use-navigation-warning";
+import { extendRecipe } from "~/composables/use-extend-object";
 
 const recipe = defineModel<NoUndefinedField<Recipe>>({ required: true });
 
@@ -330,6 +331,8 @@ onMounted(() => {
   if (paramsParse.value === "true" && isOwnGroup.value) {
     toggleIsParsing(true);
   }
+
+  extendRecipe(recipe.value);
 });
 
 watch(isEditMode, (newVal) => {

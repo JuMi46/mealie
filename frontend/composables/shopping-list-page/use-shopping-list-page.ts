@@ -6,6 +6,7 @@ import { useShoppingListLabels } from "~/composables/shopping-list-page/sub-comp
 import { useShoppingListCopy } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-copy";
 import { useShoppingListCrud } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-crud";
 import { useShoppingListRecipes } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-recipes";
+import { extendLabel, compareLabel } from "~/composables/use-extend-object";
 
 /**
  * Main composable that orchestrates all shopping list page functionality
@@ -31,6 +32,21 @@ export function useShoppingListPage(listId: string) {
 
   function updateListItemOrder() {
     if (!shoppingList.value) return;
+
+    if (shoppingList.value?.listItems && !shoppingList.value?.listItems[0].label?.sortOrder
+      && shoppingList.value?.listItems[0].label?.name.startsWith("{")) {
+      for (const item of shoppingList.value.listItems) {
+        extendLabel(item.label);
+      }
+    }
+    if (shoppingList.value?.labelSettings && !shoppingList.value?.labelSettings[0].label?.sortOrder
+      && shoppingList.value?.labelSettings[0].label?.name.startsWith("{")) {
+      for (const item of shoppingList.value.labelSettings) {
+        extendLabel(item.label);
+      }
+
+      shoppingList.value.labelSettings.sort((a, b) => compareLabel(a.label, b.label));
+    }
 
     if (!preserveItemOrder.value) {
       groupAndSortListItemsByFood(shoppingList.value);

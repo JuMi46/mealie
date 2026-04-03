@@ -14,6 +14,9 @@ export interface MultiPurposeLabelOut {
   color?: string;
   groupId: string;
   id: string;
+  labelText?: string | null;
+  sortOrder?: number | null;
+  place?: string | null;
 }
 export interface MultiPurposeLabelSave {
   name: string;
@@ -25,6 +28,9 @@ export interface MultiPurposeLabelSummary {
   color?: string;
   groupId: string;
   id: string;
+  labelText?: string | null;
+  sortOrder?: number | null;
+  place?: string | null;
 }
 export interface MultiPurposeLabelUpdate {
   name: string;

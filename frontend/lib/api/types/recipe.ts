@@ -68,9 +68,15 @@ export interface CreateIngredientFood {
   labelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
+  density?: number | null;
+  tip?: string | null;
 }
 export interface CreateIngredientFoodAlias {
   name: string;
+}
+export interface IngredientUnitRange {
+  start: number;
+  end: number;
 }
 export interface CreateIngredientUnit {
   id?: string | null;
@@ -85,6 +91,11 @@ export interface CreateIngredientUnit {
   pluralAbbreviation?: string | null;
   useAbbreviation?: boolean;
   aliases?: CreateIngredientUnitAlias[];
+  gram?: number | null;
+  milliliter?: number | null;
+  metric?: boolean | null;
+  imperial?: boolean | null;
+  range?: IngredientUnitRange[] | null;
 }
 export interface CreateIngredientUnitAlias {
   name: string;
@@ -144,6 +155,8 @@ export interface IngredientFood {
   label?: MultiPurposeLabelSummary | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  density?: number | null;
+  tip?: string | null;
 }
 export interface IngredientFoodAlias {
   name: string;
@@ -153,6 +166,9 @@ export interface MultiPurposeLabelSummary {
   color?: string;
   groupId: string;
   id: string;
+  labelText?: string | null;
+  sortOrder?: number | null;
+  place?: string | null;
 }
 export interface IngredientReferences {
   referenceId?: string | null;
@@ -176,6 +192,11 @@ export interface IngredientUnit {
   aliases?: IngredientUnitAlias[];
   createdAt?: string | null;
   updatedAt?: string | null;
+  gram?: number | null;
+  milliliter?: number | null;
+  metric?: boolean | null;
+  imperial?: boolean | null;
+  range?: IngredientUnitRange[] | null;
 }
 export interface IngredientUnitAlias {
   name: string;
@@ -264,6 +285,11 @@ export interface RecipeTool {
   name: string;
   slug: string;
   householdsWithTool?: string[];
+  toolName?: string | null;
+  sortOrder?: number | null;
+  labelText?: string | null;
+  weight?: number | null;
+  servingCategory?: string | null;
 }
 export interface RecipeStep {
   id?: string | null;

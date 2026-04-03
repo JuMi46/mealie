@@ -316,6 +316,10 @@ export interface RecipeIngredient {
   originalText?: string | null;
   referenceId?: string;
 }
+export interface IngredientUnitRange {
+  start: number;
+  end: number;
+}
 export interface IngredientUnit {
   id: string;
   name: string;
@@ -331,6 +335,11 @@ export interface IngredientUnit {
   aliases?: IngredientUnitAlias[];
   createdAt?: string | null;
   updatedAt?: string | null;
+  gram?: number | null;
+  milliliter?: number | null;
+  metric?: boolean | null;
+  imperial?: boolean | null;
+  range?: IngredientUnitRange[] | null;
 }
 export interface IngredientUnitAlias {
   name: string;
@@ -348,6 +357,11 @@ export interface CreateIngredientUnit {
   pluralAbbreviation?: string | null;
   useAbbreviation?: boolean;
   aliases?: CreateIngredientUnitAlias[];
+  gram?: number | null;
+  milliliter?: number | null;
+  metric?: boolean | null;
+  imperial?: boolean | null;
+  range?: IngredientUnitRange[] | null;
 }
 export interface CreateIngredientUnitAlias {
   name: string;
@@ -375,6 +389,9 @@ export interface MultiPurposeLabelSummary {
   color?: string;
   groupId: string;
   id: string;
+  labelText?: string | null;
+  sortOrder?: number | null;
+  place?: string | null;
 }
 export interface CreateIngredientFood {
   id?: string | null;
@@ -446,6 +463,11 @@ export interface RecipeTool {
   name: string;
   slug: string;
   householdsWithTool?: string[];
+  toolName?: string | null;
+  sortOrder?: number | null;
+  labelText?: string | null;
+  weight?: number | null;
+  servingCategory?: string | null;
 }
 export interface RecipeStep {
   id?: string | null;
