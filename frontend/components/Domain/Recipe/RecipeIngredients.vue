@@ -13,39 +13,153 @@
       />
     </div>
     <div>
-      <div
-        v-for="(ingredient, index) in value"
-        :key="'ingredient' + index"
-      >
-        <h3
-          v-if="showTitleEditor[index]"
-          class="mt-2"
+      <v-checkbox
+        v-if="!isCookMode && sortedIngredientsByPlace"
+        v-model="sortIngredientsByPlace"
+        class="my-auto ml-auto"
+        color="secondary"
+        :label="$t('recipe.sort-by-label-place')"
+      />
+      <template v-if="!isCookMode && sortIngredientsByPlace">
+        <div
+          v-for="(place, placeName) in sortedIngredientsByPlace"
+          :key="'place' + placeName"
         >
-          {{ ingredient.title }}
-        </h3>
-        <v-divider v-if="showTitleEditor[index]" />
-        <v-list-item
-          density="compact"
-          class="pa-0"
-          @click.stop="toggleChecked(index)"
-        >
-          <template #prepend>
-            <v-checkbox
-              v-model="checked[index]"
-              hide-details
-              class="pt-0 my-auto py-auto"
-              color="secondary"
-              density="comfortable"
-            />
+          <h2
+            v-if="place.length > 0"
+            class="mt-2"
+          >
+            {{ placeName }}
+          </h2>
+          <v-list>
+            <template
+              v-for="(ingredient, ingredientIndex) in place"
+              :key="'ingredient' + ingredientIndex"
+            >
+              <v-list-item
+                v-if="!ingredient.referencedRecipe || (ingredient.referencedRecipe?.recipeInstructions?.length || 0 > 0)"
+                density="compact"
+                class="pa-0"
+              >
+                <v-list-item-title>
+                  <RecipeIngredientListItem
+                    :ingredient="ingredient"
+                    :scale="scale"
+                  />
+                </v-list-item-title>
+              </v-list-item>
+
+              <v-list-group
+                v-else
+                density="compact"
+                class="pa-0"
+              >
+                <template #activator="{ props: groupProps }">
+                  <v-list-item
+                    v-bind="groupProps"
+                    density="compact"
+                    class="pa-0"
+                  >
+                    <v-list-item-title>
+                      <RecipeIngredientListItem
+                        :ingredient="ingredient"
+                        :scale="scale"
+                      />
+                    </v-list-item-title>
+                  </v-list-item>
+                </template>
+                <v-list-item
+                  v-for="(refIngredient, refIngredientIndex) in ingredient.referencedRecipe?.recipeIngredient"
+                  :key="'refIngredient' + refIngredientIndex"
+                  density="compact"
+                  class="pa-0"
+                >
+                  <v-list-item-title>
+                    <RecipeIngredientListItem
+                      :ingredient="refIngredient"
+                      :scale="(ingredient.quantity || 1) * scale / (ingredient.referencedRecipe.recipeServings || 1)"
+                    />
+                  </v-list-item-title>
+                </v-list-item>
+              </v-list-group>
+            </template>
+          </v-list>
+        </div>
+      </template>
+
+      <template v-else>
+        <v-list>
+          <template
+            v-for="(ingredient, index) in groupedIngredients"
+            :key="'ingredient' + index"
+          >
+            <v-list-item
+              v-if="!ingredient.referencedRecipe || (ingredient.referencedRecipe?.recipeInstructions?.length || 0 > 0)"
+              density="compact"
+              class="pa-0"
+              @click.stop="toggleChecked(index)"
+            >
+              <template #prepend>
+                <v-checkbox
+                  v-model="checked[index]"
+                  hide-details
+                  class="pt-0 my-auto py-auto"
+                  color="secondary"
+                  density="comfortable"
+                />
+              </template>
+              <v-list-item-title>
+                <RecipeIngredientListItem
+                  :ingredient="ingredient"
+                  :scale="scale"
+                />
+              </v-list-item-title>
+            </v-list-item>
+            <v-list-group
+              v-else
+              density="compact"
+              class="pa-0"
+            >
+              <template #activator="{ props: groupProps }">
+                <v-list-item
+                  v-bind="groupProps"
+                  density="compact"
+                  class="pa-0"
+                >
+                  <template #prepend>
+                    <v-checkbox
+                      v-model="checked[index]"
+                      hide-details
+                      class="pt-0 my-auto py-auto"
+                      color="secondary"
+                      density="comfortable"
+                    />
+                  </template>
+                  <v-list-item-title>
+                    <RecipeIngredientListItem
+                      :ingredient="ingredient"
+                      :scale="scale"
+                    />
+                  </v-list-item-title>
+                </v-list-item>
+              </template>
+              <v-list-item
+                v-for="(refIngredient, refIngredientIndex) in ingredient.referencedRecipe?.recipeIngredient"
+                :key="'refIngredient' + refIngredientIndex"
+                density="compact"
+                class="pa-0"
+              >
+                <v-list-item-title>
+                  <RecipeIngredientListItem
+                    :ingredient="refIngredient"
+                    :scale="(ingredient.quantity || 1) * scale / (ingredient.referencedRecipe.recipeServings || 1)"
+                  />
+                </v-list-item-title>
+              </v-list-item>
+            </v-list-group>
           </template>
-          <v-list-item-title>
-            <RecipeIngredientListItem
-              :ingredient="ingredient"
-              :scale="scale"
-            />
-          </v-list-item-title>
-        </v-list-item>
-      </div>
+        </v-list>
+      </template>
     </div>
   </div>
 </template>
@@ -53,7 +167,8 @@
 <script setup lang="ts">
 import RecipeIngredientListItem from "./RecipeIngredientListItem.vue";
 import { useIngredientTextParser } from "~/composables/recipes";
-import type { RecipeIngredient } from "~/lib/api/types/recipe";
+import type { IngredientFood, RecipeIngredient } from "~/lib/api/types/recipe";
+import { reduceIngredients } from "~/composables/recipes/use-recipe";
 
 interface Props {
   value?: RecipeIngredient[];
@@ -68,12 +183,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { parseIngredientText } = useIngredientTextParser();
 
-function validateTitle(title?: string | null) {
-  return !(title === undefined || title === "" || title === null);
-}
-
 const checked = ref(props.value.map(() => false));
-const showTitleEditor = computed(() => props.value.map(x => validateTitle(x.title)));
+const sortIngredientsByPlace = ref(true); // TODO: Save default value as a household setting
 
 const ingredientCopyText = computed(() => {
   const components: string[] = [];
@@ -97,6 +208,58 @@ function toggleChecked(index: number) {
   // direct array modifications are not propagated for some reason
   checked.value.splice(index, 1, !checked.value[index]);
 }
+
+const sortedIngredientsByPlace = computed(() => {
+  const ingredientsByPlace: { fridge: RecipeIngredient[]; freezer: RecipeIngredient[]; pantry: RecipeIngredient[] } = { fridge: [], freezer: [], pantry: [] };
+  groupedIngredients.value.forEach((ingredient) => {
+    let place = (ingredient.food as IngredientFood)?.label?.place;
+    if (ingredient.referencedRecipe?.recipeIngredient) {
+      const refFood = ingredient.referencedRecipe?.recipeIngredient[0].food as IngredientFood;
+      place = refFood?.label?.place;
+    }
+
+    if (place) {
+      ingredientsByPlace[place].push(ingredient);
+    }
+    else {
+      ingredientsByPlace.pantry.push(ingredient);
+    }
+  });
+  for (const place in ingredientsByPlace) {
+    ingredientsByPlace[place].sort((a: RecipeIngredient, b: RecipeIngredient) => {
+      let aSortOrder = 100;
+      let bSortOrder = 100;
+
+      let aFood = a.food as IngredientFood;
+      if (a.referencedRecipe?.recipeIngredient) {
+        const refIng = a.referencedRecipe?.recipeIngredient[0];
+        if (refIng) {
+          aFood = refIng.food as IngredientFood;
+        }
+      }
+      if (aFood?.label?.sortOrder) {
+        aSortOrder = aFood.label.sortOrder;
+      }
+
+      let bFood = b.food as IngredientFood;
+      if (b.referencedRecipe?.recipeIngredient) {
+        const refIng = b.referencedRecipe?.recipeIngredient[0];
+        if (refIng) {
+          bFood = refIng.food as IngredientFood;
+        }
+      }
+      if (bFood?.label?.sortOrder) {
+        bSortOrder = bFood.label.sortOrder;
+      }
+      return aSortOrder - bSortOrder;
+    });
+  }
+  return ingredientsByPlace;
+});
+
+const groupedIngredients = computed(() => {
+  return reduceIngredients(props.value);
+});
 </script>
 
 <style>

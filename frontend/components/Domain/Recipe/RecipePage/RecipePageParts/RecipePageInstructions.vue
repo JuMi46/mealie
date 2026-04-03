@@ -187,7 +187,6 @@
               :class="[{ 'on-hover': isHovering }, { 'cursor-default': isEditForm }, isChecked(index)]"
               :elevation="isHovering ? 12 : 2"
               :ripple="false"
-              @click="toggleDisabled(index)"
             >
               <v-card-title class="recipe-step-title pt-3" :class="!isChecked(index) ? 'pb-0' : 'pb-3'">
                 <div class="d-flex align-center w-100">
@@ -210,6 +209,7 @@
                   <div
                     v-else
                     class="summary-wrapper"
+                    @click="toggleDisabled(index)"
                   >
                     <template v-if="step.summary">
                       <SafeMarkdown
