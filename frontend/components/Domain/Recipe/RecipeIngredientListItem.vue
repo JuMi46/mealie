@@ -9,6 +9,11 @@
       {{ parsedIng.unit }}
     </template>
     <SafeMarkdown
+      v-if="parsedIng.alternativeMeasurement"
+      class="d-inline"
+      :source="parsedIng.alternativeMeasurement"
+    />
+    <SafeMarkdown
       v-if="parsedIng.note && !parsedIng.name"
       class="text-bold d-inline"
       :source="parsedIng.note"
@@ -35,6 +40,7 @@
 <script setup lang="ts">
 import type { RecipeIngredient } from "~/lib/api/types/household";
 import { useIngredientTextParser } from "~/composables/recipes";
+import { useUnitStore, unitsWithRange } from "~/composables/store";
 
 interface Props {
   ingredient: RecipeIngredient;
@@ -45,11 +51,12 @@ const props = withDefaults(defineProps<Props>(), {
 });
 const route = useRoute();
 const auth = useMealieAuth();
+const unitStore = useUnitStore();
 const groupSlug = computed(() => route.params.groupSlug || auth.user?.value?.groupSlug || "");
 const { useParsedIngredientText } = useIngredientTextParser();
 
 const parsedIng = computed(() => {
-  return useParsedIngredientText(props.ingredient, props.scale, true, groupSlug.value.toString());
+  return useParsedIngredientText(props.ingredient, props.scale, true, groupSlug.value.toString(), unitStore.store, unitsWithRange);
 });
 </script>
 

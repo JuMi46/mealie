@@ -2,8 +2,9 @@ import DOMPurify from "isomorphic-dompurify";
 import { useFraction } from "./use-fraction";
 import { useLocales } from "../use-locales";
 import type { CreateIngredientFood, CreateIngredientUnit, IngredientFood, IngredientUnit, Recipe, RecipeIngredient } from "~/lib/api/types/recipe";
+import { UnitNames } from "../use-unit";
 
-const { frac } = useFraction();
+const { simpleFrac } = useFraction();
 
 const FRAC_MIN_DENOM = 10;
 const DECIMAL_PRECISION = 3;
@@ -58,6 +59,7 @@ type ParsedIngredientText = {
    * If the ingredient is a linked recipe, an HTML link to the referenced recipe, otherwise undefined.
    */
   recipeLink?: string;
+  alternativeMeasurement?: string;
 };
 
 function shouldUsePluralFood(quantity: number, hasUnit: boolean, pluralFoodHandling: string): boolean {
@@ -82,21 +84,42 @@ function shouldUsePluralFood(quantity: number, hasUnit: boolean, pluralFoodHandl
 export function useIngredientTextParser() {
   const { locales, locale } = useLocales();
 
-  function useParsedIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true, groupSlug?: string): ParsedIngredientText {
+  function useParsedIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true, groupSlug?: string,
+    allUnits?: globalThis.Ref<IngredientUnit[], IngredientUnit[]>, unitsWithRange?: globalThis.Ref<IngredientUnit[], IngredientUnit[]>): ParsedIngredientText {
     const filteredLocales = locales.filter(lc => lc.value === locale.value);
     const pluralFoodHandling = filteredLocales.length ? filteredLocales[0].pluralFoodHandling : "without-unit";
 
     const { quantity, food, unit, note, referencedRecipe } = ingredient;
-    const usePluralUnit = quantity !== undefined && ((quantity || 0) * scale > 1 || (quantity || 0) * scale === 0);
-    const usePluralFood = shouldUsePluralFood((quantity || 0) * scale, !!unit, pluralFoodHandling);
+    let scaledQuantity = (quantity || 0) * scale;
+    let returnUnit = unit;
+
+    const quantityInMl = convertToMilliliter(scaledQuantity, returnUnit);
+
+    if (returnUnit) {
+      if (quantityInMl && !returnUnit.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end) && unitsWithRange?.value) {
+        for (const unitObject of unitsWithRange.value) {
+          if (unitObject.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end)) {
+            scaledQuantity = quantityInMl / (unitObject.milliliter || 1);
+            returnUnit = unitObject;
+            break;
+          }
+        }
+      }
+      else if (returnUnit.gram && returnUnit.name != UnitNames.gram) {
+        // TODO: Add settings that dictates which convertions to happen (Imperial to Metric, etc)
+        scaledQuantity *= (returnUnit.gram || 1);
+        returnUnit = allUnits?.value.find(unit => unit.name == UnitNames.gram);
+      }
+    }
+
+    const usePluralUnit = quantity !== undefined && (scaledQuantity > 1 || scaledQuantity === 0);
+    const usePluralFood = shouldUsePluralFood(scaledQuantity, !!unit, pluralFoodHandling);
 
     let returnQty = "";
 
     // casting to number is required as sometimes quantity is a string
     if (quantity && Number(quantity) !== 0) {
-      const scaledQuantity = Number((quantity * scale));
-
-      if (unit && !unit.fraction) {
+      if (returnUnit && !returnUnit.fraction) {
         const minVal = 10 ** -DECIMAL_PRECISION;
         returnQty = scaledQuantity >= minVal
           ? Number(scaledQuantity.toPrecision(DECIMAL_PRECISION)).toString()
@@ -106,7 +129,15 @@ export function useIngredientTextParser() {
         const minVal = 1 / FRAC_MIN_DENOM;
         const isUnderMinVal = !(scaledQuantity >= minVal);
 
-        const fraction = !isUnderMinVal ? frac(scaledQuantity, FRAC_MIN_DENOM, true) : [0, 1, FRAC_MIN_DENOM];
+        // const fraction = !isUnderMinVal ? frac(scaledQuantity, FRAC_MIN_DENOM, true) : [0, 1, FRAC_MIN_DENOM];
+        let fraction;
+        if (unit?.name === UnitNames.teaspoon && quantityInMl && quantityInMl < 2.1875) {
+          // Finer precision under 3/8 teaspoon
+          fraction = quantityInMl < 0.9375 ? [0, 1, 8] : quantityInMl < 1.5625 ? [0, 1, 4] : [0, 3, 8];
+        }
+        else {
+          fraction = simpleFrac(scaledQuantity, !quantityInMl || quantityInMl >= 58.125);
+        }
         if (fraction[0] !== undefined && fraction[0] > 0) {
           returnQty += fraction[0];
         }
@@ -123,8 +154,22 @@ export function useIngredientTextParser() {
       }
     }
 
-    const unitName = useUnitName(unit || undefined, usePluralUnit);
+    const unitName = useUnitName(returnUnit || undefined, usePluralUnit);
     const ingName = referencedRecipe ? referencedRecipe.name || "" : useFoodName(food || undefined, usePluralFood);
+
+    let alternativeMeasurement = "";
+
+    if (returnUnit) {
+      if (scaledQuantity && returnUnit.milliliter && food?.density) {
+      // TODO: convert to desired unit based on setting
+        alternativeMeasurement = `(${(Math.ceil(scaledQuantity * (returnUnit.milliliter || 1) * food.density)).toString()} g)`;
+      }
+
+      if (alternativeMeasurement === "" && quantityInMl && returnUnit.name !== UnitNames.milliliter) {
+        // TODO: convert to desired unit based on setting
+        alternativeMeasurement = `(${Math.ceil(quantityInMl)} ml)`;
+      }
+    }
 
     return {
       quantity: returnQty ? sanitizeIngredientHTML(returnQty) : undefined,
@@ -132,6 +177,7 @@ export function useIngredientTextParser() {
       name: ingName ? sanitizeIngredientHTML(ingName) : undefined,
       note: note ? sanitizeIngredientHTML(note) : undefined,
       recipeLink: useRecipeLink(referencedRecipe || undefined, groupSlug),
+      alternativeMeasurement: alternativeMeasurement ? sanitizeIngredientHTML(alternativeMeasurement) : undefined,
     };
   };
 
@@ -146,4 +192,24 @@ export function useIngredientTextParser() {
     useParsedIngredientText,
     parseIngredientText,
   };
+}
+
+export function convertToMilliliter(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
+  if (unit?.name == UnitNames.milliliter)
+    return quantity;
+  return quantity && unit && unit.milliliter && quantity * (unit.milliliter || 1);
+}
+
+export function convertToGram(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
+  if (unit?.name == UnitNames.gram)
+    return quantity;
+  return quantity && unit && unit.gram && quantity * (unit.gram || 1);
+}
+
+export function convertMilliliterToUnit(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
+  return quantity && unit && unit.milliliter && quantity / (unit.milliliter || 1);
+}
+
+export function convertGramToUnit(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
+  return quantity && unit && unit.gram && quantity / (unit.gram || 1);
 }

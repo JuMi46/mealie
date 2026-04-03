@@ -36,6 +36,46 @@ function frac(x: number, D: number, mixed: boolean) {
   const q = Math.floor(n1 / d1);
   return [q, n1 - q * d1, d1];
 }
+function findClosestValue(value: number, values: Array<[number, any]>) {
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] > value) {
+      if (value === values[i - 1][0]) {
+        return values[i - 1];
+      }
+      else {
+        const diffDown = value - values[i - 1][0];
+        const diffUp = values[i][0] - value;
+        return diffDown < diffUp ? values[i - 1] : values[i];
+      }
+    }
+  }
+  return values[values.length - 1];
+}
+function simpleFrac(x: number, includeThirds: boolean) {
+  // Uses only thirds and quarters
+  const floor = Math.floor(x);
+  if (floor === x) {
+    return [floor, 0, 0];
+  }
+
+  const rest = x - floor;
+
+  if (!includeThirds) {
+    const quarters = Math.round(rest / 0.25);
+    if (quarters === 0) {
+      return [floor, 0, 0];
+    }
+    if (quarters === 4) {
+      return [floor + 1, 0, 0];
+    }
+    const fraction = { 1: [1, 4], 2: [1, 2], 3: [3, 4] }[quarters];
+    return fraction ? [floor, fraction[0], fraction[1]] : [x, 0, 0];
+  }
+
+  const fractions: Array<[number, number[]]> = [[0, [0, 0]], [0.25, [1, 4]], [0.33, [1, 3]], [0.50, [1, 2]], [0.66, [2, 3]], [0.75, [3, 4]], [1, [0, 0]]];
+  const fraction = findClosestValue(rest, fractions) as [number, number[]];
+  return [floor + (fraction[0] === 1 ? 1 : 0), fraction[1][0], fraction[1][1]];
+}
 function cont(x: number, D: number, mixed: boolean) {
   const sgn = x < 0 ? -1 : 1;
   let B = x * sgn;
@@ -75,6 +115,7 @@ function cont(x: number, D: number, mixed: boolean) {
 export const useFraction = function () {
   return {
     frac,
+    simpleFrac,
     cont,
   };
 };

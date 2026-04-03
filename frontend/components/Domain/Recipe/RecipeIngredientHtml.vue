@@ -13,6 +13,7 @@
 import { computed } from "vue";
 import type { RecipeIngredient } from "~/lib/api/types/recipe";
 import { useIngredientTextParser } from "~/composables/recipes";
+import { useUnitStore, unitsWithRange } from "~/composables/store";
 
 interface Props {
   ingredient?: RecipeIngredient;
@@ -21,10 +22,11 @@ interface Props {
 
 const { ingredient, scale = 1 } = defineProps<Props>();
 const { useParsedIngredientText } = useIngredientTextParser();
+const unitStore = useUnitStore();
 
 const baseText = computed(() => {
   if (!ingredient) return "";
-  const parsed = useParsedIngredientText(ingredient, scale);
+  const parsed = useParsedIngredientText(ingredient, scale, false, undefined, unitStore.store, unitsWithRange);
   return [parsed.quantity, parsed.unit, parsed.name].filter(Boolean).join(" ").trim();
 });
 </script>

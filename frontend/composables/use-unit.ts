@@ -1,0 +1,15 @@
+export enum UnitNames {
+  milliliter = "milliliter",
+  deciliter = "deciliter",
+  liter = "liter",
+  teaspoon = "teaspoon",
+  tablespoon = "tablespoon",
+  fluidOunce = "fluid ounce",
+  cup = "cup",
+  pint = "pint",
+  gallon = "gallon",
+  gram = "gram",
+  kilogram = "kilogram",
+  ounce = "ounce",
+  pound = "pound",
+};
