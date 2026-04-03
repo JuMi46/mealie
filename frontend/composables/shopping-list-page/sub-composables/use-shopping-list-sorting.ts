@@ -1,4 +1,5 @@
 import type { ShoppingListOut, ShoppingListItemOut } from "~/lib/api/types/household";
+import { parseLabelName } from "~/composables/use-extend-object";
 
 interface ListItemGroup {
   position: number;
@@ -90,11 +91,12 @@ export function useShoppingListSorting() {
       }
 
       if (item.labelId) {
-        if (item.label && item.label.name in items) {
-          items[item.label.name].push(item);
+        const labelName = parseLabelName(item.label);
+        if (item.label && labelName in items) {
+          items[labelName].push(item);
         }
         else if (item.label) {
-          items[item.label.name] = [item];
+          items[labelName] = [item];
         }
       }
       else {
@@ -107,7 +109,7 @@ export function useShoppingListSorting() {
     }
 
     // sort the map by label order
-    const orderedLabelNames = shoppingList?.labelSettings?.map(labelSetting => labelSetting.label.name);
+    const orderedLabelNames = shoppingList?.labelSettings?.map(labelSetting => parseLabelName(labelSetting.label));
     if (!orderedLabelNames) {
       return items;
     }

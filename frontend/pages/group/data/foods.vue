@@ -209,6 +209,7 @@ import type { MultiPurposeLabelOut } from "~/lib/api/types/labels";
 import type { AutoFormItems } from "~/types/auto-forms";
 import type { TableHeaders, TableConfig } from "~/components/global/CrudTable.vue";
 import { fieldTypes } from "~/composables/forms";
+import { compareLabel } from "~/composables/use-extend-object";
 
 interface CreateIngredientFoodWithOnHand extends CreateIngredientFood {
   onHand: boolean;
@@ -253,11 +254,7 @@ const tableHeaders: TableHeaders[] = [
     value: "label",
     show: true,
     sortable: true,
-    sort: (label1: MultiPurposeLabelOut | null, label2: MultiPurposeLabelOut | null) => {
-      const label1Name = label1?.name || "";
-      const label2Name = label2?.name || "";
-      return label1Name.localeCompare(label2Name);
-    },
+    sort: (a: MultiPurposeLabelOut | null, b: MultiPurposeLabelOut | null) => compareLabel(a, b),
   },
   {
     text: i18n.t("tool.on-hand"),
@@ -283,7 +280,7 @@ const foods = computed(() => foodStore.store.value.map((food) => {
 // ============================================================
 // Labels
 const { store: allLabels } = useLabelStore();
-const labelOptions = computed(() => allLabels.value.map(label => ({ text: label.name, value: label.id })) || []);
+const labelOptions = computed(() => allLabels.value.map(label => ({ text: parseLabelName(label, true), value: label.id })) || []);
 
 // ============================================================
 // Form items (shared)

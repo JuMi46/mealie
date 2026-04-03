@@ -163,6 +163,7 @@ import type { ShoppingListItemOut } from "~/lib/api/types/household";
 import type { MultiPurposeLabelOut, MultiPurposeLabelSummary } from "~/lib/api/types/labels";
 import type { IngredientFood, IngredientUnit, RecipeSummary } from "~/lib/api/types/recipe";
 import RecipeList from "~/components/Domain/Recipe/RecipeList.vue";
+import { parseLabelName } from "~/composables/use-extend-object";
 
 interface actions {
   text: string;
@@ -254,7 +255,7 @@ export default defineNuxtComponent({
       return props.labels.map((label) => {
         return {
           id: label.id,
-          text: label.name,
+          text: parseLabelName(label),
         };
       });
     });

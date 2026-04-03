@@ -27,7 +27,7 @@
             />
           </template>
           <v-list-item-title>
-            {{ tool.name }}
+            {{ tool.toolName || tool.name }}
           </v-list-item-title>
         </v-list-item>
       </v-list>

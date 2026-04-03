@@ -9,7 +9,7 @@
     chips
     closable-chips
     :item-title="itemTitle"
-    item-value="name"
+    :item-value="itemValue"
     multiple
     :variant="variant"
     :prepend-inner-icon="icon"
@@ -140,7 +140,11 @@ const icon = computed(() => {
 const itemTitle = computed(() =>
   props.selectorType === Organizer.User
     ? (i: any) => i?.fullName ?? i?.name ?? ""
-    : "name",
+    : (props.selectorType === Organizer.Tool ? (i: any) => i?.toolName ?? i?.name : "name"),
+);
+
+const itemValue = computed(() =>
+  props.selectorType === Organizer.Tool ? (i: any) => i?.toolName ?? i?.name : "name",
 );
 
 // ===========================================================================

@@ -6,7 +6,7 @@
           {{ $globals.icons.tags }}
         </v-icon>
       </span>
-      {{ modelValue.label.name }}
+      {{ parseLabelName(modelValue.label) }}
     </div>
     <div
       style="min-width: 72px"
@@ -37,6 +37,7 @@
 
 <script lang="ts">
 import type { ShoppingListMultiPurposeLabelOut } from "~/lib/api/types/household";
+import { parseLabelName } from "~/composables/use-extend-object";
 
 export default defineNuxtComponent({
   props: {
@@ -59,6 +60,7 @@ export default defineNuxtComponent({
     return {
       contextHandler,
       labelColor,
+      parseLabelName,
     };
   },
 });

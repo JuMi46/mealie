@@ -7,7 +7,7 @@
     :text-color="textColor"
   >
     <span style="max-width: 100%; overflow: hidden; text-overflow: ellipsis;">
-      {{ label.name }}
+      {{ parseLabelName(label, true) }}
     </span>
   </v-chip>
 </template>
@@ -15,6 +15,7 @@
 <script lang="ts">
 import { getTextColor } from "~/composables/use-text-color";
 import type { MultiPurposeLabelSummary } from "~/lib/api/types/recipe";
+import { parseLabelName } from "~/composables/use-extend-object";
 
 export default defineNuxtComponent({
   props: {
@@ -28,6 +29,7 @@ export default defineNuxtComponent({
 
     return {
       textColor,
+      parseLabelName,
     };
   },
 });
