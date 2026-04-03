@@ -24,6 +24,14 @@
           </div>
           <v-divider class="my-2" />
           <SafeMarkdown :source="recipe.description" class="my-3" />
+          <v-list density="compact">
+            <v-list-item
+              v-for="tip in ingredientTips"
+              :key="tip.ingredient"
+            >
+              {{ tip.text }}
+            </v-list-item>
+          </v-list>
           <v-divider v-if="recipe.description" />
           <v-container class="d-flex flex-row flex-wrap justify-center">
             <div class="mx-6">
@@ -95,6 +103,21 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   recipeScale: 1,
 });
+
+const ingredientTips = computed(
+  () => props.recipe.recipeIngredient.reduce((res, ingredient) => {
+    if (ingredient.food?.tip && !res.some(tip => tip.ingredient == ingredient.food.name)) {
+      res.push({
+        text: `${ingredient.food.name}: ${ingredient.food.tip}`,
+        ingredient: ingredient.food.name,
+      });
+    }
+    return res;
+  }, [] as {
+    text: string;
+    ingredient: string;
+  }[]),
+);
 
 const { isOwnGroup } = useLoggedInState();
 </script>
