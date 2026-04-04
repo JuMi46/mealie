@@ -59,76 +59,33 @@
       @submit="addRecipesToList()"
     >
       <div style="max-height: 70vh;  overflow-y: auto">
-        <v-card
-          v-for="(recipeSection, recipeSectionIndex) in recipeIngredientSections"
-          :key="recipeSection.recipeId + recipeSectionIndex"
-          elevation="0"
-          height="fit-content"
-          width="100%"
-        >
+        <v-card v-for="(listSection, recipeSectionIndex) in groupedIngredients" :key="recipeSectionIndex" elevation="0" height="fit-content" width="100%">
           <v-divider
             v-if="recipeSectionIndex > 0"
             class="mt-3"
           />
-          <v-card-title
-            v-if="recipeIngredientSections.length > 1"
-            class="justify-center text-h5"
-            width="100%"
-          >
-            <v-container style="width: 100%;">
-              <v-row
-                no-gutters
-                class="ma-0 pa-0"
-              >
-                <v-col
-                  cols="12"
-                  align-self="center"
-                  class="text-center"
-                >
-                  {{ recipeSection.recipeName }}
-                </v-col>
-              </v-row>
-              <v-row
-                v-if="recipeSection.recipeScale > 1"
-                no-gutters
-                class="ma-0 pa-0"
-              >
-                <!-- TODO: make this editable in the dialog and visible on single-recipe lists -->
-                <v-col
-                  cols="12"
-                  align-self="center"
-                  class="text-center"
-                >
-                  ({{ $t("recipe.quantity") }}: {{ recipeSection.recipeScale }})
-                </v-col>
-              </v-row>
-            </v-container>
+          <v-card-title v-if="listSection.section" class="justify-center text-h5" width="100%">
+            {{ listSection.section }}
           </v-card-title>
           <div>
-            <div
-              v-for="(ingredientSection, ingredientSectionIndex) in recipeSection.ingredientSections"
-              :key="recipeSection.recipeId + recipeSectionIndex + ingredientSectionIndex"
-            >
-              <v-card-title
-                v-if="ingredientSection.sectionName"
-                class="ingredient-title mt-2 pb-0 text-h6"
-              >
-                {{ ingredientSection.sectionName }}
+            <div v-for="(label, labelIndex) in listSection.labels" :key="recipeSectionIndex + label.label">
+              <v-card-title v-if="label.label" class="ingredient-title mt-2 pb-0 text-h6">
+                {{ label.label }}
               </v-card-title>
               <div
                 :class="$vuetify.display.smAndDown ? '' : 'ingredient-grid'"
-                :style="$vuetify.display.smAndDown ? '' : { gridTemplateRows: `repeat(${Math.ceil(ingredientSection.ingredients.length / 2)}, min-content)` }"
+                :style="$vuetify.display.smAndDown ? '' : { gridTemplateRows: `repeat(${Math.ceil(label.ingredients.length / 2)}, min-content)` }"
               >
                 <v-list-item
-                  v-for="(ingredientData, i) in ingredientSection.ingredients"
-                  :key="recipeSection.recipeId + recipeSectionIndex + ingredientSectionIndex + i"
+                  v-for="(ingredientData, ingredientIndex) in label.ingredients"
+                  :key="recipeSectionIndex + label.label + ingredientIndex"
                   density="compact"
-                  @click="recipeIngredientSections[recipeSectionIndex]
-                    .ingredientSections[ingredientSectionIndex]
-                    .ingredients[i].checked = !recipeIngredientSections[recipeSectionIndex]
-                      .ingredientSections[ingredientSectionIndex]
-                      .ingredients[i]
-                      .checked"
+                  @click="groupedIngredients[recipeSectionIndex]
+                    .labels[labelIndex]
+                    .ingredients[ingredientIndex].checked
+                    = !groupedIngredients[recipeSectionIndex]
+                      .labels[labelIndex]
+                      .ingredients[ingredientIndex].checked"
                 >
                   <v-container class="pa-0 ma-0">
                     <v-row no-gutters>
@@ -139,10 +96,10 @@
                         color="secondary"
                         density="compact"
                       />
-                      <div :key="`${ingredientData.ingredient?.quantity || 'no-qty'}-${i}`" class="pa-auto my-auto">
+                      <div key="ingredientData.ingredientSum.quantity" class="pa-auto my-auto">
                         <RecipeIngredientListItem
-                          :ingredient="ingredientData.ingredient"
-                          :scale="recipeSection.recipeScale"
+                          :ingredient="ingredientData.ingredientSum"
+                          :scale="1"
                         />
                       </div>
                     </v-row>
@@ -152,24 +109,6 @@
             </div>
           </div>
         </v-card>
-      </div>
-      <div class="d-flex justify-end mb-4 mt-2">
-        <BaseButtonGroup
-          :buttons="[
-            {
-              icon: $globals.icons.checkboxBlankOutline,
-              text: $t('shopping-list.uncheck-all-items'),
-              event: 'uncheck',
-            },
-            {
-              icon: $globals.icons.checkboxOutline,
-              text: $t('shopping-list.check-all-items'),
-              event: 'check',
-            },
-          ]"
-          @uncheck="bulkCheckIngredients(false)"
-          @check="bulkCheckIngredients(true)"
-        />
       </div>
     </BaseDialog>
   </div>
@@ -181,28 +120,44 @@ import RecipeIngredientListItem from "./RecipeIngredientListItem.vue";
 import { useUserApi } from "~/composables/api";
 import { alert } from "~/composables/use-toast";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
-import type { RecipeIngredient, ShoppingListAddRecipeParamsBulk, ShoppingListSummary } from "~/lib/api/types/household";
-import type { Recipe } from "~/lib/api/types/recipe";
+import { convertToGram, convertToMilliliter } from "~/composables/recipes/use-recipe-ingredients";
+import { useUnitStore } from "~/composables/store";
+import type { IngredientUnit, RecipeIngredient, ShoppingListAddRecipeParamsBulk, ShoppingListSummary } from "~/lib/api/types/household";
+import type { IngredientFood, Recipe } from "~/lib/api/types/recipe";
+import { reduceIngredients } from "~/composables/recipes/use-recipe";
+import { UnitNames } from "~/composables/use-unit";
+import { extendLabel, extendUnit } from "~/composables/use-extend-object";
 
 export interface RecipeWithScale extends Recipe {
   scale: number;
 }
 
-export interface ShoppingListIngredient {
+export interface ShoppingListRecipe {
+  id: string;
+  scale: number;
+}
+
+export interface ShoppingListGroupedIngredientItem {
   checked: boolean;
   ingredient: RecipeIngredient;
+  recipe: ShoppingListRecipe;
 }
 
-export interface ShoppingListIngredientSection {
-  sectionName: string;
-  ingredients: ShoppingListIngredient[];
+export interface ShoppingListGroupedIngredient {
+  checked: boolean;
+  ingredientSum: RecipeIngredient;
+  ingredientItems: ShoppingListGroupedIngredientItem[];
 }
 
-export interface ShoppingListRecipeIngredientSection {
-  recipeId: string;
-  recipeName: string;
-  recipeScale: number;
-  ingredientSections: ShoppingListIngredientSection[];
+export interface ShoppingListGroupedIngredientLabel {
+  label: string;
+  labelSortOrder: number | null | undefined;
+  ingredients: ShoppingListGroupedIngredient[];
+}
+
+export interface ShoppingListGroupedIngredientLabels {
+  section: string;
+  labels: ShoppingListGroupedIngredientLabel[];
 }
 
 interface Props {
@@ -234,8 +189,8 @@ const state = reactive({
 
 const { shoppingListDialog, shoppingListIngredientDialog, shoppingListShowAllToggled: _shoppingListShowAllToggled } = toRefs(state);
 
-const recipeIngredientSections = ref<ShoppingListRecipeIngredientSection[]>([]);
 const selectedShoppingList = ref<ShoppingListSummary | null>(null);
+const groupedIngredients = ref<ShoppingListGroupedIngredientLabels[]>([]);
 
 watch([dialog, () => preferences.value.viewAllLists], () => {
   if (dialog.value) {
@@ -258,125 +213,207 @@ watch([dialog, () => preferences.value.viewAllLists], () => {
   }
 });
 
-async function consolidateRecipesIntoSections(recipes: RecipeWithScale[]) {
-  const recipeSectionMap = new Map<string, ShoppingListRecipeIngredientSection>();
+async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
+  groupedIngredients.value = [{ section: "", labels: [] }, { section: "On hand", labels: [] }];
+  const recipeMap = new Map<string, ShoppingListRecipe>();
+  const groupedIngredientMap = new Map<string, ShoppingListGroupedIngredient>();
+
   for (const recipe of recipes) {
     if (!recipe.slug) {
       continue;
     }
 
-    if (recipeSectionMap.has(recipe.slug)) {
-      const existingSection = recipeSectionMap.get(recipe.slug);
-      if (existingSection) {
-        existingSection.recipeScale += recipe.scale;
+    if (recipeMap.has(recipe.slug)) {
+      const existingRecipe = recipeMap.get(recipe.slug);
+      if (existingRecipe) {
+        existingRecipe.scale += recipe.scale;
       }
       continue;
     }
 
-    // Create a local copy to avoid mutating props
-    let recipeData = { ...recipe };
+    const recipeData = { ...recipe };
     if (!(recipeData.id && recipeData.name && recipeData.recipeIngredient)) {
-      const { data } = await api.recipes.getOne(recipeData.slug);
+      const { data } = await api.recipes.getOne(recipe.slug);
       if (!data?.recipeIngredient?.length) {
         continue;
       }
-      recipeData = {
-        ...recipeData,
-        id: data.id || "",
-        name: data.name || "",
-        recipeIngredient: data.recipeIngredient,
-      };
+      recipeData.id = data.id || "";
+      recipeData.name = data.name || "";
+      recipeData.recipeIngredient = data.recipeIngredient;
     }
     else if (!recipeData.recipeIngredient.length) {
       continue;
     }
 
-    const shoppingListIngredients: ShoppingListIngredient[] = [];
-    function flattenRecipeIngredients(ing: RecipeIngredient, parentTitle = ""): ShoppingListIngredient[] {
-      if (ing.referencedRecipe) {
-        // Recursively flatten all ingredients in the referenced recipe
-        return (ing.referencedRecipe.recipeIngredient ?? []).flatMap((subIng) => {
-          const calculatedQty = (ing.quantity || 1) * (subIng.quantity || 1);
-          // Pass the referenced recipe name as the section title
-          return flattenRecipeIngredients(
-            { ...subIng, quantity: calculatedQty },
-            "",
-          );
-        });
-      }
-      else {
-        // Regular ingredient
-        const householdsWithFood = ing.food?.householdsWithIngredientFood || [];
-        return [{
-          checked: !householdsWithFood.includes(currentHouseholdSlug.value),
-          ingredient: {
-            ...ing,
-            title: ing.title || parentTitle,
-          },
-        }];
-      }
-    }
+    const recipeItem: ShoppingListRecipe = {
+      id: recipeData.id,
+      scale: recipeData.scale,
+    };
+
+    recipeMap.set(recipe.slug, recipeItem);
 
     recipeData.recipeIngredient.forEach((ing) => {
-      const flattened = flattenRecipeIngredients(ing, "");
-      shoppingListIngredients.push(...flattened);
-    });
-
-    let currentTitle = "";
-    const onHandIngs: ShoppingListIngredient[] = [];
-    const shoppingListIngredientSections = shoppingListIngredients.reduce((sections, ing) => {
-      if (ing.ingredient.title) {
-        currentTitle = ing.ingredient.title;
-      }
-      else if (ing.ingredient.referencedRecipe?.name) {
-        currentTitle = ing.ingredient.referencedRecipe.name;
-      }
-
-      // If this is the first item in the section, create a new section
-      if (sections.length === 0 || currentTitle !== sections[sections.length - 1].sectionName) {
-        if (sections.length) {
-          // Add the on-hand ingredients to the previous section
-          sections[sections.length - 1].ingredients.push(...onHandIngs);
-          onHandIngs.length = 0;
+      if (ing.unit) {
+        if (!ing.unit.milliliter && !ing.unit.gram) {
+          extendUnit(ing.unit);
         }
-        sections.push({
-          sectionName: currentTitle,
-          ingredients: [],
-        });
+        if (ing.unit.gram) {
+          ing.quantity = Number(convertToGram(ing.quantity, ing.unit));
+          ing.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram) as IngredientUnit;
+        }
+        else if (ing.unit.milliliter) {
+          ing.quantity = Number(convertToMilliliter(ing.quantity, ing.unit));
+          ing.unit = unitStore.store.value.find(unit => unit.name === UnitNames.milliliter) as IngredientUnit;
+        }
       }
-
-      // Store the on-hand ingredients for later
-      const householdsWithFood = (ing.ingredient?.food?.householdsWithIngredientFood || []);
-      if (householdsWithFood.includes(currentHouseholdSlug.value)) {
-        onHandIngs.push(ing);
-        return sections;
-      }
-
-      // Add the ingredient to previous section
-      sections[sections.length - 1].ingredients.push(ing);
-      return sections;
-    }, [] as ShoppingListIngredientSection[]);
-
-    // Add remaining on-hand ingredients to the previous section
-    shoppingListIngredientSections[shoppingListIngredientSections.length - 1].ingredients.push(...onHandIngs);
-
-    recipeSectionMap.set(recipe.slug, {
-      recipeId: recipeData.id,
-      recipeName: recipeData.name,
-      recipeScale: recipeData.scale,
-      ingredientSections: shoppingListIngredientSections,
     });
+
+    recipeData.recipeIngredient = reduceIngredients(recipeData.recipeIngredient);
+
+    recipeData.recipeIngredient.forEach(ing => addToGroups(ing, recipeItem));
   }
 
-  recipeIngredientSections.value = Array.from(recipeSectionMap.values());
+  function addToGroups(ing: RecipeIngredient, recipeItem: ShoppingListRecipe) {
+    if (!ing.referencedRecipe?.slug) {
+      const householdsWithFood = ing.food?.householdsWithIngredientFood || [];
+      const checked = ing.food && ing.food.name ? !householdsWithFood.includes(currentHouseholdSlug.value) : true;
+      const groupedIngredientMapKey = (ing.food && ing.food.name ? ing.food.name : ing.referenceId || "") + (ing.unit?.name || "");
+      const match = ing.note?.match(/^or [^;]*/);
+      ing.note = match ? match[0] : undefined;
+
+      if (groupedIngredientMap.has(groupedIngredientMapKey)) {
+        const mapItem = groupedIngredientMap.get(groupedIngredientMapKey);
+        if (mapItem) {
+          if (ing.note) {
+            mapItem.ingredientSum.note = mapItem.ingredientSum.note ? `${mapItem.ingredientSum.note} | ${ing.note}` : ing.note;
+          }
+          mapItem.ingredientItems.push({
+            checked,
+            ingredient: ing,
+            recipe: recipeItem,
+          });
+        }
+      }
+      else {
+        groupedIngredientMap.set(groupedIngredientMapKey, {
+          checked,
+          ingredientSum: {
+            ...ing,
+            quantity: 0,
+          },
+          ingredientItems: [{
+            checked,
+            ingredient: ing,
+            recipe: recipeItem,
+          }],
+        });
+      }
+    }
+    else if (recipeMap.has(ing.referencedRecipe.slug)) {
+      const existingRecipe = recipeMap.get(ing.referencedRecipe.slug);
+      if (existingRecipe) {
+        existingRecipe.scale += (ing.quantity || 1) / (ing.referencedRecipe.recipeServings || 1);
+      }
+    }
+    else {
+      const refRecipeItem: ShoppingListRecipe = {
+        id: recipeItem.id,
+        scale: (ing.quantity || 1) / (ing.referencedRecipe.recipeServings || 1),
+      };
+
+      recipeMap.set(ing.referencedRecipe.slug, refRecipeItem);
+
+      ing.referencedRecipe.recipeIngredient?.forEach(refIng => addToGroups(refIng, refRecipeItem));
+    }
+  }
+  const groupedIngredientLabelMap = new Map<string, ShoppingListGroupedIngredientLabel>();
+  const groupedIngredientLabelOnHandMap = new Map<string, ShoppingListGroupedIngredientLabel>();
+
+  groupedIngredientMap.forEach((ing) => {
+    ing.ingredientItems.forEach((ingItem) => {
+      if (ingItem.ingredient.quantity) {
+        ing.ingredientSum.quantity = (ing.ingredientSum.quantity || 0) + (ingItem.ingredient.quantity * ingItem.recipe.scale);
+      }
+    });
+
+    let label: string;
+    let labelSortOrder: number;
+    const labelObject = (ing.ingredientSum.food as IngredientFood)?.label;
+    if (labelObject && !labelObject.sortOrder) {
+      extendLabel(labelObject);
+    }
+    if (labelObject?.sortOrder) {
+      label = labelObject.labelText || labelObject.name;
+      labelSortOrder = labelObject.sortOrder;
+    }
+    else {
+      label = "Mixed";
+      labelSortOrder = 999;
+    }
+
+    if (ing.checked) {
+      if (groupedIngredientLabelMap.has(label)) {
+        groupedIngredientLabelMap.get(label)?.ingredients.push(ing);
+      }
+      else {
+        groupedIngredientLabelMap.set(label, { label, labelSortOrder, ingredients: [ing] });
+      }
+    }
+    else if (groupedIngredientLabelOnHandMap.has(label)) {
+      groupedIngredientLabelOnHandMap.get(label)?.ingredients.push(ing);
+    }
+    else {
+      groupedIngredientLabelOnHandMap.set(label, { label, labelSortOrder, ingredients: [ing] });
+    }
+  });
+
+  moveToMixed(groupedIngredientLabelMap);
+  moveToMixed(groupedIngredientLabelOnHandMap);
+
+  groupedIngredients.value[0].labels = Array.from(groupedIngredientLabelMap.values()).sort((a, b) => {
+    return (a.labelSortOrder || a.label) < (b.labelSortOrder || b.label) ? -1 : 1;
+  });
+  groupedIngredients.value[1].labels = Array.from(groupedIngredientLabelOnHandMap.values()).sort((a, b) => {
+    return (a.labelSortOrder || a.label) < (b.labelSortOrder || b.label) ? -1 : 1;
+  });
+
+  function moveToMixed(map: Map<string, ShoppingListGroupedIngredientLabel>) {
+    const keysToBeMixed: string[] = [];
+    map.forEach((value, key) => {
+      if (value.ingredients.length == 1) {
+        keysToBeMixed.push(key);
+      }
+    });
+
+    if (keysToBeMixed.length >= 2) {
+      const mixed: ShoppingListGroupedIngredient[] = [];
+      keysToBeMixed.forEach((key) => {
+        const label = map.get(key);
+        if (label?.ingredients[0]) {
+          mixed.push(label.ingredients[0]);
+          map.delete(key);
+        }
+      });
+      const mixedKey = "mixed";
+      if (map.has(mixedKey)) {
+        const oldMap = map.get(mixedKey);
+        if (oldMap) {
+          oldMap.ingredients.push(...mixed);
+        }
+      }
+      else {
+        map.set(mixedKey, { label: "Mixed", labelSortOrder: 999, ingredients: mixed });
+      }
+    }
+  }
 }
 
 function initState() {
   state.shoppingListDialog = false;
   state.shoppingListIngredientDialog = false;
   state.shoppingListShowAllToggled = false;
-  recipeIngredientSections.value = [];
   selectedShoppingList.value = null;
+  groupedIngredients.value = [];
 }
 
 initState();
@@ -385,9 +422,8 @@ async function openShoppingListIngredientDialog(list: ShoppingListSummary) {
   if (!props.recipes?.length) {
     return;
   }
-
   selectedShoppingList.value = list;
-  await consolidateRecipesIntoSections(props.recipes);
+  await consolidateRecipesIntoGroups(props.recipes);
   state.shoppingListDialog = false;
   state.shoppingListIngredientDialog = true;
 }
@@ -396,15 +432,7 @@ function setShowAllToggled() {
   state.shoppingListShowAllToggled = true;
 }
 
-function bulkCheckIngredients(value = true) {
-  recipeIngredientSections.value.forEach((recipeSection) => {
-    recipeSection.ingredientSections.forEach((ingSection) => {
-      ingSection.ingredients.forEach((ing) => {
-        ing.checked = value;
-      });
-    });
-  });
-}
+const unitStore = useUnitStore();
 
 async function addRecipesToList() {
   if (!selectedShoppingList.value) {
@@ -412,27 +440,28 @@ async function addRecipesToList() {
   }
 
   const recipeData: ShoppingListAddRecipeParamsBulk[] = [];
-  recipeIngredientSections.value.forEach((section) => {
-    const ingredients: RecipeIngredient[] = [];
-    section.ingredientSections.forEach((ingSection) => {
-      ingSection.ingredients.forEach((ing) => {
-        if (ing.checked) {
-          ingredients.push(ing.ingredient);
+
+  const recipeDataIndexes: { [key: string]: number } = {};
+  groupedIngredients.value.forEach((section) => {
+    section.labels.forEach((label) => {
+      label.ingredients.forEach((ingredientData) => {
+        if (ingredientData.checked) {
+          ingredientData.ingredientItems.forEach((ing) => {
+            if (ing.recipe.id in recipeDataIndexes) {
+              recipeData[recipeDataIndexes[ing.recipe.id]].recipeIngredients?.push(ing.ingredient);
+            }
+            else {
+              recipeDataIndexes[ing.recipe.id] = recipeData.length;
+              recipeData.push({
+                recipeId: ing.recipe.id,
+                recipeIncrementQuantity: ing.recipe.scale,
+                recipeIngredients: [ing.ingredient],
+              });
+            }
+          });
         }
       });
     });
-
-    if (!ingredients.length) {
-      return;
-    }
-
-    recipeData.push(
-      {
-        recipeId: section.recipeId,
-        recipeIncrementQuantity: section.recipeScale,
-        recipeIngredients: ingredients,
-      },
-    );
   });
 
   const { error } = await api.shopping.lists.addRecipes(selectedShoppingList.value.id, recipeData);
