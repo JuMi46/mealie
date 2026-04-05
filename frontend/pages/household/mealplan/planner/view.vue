@@ -6,17 +6,17 @@
         :key="index"
         cols="12"
         sm="12"
-        md="4"
-        lg="4"
+        md="3"
+        lg="3"
         xl="2"
         class="col-borders my-1 d-flex flex-column"
       >
-        <v-card class="mb-2 border-left-primary rounded-sm px-2">
+        <v-card class="mb-2 border-left-primary rounded-sm px-2" :color="isSameDay(day.date, todaysDate) ? 'info' : undefined">
           <v-container class="px-0 d-flex align-center" height="56px">
             <v-row no-gutters style="width: 100%;">
               <v-col cols="10" class="d-flex align-center">
                 <p class="pl-2 my-1">
-                  {{ $d(day.date, "short") }}
+                  {{ isSameDay(day.date, todaysDate) ? $t("meal-plan.today") : $d(day.date, "short") }}
                 </p>
               </v-col>
               <v-col class="d-flex align-center" cols="2">
@@ -55,6 +55,7 @@ import type { MealsByDate } from "./types";
 import type { ReadPlanEntry } from "~/lib/api/types/meal-plan";
 import GroupMealPlanDayContextMenu from "~/components/Domain/Household/GroupMealPlanDayContextMenu.vue";
 import RecipeCardMobile from "~/components/Domain/Recipe/RecipeCardMobile.vue";
+import { isSameDay } from "date-fns";
 import type { RecipeSummary } from "~/lib/api/types/recipe";
 
 const props = defineProps<{
@@ -126,4 +127,6 @@ const plan = computed<Days[]>(() => {
     return acc;
   }, [] as Days[]);
 });
+
+const todaysDate = computed(() => new Date());
 </script>

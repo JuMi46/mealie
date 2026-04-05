@@ -76,9 +76,9 @@
         xl="2"
         class="col-borders my-1 d-flex flex-column"
       >
-        <v-card class="mb-2 border-left-primary rounded-sm pa-2">
+        <v-card class="mb-2 border-left-primary rounded-sm pa-2" :color="isSameDay(plan.date, todaysDate) ? 'info' : undefined">
           <p class="pl-2 mb-1">
-            {{ $d(plan.date, "short") }}
+            {{ isSameDay(plan.date, todaysDate) ? $t("meal-plan.today") : $d(plan.date, "short") }}
           </p>
         </v-card>
         <VueDraggable
@@ -233,7 +233,7 @@
 </template>
 
 <script lang="ts">
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import type { SortableEvent } from "sortablejs";
 import { VueDraggable } from "vue-draggable-plus";
 import type { MealsByDate } from "./types";
@@ -318,6 +318,8 @@ export default defineNuxtComponent({
         }
       }
     }
+
+    const todaysDate = computed(() => new Date());
 
     // =====================================================
     // New Meal Dialog
@@ -419,6 +421,8 @@ export default defineNuxtComponent({
       requiredRule,
       isCreateDisabled,
       normalizeFilter,
+      todaysDate,
+      isSameDay,
 
       // Dialog
       dialog,

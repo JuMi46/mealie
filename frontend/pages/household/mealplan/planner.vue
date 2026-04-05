@@ -1,53 +1,80 @@
 <template>
   <v-container>
-    <RecipeDialogAddToShoppingList
-      v-if="shoppingLists"
-      v-model="state.shoppingListDialog"
-      :recipes="weekRecipesWithScales"
-      :shopping-lists="shoppingLists"
-    />
-    <v-menu
-      v-model="state.picker"
-      :close-on-content-click="false"
-      transition="scale-transition"
-      offset-y
-      min-width="auto"
-    >
-      <template #activator="{ props }">
-        <v-btn
-          color="primary"
-          class="mb-2"
-          v-bind="props"
-        >
-          <v-icon start>
-            {{ $globals.icons.calendar }}
-          </v-icon>
-          {{ $d(weekRange.start, "short") }} - {{ $d(weekRange.end, "short") }}
-        </v-btn>
-      </template>
+    <div class="d-flex flex-wrap align-center justify-space-between mb-2">
+      <RecipeDialogAddToShoppingList
+        v-if="shoppingLists"
+        v-model="state.shoppingListDialog"
+        :recipes="weekRecipesWithScales"
+        :shopping-lists="shoppingLists"
+      />
+      <v-menu
+        v-model="state.picker"
+        :close-on-content-click="false"
+        transition="scale-transition"
+        offset-y
+        min-width="auto"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            color="primary"
+            class="mb-2"
+            v-bind="props"
+          >
+            <v-icon start>
+              {{ $globals.icons.calendar }}
+            </v-icon>
+            {{ $d(weekRange.start, "short") }} - {{ $d(weekRange.end, "short") }}
+          </v-btn>
+        </template>
 
-      <v-card>
-        <v-date-picker
-          v-model="state.range"
-          hide-header
-          :multiple="'range'"
-          :first-day-of-week="firstDayOfWeek"
-          :local="$i18n.locale"
-        />
-
-        <v-card-text>
-          <v-number-input
-            v-model="numberOfDays"
-            :min="1"
-            control-variant="stacked"
-            inset
-            :label="$t('meal-plan.numberOfDays-label')"
-            :hint="$t('meal-plan.numberOfDays-hint')"
-            persistent-hint
+        <v-card>
+          <v-date-picker
+            v-model="state.range"
+            hide-header
+            :multiple="'range'"
+            :first-day-of-week="firstDayOfWeek"
+            :local="$i18n.locale"
           />
-        </v-card-text>
-      </v-card>
-    </v-menu>
+
+          <v-card-text>
+            <v-number-input
+              v-model="numberOfDays"
+              :min="1"
+              control-variant="stacked"
+              inset
+              :label="$t('meal-plan.numberOfDays-label')"
+              :hint="$t('meal-plan.numberOfDays-hint')"
+              persistent-hint
+            />
+          </v-card-text>
+        </v-card>
+      </v-menu>
+
+      <div>
+        <BaseButton
+          class="mx-1"
+          :icon="$globals.icons.arrowLeftBold"
+          :only-icon="true"
+          color="primary"
+          @click="changePeriod(true)"
+        />
+        <BaseButton
+          class="mx-1"
+          :text="$t('meal-plan.this-week')"
+          :only-text="true"
+          color="primary"
+          @click="showThisWeek"
+        />
+        <BaseButton
+          class="mx-1"
+          :icon="$globals.icons.arrowRightBold"
+          :only-icon="true"
+          :icon-right="true"
+          color="primary"
+          @click="changePeriod(false)"
+        />
+      </div>
+    </div>
 
     <div class="d-flex flex-wrap align-center justify-space-between mb-2">
       <v-tabs style="width: fit-content;">
@@ -87,7 +114,7 @@
 </template>
 
 <script lang="ts">
-import { isSameDay, addDays, parseISO, format, isValid } from "date-fns";
+import { isSameDay, addDays, parseISO, format, isValid, differenceInDays } from "date-fns";
 import RecipeDialogAddToShoppingList from "~/components/Domain/Recipe/RecipeDialogAddToShoppingList.vue";
 import { useHouseholdSelf } from "~/composables/use-households";
 import { useMealplans } from "~/composables/use-group-mealplan";
@@ -258,6 +285,21 @@ export default defineNuxtComponent({
       state.value.addAllLoading = false;
     }
 
+    function changePeriod(previous = false) {
+      const firstDayOfPeriod = state.value.range[0];
+      const numberOfDaysInRange = differenceInDays(weekRange.value.end, weekRange.value.start) + 1;
+      firstDayOfPeriod.setDate(!previous ? firstDayOfPeriod.getDate() + numberOfDaysInRange : firstDayOfPeriod.getDate() - numberOfDaysInRange);
+      state.value.range = [firstDayOfPeriod, addDays(firstDayOfPeriod, adjustForToday(numberOfDaysInRange))];
+    }
+
+    function showThisWeek() {
+      const date = new Date();
+      if (date.getDay() !== firstDayOfWeek.value) {
+        date.setDate(date.getDate() - date.getDay() + firstDayOfWeek.value);
+      }
+      state.value.range = [date, addDays(date, adjustForToday(7))];
+    }
+
     return {
       TABS,
       route,
@@ -271,6 +313,8 @@ export default defineNuxtComponent({
       shoppingLists,
       weekRecipesWithScales,
       addAllToList,
+      changePeriod,
+      showThisWeek,
     };
   },
 });
