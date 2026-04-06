@@ -138,3 +138,31 @@ export function printFromNewWindow(content: string, style?: string) {
     printWindow.close();
   }
 }
+
+export function convertToCelsius(fahrenheit: number | string) {
+  const celsius = (Number(fahrenheit) - 32) * 5 / 9;
+  return celsius >= 110 ? Math.round(celsius / 5) * 5 : Math.ceil(celsius);
+}
+
+export function convertToFahrenheit(celsius: number | string) {
+  const fahrenheit = (Number(celsius) * 9 / 5) + 32;
+  return fahrenheit >= 230 ? Math.round(fahrenheit / 5) * 5 : Math.ceil(fahrenheit);
+}
+
+export function parseTemperaturesInText(text: string) {
+  const textMatches = text.match(/\d+(°|)(f|F|c|C)/g);
+  if (textMatches) {
+    for (const textMatch of textMatches) {
+      const tempMatch = textMatch.match(/\d+/);
+      if (tempMatch) {
+        const temp = tempMatch[0];
+        const isCelsius = textMatch.toLowerCase().includes("c");
+        const celsius = isCelsius ? temp : convertToCelsius(temp);
+        const fahrenheit = isCelsius ? convertToFahrenheit(temp) : temp;
+        const newTemp = `${celsius}℃ / ${fahrenheit}℉`; // TODO: Make a household setting about what temperatures to display
+        text = text.replaceAll(textMatch, newTemp);
+      }
+    }
+  }
+  return text;
+}

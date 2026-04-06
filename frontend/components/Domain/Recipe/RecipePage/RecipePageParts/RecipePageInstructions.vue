@@ -375,7 +375,7 @@
                       <v-col>
                         <SafeMarkdown
                           class="markdown"
-                          :source="step.text"
+                          :source="parseTemperaturesInText(step.text)"
                         />
                       </v-col>
                     </v-row>
@@ -398,7 +398,7 @@
 import { VueDraggable } from "vue-draggable-plus";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { RecipeStep, IngredientReferences, RecipeIngredient, RecipeAsset, Recipe } from "~/lib/api/types/recipe";
-import { uuid4 } from "~/composables/use-utils";
+import { uuid4, parseTemperaturesInText } from "~/composables/use-utils";
 import { useUserApi, useStaticRoutes } from "~/composables/api";
 import { usePageState } from "~/composables/recipe-page/shared-state";
 import { useExtractIngredientReferences } from "~/composables/recipe-page/use-extract-ingredient-references";
