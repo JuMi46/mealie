@@ -160,9 +160,23 @@
       </v-col>
       <!-- Recipe Input -->
       <v-col
+        v-if="state.isRecipe && model.referencedRecipe?.recipeYield"
+        m="12"
+        md="3"
+        cols="12"
+        class=""
+      >
+        <!-- v-field--variant-solo -->
+        <!-- class="mx-1 py-0 v-field v-field--active v-field--appended v-field--center-affix v-field--dirty v-field--no-label v-field--variant-solo" -->
+        <div class="mx-1 py-0 v-field v-field--variant-solo">
+          {{ parseYieldUnit(model.referencedRecipe?.recipeYield) }}
+        </div>
+      </v-col>
+
+      <v-col
         v-if="state.isRecipe"
         m="12"
-        md="6"
+        :md="model.referencedRecipe?.recipeYield ? 3 : 6"
         cols="12"
         class=""
       >
@@ -440,6 +454,11 @@ function convertUnit() {
   // TODO: convert to desired unit based on setting
   model.value.quantity = Number(convertToGram(model.value.quantity, model.value.unit));
   model.value.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram);
+}
+
+function parseYieldUnit(unitName: string) {
+  const unit = unitStore.store.value.find(unit => unit.abbreviation === unitName);
+  return unit ? unit.name : unitName;
 }
 
 const { showTitle } = toRefs(state);

@@ -41,12 +41,12 @@ function useUnitName(unit: CreateIngredientUnit | IngredientUnit | undefined, us
   return returnVal;
 }
 
-function useRecipeLink(recipe: Recipe | undefined, groupSlug: string | undefined): string | undefined {
+function useRecipeLink(recipe: Recipe | undefined, groupSlug: string | undefined, servings: number | undefined): string | undefined {
   if (!(recipe && recipe.slug && recipe.name && groupSlug)) {
     return undefined;
   }
-
-  return `<a href="/g/${groupSlug}/r/${recipe.slug}" target="_blank">${recipe.name}</a>`;
+  const servingsQuery = servings || 0 > 0 ? `?servings=${servings}` : "";
+  return `<a href="/g/${groupSlug}/r/${recipe.slug}${servingsQuery}" target="_blank">${recipe.name}</a>`;
 }
 
 type ParsedIngredientText = {
@@ -92,6 +92,17 @@ export function useIngredientTextParser() {
     const { quantity, food, unit, note, referencedRecipe } = ingredient;
     let scaledQuantity = (quantity || 0) * scale;
     let returnUnit = unit;
+    let refServings = 0;
+    if (ingredient.referencedRecipe?.recipeYield) {
+      const refUnit = allUnits?.value.find(unitObj => unitObj.name == ingredient.referencedRecipe?.recipeYield
+        || unitObj.abbreviation == ingredient.referencedRecipe?.recipeYield);
+      if (refUnit) {
+        returnUnit = refUnit;
+        if (ingredient.referencedRecipe.recipeYieldQuantity && scaledQuantity > 0) {
+          refServings = scaledQuantity / ingredient.referencedRecipe.recipeYieldQuantity;
+        }
+      }
+    }
 
     const quantityInMl = convertToMilliliter(scaledQuantity, returnUnit);
 
@@ -176,7 +187,7 @@ export function useIngredientTextParser() {
       unit: unitName && quantity ? sanitizeIngredientHTML(unitName) : undefined,
       name: ingName ? sanitizeIngredientHTML(ingName) : undefined,
       note: note ? sanitizeIngredientHTML(note) : undefined,
-      recipeLink: useRecipeLink(referencedRecipe || undefined, groupSlug),
+      recipeLink: useRecipeLink(referencedRecipe || undefined, groupSlug, refServings),
       alternativeMeasurement: alternativeMeasurement ? sanitizeIngredientHTML(alternativeMeasurement) : undefined,
     };
   };
