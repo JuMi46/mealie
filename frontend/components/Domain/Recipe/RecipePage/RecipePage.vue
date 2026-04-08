@@ -242,6 +242,29 @@ const notLinkedIngredients = computed(() => {
   });
 });
 
+const scrollPositions = { beforeCookMode: 0, inCookMode: 0 };
+let previousIsCookMode = false;
+
+onBeforeUpdate(() => {
+  if (previousIsCookMode == isCookMode.value) return;
+  if (isCookMode.value) {
+    scrollPositions.beforeCookMode = window.scrollY;
+  }
+  else {
+    scrollPositions.inCookMode = window.scrollY;
+  }
+});
+onUpdated(() => {
+  if (previousIsCookMode == isCookMode.value) return;
+  if (isCookMode.value) {
+    window.scrollTo({ top: scrollPositions.inCookMode });
+  }
+  else {
+    window.scrollTo({ top: scrollPositions.beforeCookMode });
+  }
+  previousIsCookMode = isCookMode.value;
+});
+
 /** =============================================================
  * Recipe Snapshot on Mount
  * this is used to determine if the recipe has been changed since the last save
