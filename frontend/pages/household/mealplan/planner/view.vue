@@ -15,7 +15,7 @@
           <v-container class="px-0 d-flex align-center" height="56px">
             <v-row no-gutters style="width: 100%;">
               <v-col cols="10" class="d-flex align-center">
-                <p class="pl-2 my-1">
+                <p class="pl-2 my-1" :class="{ 'text-primary': isToday(day.date) }">
                   {{ isSameDay(day.date, todaysDate) ? $t("meal-plan.today") : $d(day.date, "short") }}
                 </p>
               </v-col>
@@ -50,12 +50,12 @@
   </v-container>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
+import { isSameDay } from "date-fns";
 import type { MealsByDate } from "./types";
 import type { ReadPlanEntry } from "~/lib/api/types/meal-plan";
 import GroupMealPlanDayContextMenu from "~/components/Domain/Household/GroupMealPlanDayContextMenu.vue";
 import RecipeCardMobile from "~/components/Domain/Recipe/RecipeCardMobile.vue";
-import { isSameDay } from "date-fns";
 import type { RecipeSummary } from "~/lib/api/types/recipe";
 
 const props = defineProps<{
@@ -127,6 +127,10 @@ const plan = computed<Days[]>(() => {
     return acc;
   }, [] as Days[]);
 });
+
+const isToday = (date: Date) => {
+  return isSameDay(date, new Date());
+};
 
 const todaysDate = computed(() => new Date());
 </script>

@@ -213,6 +213,38 @@ watch([dialog, () => preferences.value.viewAllLists], () => {
   }
 });
 
+function buildIngredientSections(ingredients: ShoppingListIngredient[]): ShoppingListIngredientSection[] {
+  let currentTitle = "";
+  const onHandIngs: ShoppingListIngredient[] = [];
+  const sections = ingredients.reduce((acc, ing) => {
+    if (ing.ingredient.title) {
+      currentTitle = ing.ingredient.title;
+    }
+
+    if (!acc.length || currentTitle !== acc[acc.length - 1].sectionName) {
+      if (acc.length) {
+        acc[acc.length - 1].ingredients.push(...onHandIngs);
+        onHandIngs.length = 0;
+      }
+      acc.push({ sectionName: currentTitle, ingredients: [] });
+    }
+
+    const householdsWithFood = ing.ingredient?.food?.householdsWithIngredientFood || [];
+    if (householdsWithFood.includes(currentHouseholdSlug.value)) {
+      onHandIngs.push(ing);
+      return acc;
+    }
+
+    acc[acc.length - 1].ingredients.push(ing);
+    return acc;
+  }, [] as ShoppingListIngredientSection[]);
+
+  if (sections.length) {
+    sections[sections.length - 1].ingredients.push(...onHandIngs);
+  }
+  return sections;
+}
+
 async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
   groupedIngredients.value = [{ section: "", labels: [] }, { section: "On hand", labels: [] }];
   const recipeMap = new Map<string, ShoppingListRecipe>();
