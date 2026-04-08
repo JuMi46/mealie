@@ -19,12 +19,9 @@ export function extendLabel(label: MultiPurposeLabelSummary | null | undefined) 
 }
 
 export function extendUnit(unit: IngredientUnit | CreateIngredientUnit | null | undefined) {
-  if (unit?.description?.startsWith("{")) {
+  if (!unit?.system && unit?.description?.startsWith("{")) {
     const descriptionObject = JSON.parse(unit.description);
-    unit.gram = descriptionObject.gram;
-    unit.milliliter = descriptionObject.milliliter;
-    unit.metric = descriptionObject.metric;
-    unit.imperial = descriptionObject.imperial;
+    unit.system = descriptionObject.system;
     unit.range = descriptionObject.range;
   }
 };

@@ -61,9 +61,9 @@ export function reduceIngredients(ingredients: RecipeIngredient[]) {
         if (ingredient.unit?.name === res[index].unit?.name && res[index].quantity && !isNaN(res[index].quantity)) {
           res[index].quantity += ingredient.quantity || 0;
         }
-        else if (ingredient.unit?.milliliter && res[index].unit?.milliliter
+        else if (ingredient.unit?.standardUnit === UnitNames.milliliter && res[index].unit?.standardUnit === UnitNames.milliliter
           && ingredient.quantity && !isNaN(ingredient.quantity) && res[index].quantity && !isNaN(res[index].quantity)) {
-          res[index].quantity += ingredient.quantity * ingredient.unit.milliliter / res[index].unit.milliliter;
+          res[index].quantity += ingredient.quantity * (ingredient.unit.standardQuantity || 1) / (res[index].unit.standardQuantity || 1);
         }
       }
     }

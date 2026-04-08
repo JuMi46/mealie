@@ -216,7 +216,7 @@
             class="mb-auto"
             @click="$emit('clickIngredientField', 'note')"
           />
-          <BaseButton v-if="model.unit && model.unit?.gram && model.unit?.name !== UnitNames.gram" @click="convertUnit()">
+          <BaseButton v-if="model.unit && model.unit.standardUnit === UnitNames.gram && model.unit.name !== UnitNames.gram" @click="convertUnit()">
             <template #icon>
               {{ $globals.icons.units }}
             </template>

@@ -93,10 +93,7 @@ export interface CreateIngredientUnit {
   aliases?: CreateIngredientUnitAlias[];
   standardQuantity?: number | null;
   standardUnit?: string | null;
-  gram?: number | null;
-  milliliter?: number | null;
-  metric?: boolean | null;
-  imperial?: boolean | null;
+  system?: string | null;
   range?: IngredientUnitRange[] | null;
 }
 export interface CreateIngredientUnitAlias {
@@ -196,10 +193,7 @@ export interface IngredientUnit {
   standardUnit?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  gram?: number | null;
-  milliliter?: number | null;
-  metric?: boolean | null;
-  imperial?: boolean | null;
+  system?: string | null;
   range?: IngredientUnitRange[] | null;
 }
 export interface IngredientUnitAlias {

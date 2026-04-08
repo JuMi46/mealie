@@ -3,6 +3,7 @@ import { useFraction } from "./use-fraction";
 import { useLocales } from "../use-locales";
 import type { CreateIngredientFood, CreateIngredientUnit, IngredientFood, IngredientUnit, Recipe, RecipeIngredient } from "~/lib/api/types/recipe";
 import { UnitNames } from "../use-unit";
+import { extendUnit } from "../use-extend-object";
 
 const { simpleFrac } = useFraction();
 
@@ -107,18 +108,19 @@ export function useIngredientTextParser() {
     const quantityInMl = convertToMilliliter(scaledQuantity, returnUnit);
 
     if (returnUnit) {
+      extendUnit(returnUnit);
       if (quantityInMl && !returnUnit.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end) && unitsWithRange?.value) {
         for (const unitObject of unitsWithRange.value) {
           if (unitObject.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end)) {
-            scaledQuantity = quantityInMl / (unitObject.milliliter || 1);
+            scaledQuantity = quantityInMl / (unitObject.standardQuantity || 1);
             returnUnit = unitObject;
             break;
           }
         }
       }
-      else if (returnUnit.gram && returnUnit.name != UnitNames.gram) {
+      else if (returnUnit.standardUnit == UnitNames.gram && returnUnit.name != UnitNames.gram) {
         // TODO: Add settings that dictates which convertions to happen (Imperial to Metric, etc)
-        scaledQuantity *= (returnUnit.gram || 1);
+        scaledQuantity *= (returnUnit.standardQuantity || 1);
         returnUnit = allUnits?.value.find(unit => unit.name == UnitNames.gram);
       }
     }
@@ -171,9 +173,9 @@ export function useIngredientTextParser() {
     let alternativeMeasurement = "";
 
     if (returnUnit) {
-      if (scaledQuantity && returnUnit.milliliter && food?.density) {
+      if (scaledQuantity && returnUnit.standardUnit === UnitNames.milliliter && food?.density) {
       // TODO: convert to desired unit based on setting
-        alternativeMeasurement = `(${(Math.ceil(scaledQuantity * (returnUnit.milliliter || 1) * food.density)).toString()} g)`;
+        alternativeMeasurement = `(${(Math.ceil(scaledQuantity * (returnUnit.standardQuantity || 1) * food.density)).toString()} g)`;
       }
 
       if (alternativeMeasurement === "" && quantityInMl && returnUnit.name !== UnitNames.milliliter) {
@@ -224,19 +226,19 @@ export function useIngredientTextParser() {
 export function convertToMilliliter(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
   if (unit?.name == UnitNames.milliliter)
     return quantity;
-  return quantity && unit && unit.milliliter && quantity * (unit.milliliter || 1);
+  return quantity && unit && unit.standardUnit == UnitNames.milliliter && quantity * (unit.standardQuantity || 1);
 }
 
 export function convertToGram(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
   if (unit?.name == UnitNames.gram)
     return quantity;
-  return quantity && unit && unit.gram && quantity * (unit.gram || 1);
+  return quantity && unit && unit.standardUnit == UnitNames.gram && quantity * (unit.standardQuantity || 1);
 }
 
 export function convertMilliliterToUnit(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
-  return quantity && unit && unit.milliliter && quantity / (unit.milliliter || 1);
+  return quantity && unit && unit.standardUnit == UnitNames.milliliter && quantity / (unit.standardQuantity || 1);
 }
 
 export function convertGramToUnit(quantity: number | null | undefined, unit: CreateIngredientUnit | IngredientUnit | null | undefined) {
-  return quantity && unit && unit.gram && quantity / (unit.gram || 1);
+  return quantity && unit && unit.standardUnit == UnitNames.gram && quantity / (unit.standardQuantity || 1);
 }
