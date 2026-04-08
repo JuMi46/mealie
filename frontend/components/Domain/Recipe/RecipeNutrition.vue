@@ -1,9 +1,22 @@
 <template>
   <div v-if="valueNotNull || edit">
     <v-card class="mt-2">
-      <v-card-title class="pt-2 pb-0">
-        {{ $t("recipe.nutrition") }}
-      </v-card-title>
+      <div class="d-flex">
+        <v-card-title class="pt-2 pb-0">
+          {{ $t("recipe.nutrition") }}
+        </v-card-title>
+        <BaseButton
+          v-if="!edit"
+          only-icon
+          minor
+          color="primary"
+          @click="minimizeNutrition = !minimizeNutrition"
+        >
+          <template #icon>
+            {{ minimizeNutrition ? $globals.icons.createAlt : $globals.icons.minus }}
+          </template>
+        </BaseButton>
+      </div>
       <v-divider class="mx-2 my-1" />
       <v-card-text v-if="edit">
         <div
@@ -62,6 +75,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const modelValue = defineModel<Nutrition>({ required: true });
 
+const minimizeNutrition = ref(true);
 const { labels } = useNutritionLabels();
 const valueNotNull = computed(() => {
   let key: keyof Nutrition;
@@ -79,10 +93,11 @@ function updateValue(key: number | string, event: Event) {
   modelValue.value = { ...modelValue.value, [key]: event };
 }
 
+const minimizedNutritionList = ["calories", "carbohydrateContent", "fiberContent", "proteinContent"]; // TODO: Make this list editable in settings
 // Build a new list that only contains nutritional information that has a value
 const renderedList = computed(() => {
   return Object.entries(labels).reduce((item: NutritionLabelType, [key, label]) => {
-    if (modelValue.value[key]?.trim()) {
+    if (modelValue.value[key]?.trim() && (!minimizeNutrition.value || minimizedNutritionList.includes(key))) {
       item[key] = {
         ...label,
         value: modelValue.value[key],
