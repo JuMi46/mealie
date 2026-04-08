@@ -58,6 +58,8 @@ export interface GroupEventNotifierOptions {
   dataExport?: boolean;
   dataImport?: boolean;
   mealplanEntryCreated?: boolean;
+  mealplanEntryUpdated?: boolean;
+  mealplanEntryDeleted?: boolean;
   shoppingListCreated?: boolean;
   shoppingListUpdated?: boolean;
   shoppingListDeleted?: boolean;
@@ -85,6 +87,8 @@ export interface GroupEventNotifierOptionsOut {
   dataExport?: boolean;
   dataImport?: boolean;
   mealplanEntryCreated?: boolean;
+  mealplanEntryUpdated?: boolean;
+  mealplanEntryDeleted?: boolean;
   shoppingListCreated?: boolean;
   shoppingListUpdated?: boolean;
   shoppingListDeleted?: boolean;
@@ -113,6 +117,8 @@ export interface GroupEventNotifierOptionsSave {
   dataExport?: boolean;
   dataImport?: boolean;
   mealplanEntryCreated?: boolean;
+  mealplanEntryUpdated?: boolean;
+  mealplanEntryDeleted?: boolean;
   shoppingListCreated?: boolean;
   shoppingListUpdated?: boolean;
   shoppingListDeleted?: boolean;
@@ -333,6 +339,8 @@ export interface IngredientUnit {
   pluralAbbreviation?: string | null;
   useAbbreviation?: boolean;
   aliases?: IngredientUnitAlias[];
+  standardQuantity?: number | null;
+  standardUnit?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   gram?: number | null;
@@ -357,6 +365,8 @@ export interface CreateIngredientUnit {
   pluralAbbreviation?: string | null;
   useAbbreviation?: boolean;
   aliases?: CreateIngredientUnitAlias[];
+  standardQuantity?: number | null;
+  standardUnit?: string | null;
   gram?: number | null;
   milliliter?: number | null;
   metric?: boolean | null;

@@ -46,7 +46,7 @@
       <v-col
         v-if="!state.isRecipe"
         sm="12"
-        md="3"
+        md="2"
         cols="12"
       >
         <v-autocomplete
@@ -104,7 +104,7 @@
       <v-col
         v-if="!state.isRecipe"
         m="12"
-        md="3"
+        md="4"
         cols="12"
         class=""
       >
@@ -162,7 +162,7 @@
       <v-col
         v-if="state.isRecipe && model.referencedRecipe?.recipeYield"
         m="12"
-        md="3"
+        md="2"
         cols="12"
         class=""
       >
@@ -176,7 +176,7 @@
       <v-col
         v-if="state.isRecipe"
         m="12"
-        :md="model.referencedRecipe?.recipeYield ? 3 : 6"
+        :md="model.referencedRecipe?.recipeYield ? 4 : 6"
         cols="12"
         class=""
       >
