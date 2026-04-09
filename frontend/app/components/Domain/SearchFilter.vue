@@ -115,7 +115,7 @@
                     :key="`checkbox-${item.id}`"
                     v-memo="[item.id, item.name, selectedIds.has(item.id)]"
                     :value="item"
-                    :title="item.name"
+                    :title="'toolName' in item && item.toolName ? item.toolName as string : item.name"
                   >
                     <template #prepend>
                       <v-list-item-action start>

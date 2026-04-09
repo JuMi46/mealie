@@ -18,7 +18,7 @@
 
       @click.prevent="() => $emit('item-selected', category, urlPrefix)"
     >
-      {{ truncateText(category.name) }}
+      {{ truncateText('toolName' in category && category.toolName ? category.toolName as string : category.name) }}
     </v-chip>
   </div>
 </template>
