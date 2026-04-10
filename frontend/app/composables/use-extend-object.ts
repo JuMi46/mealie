@@ -10,7 +10,7 @@ export function extendFood(food: IngredientFood | CreateIngredientFood | null | 
 }
 
 export function extendLabel(label: MultiPurposeLabelSummary | null | undefined) {
-  if (label?.name.startsWith("{")) {
+  if (!label?.sortOrder && label?.name.startsWith("{")) {
     const labelObject = JSON.parse(label.name);
     label.sortOrder = labelObject.sortOrder;
     label.labelText = labelObject.name;
@@ -27,7 +27,7 @@ export function extendUnit(unit: IngredientUnit | CreateIngredientUnit | null | 
 };
 
 export function extendTool(tool: RecipeTool | null | undefined) {
-  if (tool?.name?.startsWith("{")) {
+  if (!tool?.toolName && tool?.name?.startsWith("{")) {
     const toolObject = JSON.parse(tool.name);
     tool.sortOrder = toolObject.sortOrder;
     tool.toolName = toolObject.name;

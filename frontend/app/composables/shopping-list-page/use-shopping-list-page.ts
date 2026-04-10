@@ -37,14 +37,12 @@ export function useShoppingListPage(listId: string, allUnits?: globalThis.Ref<In
   function updateListItemOrder() {
     if (!shoppingList.value) return;
 
-    if (shoppingList.value?.listItems && !shoppingList.value?.listItems[0].label?.sortOrder
-      && shoppingList.value?.listItems[0].label?.name.startsWith("{")) {
+    if (shoppingList.value?.listItems) {
       for (const item of shoppingList.value.listItems) {
         extendLabel(item.label);
       }
     }
-    if (shoppingList.value?.labelSettings && !shoppingList.value?.labelSettings[0].label?.sortOrder
-      && shoppingList.value?.labelSettings[0].label?.name.startsWith("{")) {
+    if (shoppingList.value?.labelSettings) {
       for (const item of shoppingList.value.labelSettings) {
         extendLabel(item.label);
       }
