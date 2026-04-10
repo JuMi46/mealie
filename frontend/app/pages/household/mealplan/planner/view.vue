@@ -6,9 +6,10 @@
         :key="index"
         cols="12"
         sm="12"
-        md="3"
-        lg="3"
-        xl="2"
+        md="6"
+        lg="4"
+        xl="3"
+        xxl="2"
         class="col-borders my-1 d-flex flex-column"
       >
         <v-card class="mb-2 border-left-primary rounded-sm px-2" :color="isSameDay(day.date, todaysDate) ? 'info' : undefined">
