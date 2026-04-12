@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from mealie.schema.recipe.recipe import Recipe
 from mealie.schema.recipe.recipe_step import IngredientReferences
 from tests.utils import api_routes, jsonify
+from tests.utils.factories import random_int
 from tests.utils.fixture_schemas import TestUser
 
 
@@ -45,3 +46,19 @@ def test_associate_ingredient_with_step(api_client: TestClient, unique_user: Tes
         assert len(all_refs) == 2
 
         assert all(ref in steps[idx] for ref in all_refs)
+
+
+def test_timers_crud(api_client: TestClient, unique_user: TestUser, random_recipe: Recipe):
+    recipe = random_recipe
+    assert recipe.recipe_instructions
+
+    step_idx = random.randint(0, len(recipe.recipe_instructions) - 1)
+    recipe.recipe_instructions[step_idx].timers = [random_int() for _ in range(random_int(2, 5))]
+
+    response = api_client.put(
+        api_routes.recipes_slug(recipe.slug),
+        json=jsonify(recipe.model_dump()),
+        headers=unique_user.token,
+    )
+    assert response.status_code == 200
+    assert response.json()["recipeInstructions"][step_idx]["timers"] == recipe.recipe_instructions[step_idx].timers

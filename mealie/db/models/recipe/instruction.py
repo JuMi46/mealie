@@ -1,5 +1,8 @@
+import json
+
 from pydantic import ConfigDict
 from sqlalchemy import ForeignKey, Integer, String, orm
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .._model_base import BaseMixins, SqlAlchemyBase
@@ -27,16 +30,39 @@ class RecipeInstruction(SqlAlchemyBase):
     text: Mapped[str | None] = mapped_column(String)
     summary: Mapped[str | None] = mapped_column(String)
 
+    timers_json: Mapped[str | None] = mapped_column(String)
     ingredient_references: Mapped[list[RecipeIngredientRefLink]] = orm.relationship(
         RecipeIngredientRefLink, cascade="all, delete-orphan"
     )
+
+    @hybrid_property
+    def timers(self) -> list[int]:
+        if not self.timers_json:
+            return []
+
+        timers = json.loads(self.timers_json)
+        if not isinstance(timers, list):
+            return []
+        else:
+            return timers
+
+    @timers.setter  # type: ignore
+    def timers(self, value: list[int]) -> None:
+        if not isinstance(value, list):
+            value = []
+
+        self.timers_json = json.dumps(value)
+
     model_config = ConfigDict(
         exclude={
             "id",
             "ingredient_references",
+            "timers",
         }
     )
 
     @auto_init()
-    def __init__(self, ingredient_references, session, **_) -> None:
+    def __init__(self, ingredient_references, timers, session, **_) -> None:
         self.ingredient_references = [RecipeIngredientRefLink(**ref, session=session) for ref in ingredient_references]
+        if timers:
+            self.timers = timers  # type: ignore

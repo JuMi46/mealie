@@ -595,6 +595,17 @@
     "increase-scale-label": "Increase Scale by 1",
     "locked": "Locked",
     "public-link": "Public Link",
+    "timer": {
+      "kitchen-timer": "Kitchen Timer",
+      "start-timer": "Start Timer",
+      "pause-timer": "Pause Timer",
+      "resume-timer": "Resume Timer",
+      "stop-timer": "Stop Timer",
+      "pause": "Pause",
+      "continue": "Continue",
+      "minute": "minute",
+      "minutes": "minutes"
+    },
     "edit-timeline-event": "Edit Timeline Event",
     "timeline": "Timeline",
     "timeline-is-empty": "Nothing on the timeline yet. Try making this recipe!",
@@ -713,14 +724,7 @@
     "cover-image": "Cover image",
     "include-linked-recipes": "Include Linked Recipes",
     "include-linked-recipe-ingredients": "Include Linked Recipe Ingredients",
-    "toggle-recipe": "Toggle Recipe",
-    "timer": {
-      "kitchen-timer": "Kitchen Timer",
-      "start-timer": "Start Timer",
-      "pause-timer": "Pause Timer",
-      "resume-timer": "Resume Timer",
-      "stop-timer": "Stop Timer"
-    }
+    "toggle-recipe": "Toggle Recipe"
   },
   "recipe-finder": {
     "recipe-finder": "Recipe Finder",
@@ -1487,5 +1491,10 @@
     "mark-all-as-read": "Mark All as Read",
     "show-announcements-from-mealie": "Show announcements from Mealie",
     "show-announcements-setting-description": "Whether or not you want to allow users to see announcements from Mealie. When enabled users can still opt-out from seeing them in their user settings"
+  },
+  "timer": {
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "seconds": "Seconds"
   }
 }

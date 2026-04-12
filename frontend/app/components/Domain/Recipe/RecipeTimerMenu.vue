@@ -124,7 +124,7 @@
           <BaseButtonGroup
             stretch
             :buttons="timerButtons"
-            @initialize-timer="initializeTimer"
+            @initialize-timer="startTimer"
             @pause-timer="pauseTimer"
             @resume-timer="resumeTimer"
             @stop-timer="resetTimer"
@@ -136,11 +136,10 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, ref, toRefs, useContext, watch } from "@nuxtjs/composition-api";
+import { computed, defineComponent, reactive, toRefs, useContext, watch } from "@nuxtjs/composition-api";
 import type { ButtonOption } from "~/components/global/BaseButtonGroup.vue";
-
+import useTimer from "~/composables/use-timer";
 // @ts-ignore typescript can't find our audio file, but it's there!
-import timerAlarmAudio from "~/assets/audio/kitchen_alarm.mp3";
 
 export default defineComponent({
   props: {
@@ -155,32 +154,18 @@ export default defineComponent({
   },
   setup() {
     const { $globals, i18n } = useContext();
+    const timer = useTimer("00", "00", "00", { padTimes: true });
     const state = reactive({
       showMenu: false,
-      timerInitialized: false,
-      timerRunning: false,
-      timerEnded: false,
-      timerInitialValue: 0,
-      timerValue: 0,
     });
-
     watch(
       () => state.showMenu,
       () => {
-        if (state.showMenu && state.timerEnded) {
-          resetTimer();
+        if (state.showMenu && timer.timerEnded) {
+          timer.resetTimer();
         }
       },
     );
-
-    // ts doesn't recognize timerAlarmAudio because it's a weird import
-
-    const timerAlarm = new Audio(timerAlarmAudio);
-    timerAlarm.loop = true;
-
-    const timerHours = ref<string | number>("00");
-    const timerMinutes = ref<string | number>("00");
-    const timerSeconds = ref<string | number>("00");
 
     const initializeButton: ButtonOption = {
       icon: $globals.icons.timerPlus,
@@ -209,11 +194,11 @@ export default defineComponent({
 
     const timerButtons = computed<ButtonOption[]>(() => {
       const buttons: ButtonOption[] = [];
-      if (state.timerInitialized) {
-        if (state.timerEnded) {
+      if (timer.timerInitialized) {
+        if (timer.timerEnded) {
           buttons.push(stopButton);
         }
-        else if (state.timerRunning) {
+        else if (timer.timerRunning) {
           buttons.push(pauseButton, stopButton);
         }
         else {
@@ -229,101 +214,11 @@ export default defineComponent({
       return buttons;
     });
 
-    const timerProgress = computed(() => {
-      if (state.timerInitialValue) {
-        return (state.timerValue / state.timerInitialValue) * 100;
-      }
-      else {
-        return 0;
-      }
-    });
-
-    let timerInterval: number | null = null;
-    function decrementTimer() {
-      if (state.timerValue > 0) {
-        state.timerValue -= 1;
-
-        timerHours.value = Math.floor(state.timerValue / 3600).toString().padStart(2, "0");
-        timerMinutes.value = Math.floor(state.timerValue % 3600 / 60).toString().padStart(2, "0");
-        timerSeconds.value = Math.floor(state.timerValue % 3600 % 60).toString().padStart(2, "0");
-      }
-      else {
-        state.timerRunning = false;
-        state.timerEnded = true;
-        timerAlarm.currentTime = 0;
-        timerAlarm.play();
-
-        if (timerInterval) {
-          clearInterval(timerInterval);
-          timerInterval = null;
-        }
-      }
-    }
-
-    function initializeTimer() {
-      state.timerInitialized = true;
-      state.timerRunning = true;
-      state.timerEnded = false;
-
-      console.log(timerSeconds.value);
-
-      const hours = parseFloat(timerHours.value.toString()) > 0 ? parseFloat(timerHours.value.toString()) : 0;
-      const minutes = parseFloat(timerMinutes.value.toString()) > 0 ? parseFloat(timerMinutes.value.toString()) : 0;
-      const seconds = parseFloat(timerSeconds.value.toString()) > 0 ? parseFloat(timerSeconds.value.toString()) : 0;
-
-      state.timerInitialValue = (hours * 3600) + (minutes * 60) + seconds;
-      state.timerValue = state.timerInitialValue;
-
-      timerInterval = setInterval(decrementTimer, 1000) as unknown as number;
-
-      timerHours.value = Math.floor(state.timerValue / 3600).toString().padStart(2, "0");
-      timerMinutes.value = Math.floor(state.timerValue % 3600 / 60).toString().padStart(2, "0");
-      timerSeconds.value = Math.floor(state.timerValue % 3600 % 60).toString().padStart(2, "0");
-    };
-
-    function pauseTimer() {
-      state.timerRunning = false;
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-    };
-
-    function resumeTimer() {
-      state.timerRunning = true;
-      timerInterval = setInterval(decrementTimer, 1000) as unknown as number;
-    };
-
-    function resetTimer() {
-      state.timerInitialized = false;
-      state.timerRunning = false;
-      state.timerEnded = false;
-
-      timerAlarm.pause();
-      timerAlarm.currentTime = 0;
-
-      timerHours.value = "00";
-      timerMinutes.value = "00";
-      timerSeconds.value = "00";
-
-      state.timerValue = 0;
-      if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-    };
-
     return {
       ...toRefs(state),
-      timerHours,
-      timerMinutes,
-      timerSeconds,
+      ...toRefs(timer),
       timerButtons,
-      timerProgress,
-      initializeTimer,
-      pauseTimer,
-      resumeTimer,
-      resetTimer,
+
     };
   },
 });
