@@ -11,7 +11,7 @@
       content-class="d-print-none"
       :z-index="2"
     >
-      <template #activator="{ on, attrs }">
+      <template #activator="{ props: activatorProps }">
         <v-badge :value="timerEnded" overlap color="red" content="!">
           <v-btn
             :fab="fab"
@@ -19,8 +19,7 @@
             :color="timerEnded ? 'secondary' : color"
             :icon="!fab"
             dark
-            v-bind="attrs"
-            v-on="on"
+            v-bind="activatorProps"
             @click.prevent
           >
             <v-progress-circular
@@ -44,7 +43,7 @@
           <v-icon class="pr-2">
             {{ $globals.icons.timer }}
           </v-icon>
-          {{ $i18n.tc("recipe.timer.kitchen-timer") }}
+          {{ $t("recipe.timer.kitchen-timer") }}
         </v-card-title>
         <div class="mx-auto" style="width: fit-content;">
           <v-progress-circular
@@ -135,92 +134,93 @@
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, reactive, toRefs, useContext, watch } from "@nuxtjs/composition-api";
+<script setup lang="ts">
 import type { ButtonOption } from "~/components/global/BaseButtonGroup.vue";
 import useTimer from "~/composables/use-timer";
-// @ts-ignore typescript can't find our audio file, but it's there!
 
-export default defineComponent({
-  props: {
-    fab: {
-      type: Boolean,
-      default: false,
-    },
-    color: {
-      type: String,
-      default: "primary",
-    },
+interface Props {
+  fab?: boolean;
+  color?: string;
+}
+withDefaults(defineProps<Props>(), {
+  fab: false,
+  color: "primary",
+});
+
+const i18n = useI18n();
+const { $globals } = useNuxtApp();
+const timer = useTimer("00", "00", "00", { padTimes: true });
+
+const showMenu = ref(false);
+
+const {
+  timerInitialized,
+  timerRunning,
+  timerEnded,
+  timerHours,
+  timerMinutes,
+  timerSeconds,
+  timerProgress,
+  pauseTimer,
+  resumeTimer,
+  resetTimer,
+  startTimer,
+} = toRefs(timer);
+
+watch(
+  () => showMenu,
+  () => {
+    if (showMenu.value && timer.timerEnded) {
+      timer.resetTimer();
+    }
   },
-  setup() {
-    const { $globals, i18n } = useContext();
-    const timer = useTimer("00", "00", "00", { padTimes: true });
-    const state = reactive({
-      showMenu: false,
-    });
-    watch(
-      () => state.showMenu,
-      () => {
-        if (state.showMenu && timer.timerEnded) {
-          timer.resetTimer();
-        }
-      },
-    );
+);
 
-    const initializeButton: ButtonOption = {
-      icon: $globals.icons.timerPlus,
-      text: i18n.tc("recipe.timer.start-timer"),
-      event: "initialize-timer",
-    };
+const initializeButton: ButtonOption = {
+  icon: $globals.icons.timerPlus,
+  text: i18n.t("recipe.timer.start-timer"),
+  event: "initialize-timer",
+};
 
-    const pauseButton: ButtonOption = {
-      icon: $globals.icons.pause,
-      text: i18n.tc("recipe.timer.pause-timer"),
-      event: "pause-timer",
-    };
+const pauseButton: ButtonOption = {
+  icon: $globals.icons.pause,
+  text: i18n.t("recipe.timer.pause-timer"),
+  event: "pause-timer",
+};
 
-    const resumeButton: ButtonOption = {
-      icon: $globals.icons.play,
-      text: i18n.tc("recipe.timer.resume-timer"),
-      event: "resume-timer",
-    };
+const resumeButton: ButtonOption = {
+  icon: $globals.icons.play,
+  text: i18n.t("recipe.timer.resume-timer"),
+  event: "resume-timer",
+};
 
-    const stopButton: ButtonOption = {
-      icon: $globals.icons.stop,
-      text: i18n.tc("recipe.timer.stop-timer"),
-      event: "stop-timer",
-      color: "red",
-    };
+const stopButton: ButtonOption = {
+  icon: $globals.icons.stop,
+  text: i18n.t("recipe.timer.stop-timer"),
+  event: "stop-timer",
+  color: "red",
+};
 
-    const timerButtons = computed<ButtonOption[]>(() => {
-      const buttons: ButtonOption[] = [];
-      if (timer.timerInitialized) {
-        if (timer.timerEnded) {
-          buttons.push(stopButton);
-        }
-        else if (timer.timerRunning) {
-          buttons.push(pauseButton, stopButton);
-        }
-        else {
-          buttons.push(resumeButton, stopButton);
-        }
-      }
-      else {
-        buttons.push(initializeButton);
-      }
+const timerButtons = computed<ButtonOption[]>(() => {
+  const buttons: ButtonOption[] = [];
+  if (timer.timerInitialized) {
+    if (timer.timerEnded) {
+      buttons.push(stopButton);
+    }
+    else if (timer.timerRunning) {
+      buttons.push(pauseButton, stopButton);
+    }
+    else {
+      buttons.push(resumeButton, stopButton);
+    }
+  }
+  else {
+    buttons.push(initializeButton);
+  }
 
-      // I don't know why this is failing the frontend lint test ¯\_(ツ)_/¯
+  // I don't know why this is failing the frontend lint test ¯\_(ツ)_/¯
 
-      return buttons;
-    });
-
-    return {
-      ...toRefs(state),
-      ...toRefs(timer),
-      timerButtons,
-
-    };
-  },
+  return buttons;
 });
 </script>
 

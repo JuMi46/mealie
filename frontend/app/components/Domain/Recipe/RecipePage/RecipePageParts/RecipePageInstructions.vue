@@ -327,6 +327,7 @@
                       />
                     </div>
                   </div>
+                  <RecipeEditTimers v-model="step.timers" />
                 </v-card-text>
               </DropZone>
               <v-expand-transition>
@@ -363,6 +364,9 @@
                         />
                       </v-col>
                     </v-row>
+                    <div v-if="!isEditForm && step.timers && step.timers.length > 0 ">
+                      <RecipePageInstructionsTimer :timers="step.timers" />
+                    </div>
                   </v-card-text>
                 </div>
               </v-expand-transition>
@@ -390,6 +394,8 @@ import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import DropZone from "~/components/global/DropZone.vue";
 import RecipeIngredients from "~/components/Domain/Recipe/RecipeIngredients.vue";
 import RecipeIngredientHtml from "~/components/Domain/Recipe/RecipeIngredientHtml.vue";
+import RecipePageInstructionsTimer from "./RecipePageInstructionsTimer.vue";
+import RecipeEditTimers from "./RecipeEditTimers.vue";
 
 interface MergerHistory {
   target: number;
