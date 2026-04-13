@@ -1,8 +1,8 @@
-"""added timers to recipe instructions
+"""added_timers_to_recipe_instructions
 
-Revision ID: 02ec5b3e0525
-Revises: 3897397b4631
-Create Date: 2024-11-05 15:28:40.528380
+Revision ID: 1947821ead42
+Revises: 4395a04f7784
+Create Date: 2026-04-13 07:11:57.662321
 
 """
 
@@ -19,10 +19,11 @@ from mealie.db.models._model_utils.guid import GUID
 from mealie.services.parser_services.parser_utils.duration_parser import DurationParser
 
 # revision identifiers, used by Alembic.
-revision = "02ec5b3e0525"
-down_revision: str | None = "3897397b4631"
+revision = "1947821ead42"
+down_revision: str | None = "4395a04f7784"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
+
 
 logger = get_logger()
 

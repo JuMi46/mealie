@@ -601,6 +601,7 @@
       "pause-timer": "Pause Timer",
       "resume-timer": "Resume Timer",
       "stop-timer": "Stop Timer",
+      "add-timer": "Add Timer",
       "pause": "Pause",
       "continue": "Continue",
       "minute": "minute",

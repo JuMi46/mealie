@@ -11,14 +11,14 @@
         :color="timer.timerEnded ? 'success' : ''"
         :class="timer.timerEnded ? 'shake' : ''"
       >
-        mdi-alarm
+        {{ $globals.icons.alarm }}
       </v-icon>
       <v-icon
         v-else
         color="primary"
         :class="timer.timerRunning ? 'tick' : ''"
       >
-        mdi-alarm
+        {{ $globals.icons.alarm }}
       </v-icon>
 
       <v-btn
@@ -27,7 +27,7 @@
         depressed
         @click="timer.timerValue -= 30"
       >
-        <v-icon>mdi-minus</v-icon>
+        <v-icon>{{ $globals.icons.minus }}</v-icon>
       </v-btn>
       {{ timer.simpleDisplayValue }}
       <v-btn
@@ -35,7 +35,7 @@
         depressed
         @click="timer.timerValue += 30"
       >
-        <v-icon>mdi-plus</v-icon>
+        <v-icon>{{ $globals.icons.createAlt }}</v-icon>
       </v-btn>
       <v-btn
         v-if="!timer.timerRunning && !timer.timerPaused && !timer.timerEnded"
@@ -43,7 +43,7 @@
         depressed
         @click="timer.startTimer"
       >
-        {{ $t("recipe.timer.start") }}
+        {{ $t("recipe.timer.start-timer") }}
       </v-btn>
       <template v-else>
         <v-btn
@@ -65,13 +65,13 @@
           <v-btn
             icon
             @click="timer.resetTimer"
-          ><v-icon>mdi-restore</v-icon></v-btn>
+          ><v-icon>{{ $globals.icons.restore }}</v-icon></v-btn>
         </span>
         <span v-else>
           <v-btn
             icon
             @click="timer.resetTimer"
-          ><v-icon>mdi-restore</v-icon></v-btn>
+          ><v-icon>{{ $globals.icons.restore }}</v-icon></v-btn>
         </span>
       </template>
     </div>
