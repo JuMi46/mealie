@@ -139,20 +139,12 @@ instruction_test_cases = (
     CleanerCase(
         test_id="single string",
         input="Instruction A\nInstruction B\nInstruction C",
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="single string multiple newlines",
         input="Instruction A\n\nInstruction B\n\nInstruction C",
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="common list of dicts",
@@ -161,11 +153,7 @@ instruction_test_cases = (
             {"text": "Instruction B"},
             {"text": "Instruction C"},
         ],
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="dict with int keys",
@@ -174,11 +162,7 @@ instruction_test_cases = (
             1: {"text": "Instruction B"},
             2: {"text": "Instruction C"},
         },
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="dict with str num keys",
@@ -187,11 +171,7 @@ instruction_test_cases = (
             "1": {"text": "Instruction B"},
             "2": {"text": "Instruction C"},
         },
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="dict with str num keys",
@@ -200,11 +180,7 @@ instruction_test_cases = (
             "2": {"text": "Instruction B"},
             "3": {"text": "Instruction C"},
         },
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="dict with str num keys",
@@ -213,20 +189,12 @@ instruction_test_cases = (
             2: {"text": "Instruction B"},
             3: {"text": "Instruction C"},
         },
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="raw json str",
         input='{"0": {"text": "Instruction A"}, "1": {"text": "Instruction B"}, "2": {"text": "Instruction C"}}',
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="how to steps",
@@ -254,47 +222,27 @@ instruction_test_cases = (
                 ],
             },
         ],
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="excessive whitespace str (1)",
         input="Instruction A\n\nInstruction B\n\nInstruction C\n\n",
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="excessive whitespace str (2)",
         input="Instruction A\nInstruction B\nInstruction C\n",
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="excessive whitespace str (3)",
         input="Instruction A\r\n\r\nInstruction B\r\n\r\nInstruction C\r\n\r\n",
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="excessive whitespace str (4)",
         input="Instruction A\r\nInstruction B\r\nInstruction C\r\n",
-        expected=[
-            {"text": "Instruction A"},
-            {"text": "Instruction B"},
-            {"text": "Instruction C"},
-        ],
+        expected=None,
     ),
     CleanerCase(
         test_id="parse timer (1)",
@@ -321,9 +269,15 @@ instruction_test_cases = (
 
 @pytest.mark.parametrize("instructions", instruction_test_cases, ids=(x.test_id for x in instruction_test_cases))
 def test_cleaner_instructions(instructions: CleanerCase):
-    result = cleaner.clean_instructions(instructions.input)
+    reuslt = cleaner.clean_instructions(instructions.input)
 
-    assert result == instructions.expected
+    expected = [
+        {"text": "Instruction A"},
+        {"text": "Instruction B"},
+        {"text": "Instruction C"},
+    ]
+
+    assert reuslt == expected
 
 
 ingredients_test_cases = (
