@@ -249,7 +249,7 @@ def add_timers_to_instructions(instructions: list[dict]) -> list[dict]:
             continue
 
         if timers := duration_parser.get_all_durations(instruction_text):
-            instruction["timers"] = [int(timer) for timer in timers]
+            instruction["timers"] = [{"duration": int(timer)} for timer in timers]
 
     return instructions
 

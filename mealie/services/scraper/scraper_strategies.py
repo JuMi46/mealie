@@ -230,7 +230,15 @@ class RecipeScraperPackage(ABCScraperStrategy):
 
             try:
                 return [
-                    RecipeStep(title="", text=x.get("text"), timers=x.get("timers", [])) for x in instruction_as_text
+                    RecipeStep(
+                        title="",
+                        text=x.get("text"),
+                        timers=[
+                            timer["duration"] if isinstance(timer, dict) else int(timer)
+                            for timer in x.get("timers", [])
+                        ],
+                    )
+                    for x in instruction_as_text
                 ]
             except TypeError:
                 return []

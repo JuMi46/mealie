@@ -53,7 +53,10 @@ def test_timers_crud(api_client: TestClient, unique_user: TestUser, random_recip
     assert recipe.recipe_instructions
 
     step_idx = random.randint(0, len(recipe.recipe_instructions) - 1)
-    recipe.recipe_instructions[step_idx].timers = [random_int() for _ in range(random_int(2, 5))]
+    recipe.recipe_instructions[step_idx].timers = [
+        {"duration": random_int(), "text": "", "recipe_instruction_id": recipe.recipe_instructions[step_idx].id}
+        for _ in range(random_int(2, 5))
+    ]  # type: ignore
 
     response = api_client.put(
         api_routes.recipes_slug(recipe.slug),
@@ -61,4 +64,10 @@ def test_timers_crud(api_client: TestClient, unique_user: TestUser, random_recip
         headers=unique_user.token,
     )
     assert response.status_code == 200
+    # Check that timers were updated (compare durations since ids will be generated)
+    response_timers = response.json()["recipeInstructions"][step_idx]["timers"]
+    assert len(response_timers) == len(recipe.recipe_instructions[step_idx].timers)
+    for i, timer in enumerate(recipe.recipe_instructions[step_idx].timers):
+        assert response_timers[i]["duration"] == timer["duration"]
+        assert response_timers[i]["text"] == timer["text"]
     assert response.json()["recipeInstructions"][step_idx]["timers"] == recipe.recipe_instructions[step_idx].timers
