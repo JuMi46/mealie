@@ -1496,6 +1496,7 @@
   "timer": {
     "hours": "Hours",
     "minutes": "Minutes",
-    "seconds": "Seconds"
+    "seconds": "Seconds",
+    "text": "Text"
   }
 }

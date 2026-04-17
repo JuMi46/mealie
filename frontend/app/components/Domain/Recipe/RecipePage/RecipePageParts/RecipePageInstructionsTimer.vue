@@ -21,6 +21,7 @@
         {{ $globals.icons.alarm }}
       </v-icon>
 
+      {{ timer.timerText }}
       <v-btn
         icon
         :disabled="timer.timerValue <= 30"
@@ -80,9 +81,10 @@
 
 <script setup lang="ts">
 import useTimer from "~/composables/use-timer";
+import type { RecipeInstructionTimer } from "~/lib/api/types/recipe";
 
 interface Props {
-  timers?: number[];
+  timers?: RecipeInstructionTimer[];
 }
 const props = withDefaults(defineProps<Props>(), {
   timers: () => [],
@@ -90,11 +92,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const compTimers = ref<ReturnType<typeof useTimer>[]>();
 
-watch(() => props.timers as number[], (newTimers) => {
+watch(() => props.timers, (newTimers) => {
   console.log("new timers", newTimers);
 
   compTimers.value = newTimers.map((t) => {
-    const newTimer = useTimer("00", "00", t.toString(), { padTimes: false });
+    const newTimer = useTimer("00", "00", t.duration.toString(), { padTimes: false }, t.text);
     newTimer.initializeTimer();
     return newTimer;
   });

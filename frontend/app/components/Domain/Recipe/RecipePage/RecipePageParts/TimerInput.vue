@@ -38,11 +38,24 @@
       hide-details
       @update:model-value="handleSecondsInput"
     />
+    <v-text-field
+      :model-value="modelValue.text"
+      :label="$t('timer.text')"
+      type="text"
+      outlined
+      dense
+      hide-details
+      clearable
+      @update:model-value="modelValue.text = $event"
+    />
+    <!-- TODO: Fix styling of this text input -->
   </v-sheet>
 </template>
 
 <script setup lang="ts">
-const modelValue = defineModel<number>();
+import type { RecipeInstructionTimer } from "~/lib/api/types/recipe";
+
+const modelValue = defineModel<RecipeInstructionTimer>({ required: true });
 
 const hours = ref(0);
 const minutes = ref(0);
@@ -50,9 +63,9 @@ const seconds = ref(0);
 
 watch(() => modelValue, (newVal) => {
   if (newVal.value) {
-    hours.value = Math.floor(newVal.value / 3600);
-    minutes.value = Math.floor((newVal.value % 3600) / 60);
-    seconds.value = newVal.value % 60;
+    hours.value = Math.floor(newVal.value.duration / 3600);
+    minutes.value = Math.floor((newVal.value.duration % 3600) / 60);
+    seconds.value = newVal.value.duration % 60;
   }
 }, { immediate: true });
 
@@ -74,7 +87,7 @@ function handleSecondsInput(value: string) {
 function updateSeconds() {
   const totalSeconds
     = Number(hours.value) * 3600 + Number(minutes.value) * 60 + Number(seconds.value);
-  modelValue.value = totalSeconds;
+  modelValue.value.duration = totalSeconds;
 }
 </script>
 

@@ -274,8 +274,13 @@ export interface RecipeStep {
   title?: string | null;
   summary?: string | null;
   text: string;
-  timers: number[];
+  timers: RecipeInstructionTimer[];
   ingredientReferences?: IngredientReferences[];
+}
+export interface RecipeInstructionTimer {
+  id?: string | null;
+  duration: number;
+  text?: string | null;
 }
 export interface RecipeAsset {
   name: string;

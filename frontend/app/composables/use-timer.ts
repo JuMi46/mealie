@@ -1,6 +1,6 @@
 import timerAlarmAudio from "~/assets/audio/kitchen_alarm.mp3";
 
-export default function createTimer(initialHour = "00", initialMin = "00", initialSec = "00", options = { padTimes: true }) {
+export default function createTimer(initialHour = "00", initialMin = "00", initialSec = "00", options = { padTimes: true }, text: string | null | undefined = "") {
   const state = reactive({
     timerInitialized: false,
     timerRunning: false,
@@ -8,6 +8,7 @@ export default function createTimer(initialHour = "00", initialMin = "00", initi
     timerInitialValue: 0,
     timerValue: 0,
     timerPaused: false,
+    timerText: text,
   });
 
   const timerAlarm = new Audio(timerAlarmAudio);
