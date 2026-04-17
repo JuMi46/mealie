@@ -29,6 +29,7 @@ from ...db.models.recipe import (
 )
 from .recipe_asset import RecipeAsset
 from .recipe_comments import RecipeCommentOut
+from .recipe_instruction_timer_active import ReadRecipeInstructionTimerActive
 from .recipe_notes import RecipeNote
 from .recipe_nutrition import Nutrition
 from .recipe_settings import RecipeSettings
@@ -192,6 +193,8 @@ class Recipe(RecipeSummary):
 
     comments: list[RecipeCommentOut] | None = []
 
+    timers_active: list[ReadRecipeInstructionTimerActive] | None = []
+
     @staticmethod
     def _get_dir(dir: Path) -> Path:
         """Gets a directory and creates it if it doesn't exist"""
@@ -318,6 +321,7 @@ class Recipe(RecipeSummary):
             joinedload(RecipeModel.settings),
             # for whatever reason, joinedload can mess up the order here, so use selectinload just this once
             selectinload(RecipeModel.notes),
+            selectinload(RecipeModel.timers_active),
         ]
 
     @classmethod

@@ -5,6 +5,7 @@ from .comment import *
 from .ingredient import *
 from .instruction import *
 from .instruction_timer import *
+from .instruction_timer_active import *
 from .note import *
 from .nutrition import *
 from .recipe import *
