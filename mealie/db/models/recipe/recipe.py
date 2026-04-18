@@ -15,7 +15,7 @@ from mealie.db.models._model_utils.auto_init import auto_init
 from mealie.db.models._model_utils.datetime import NaiveDateTime, get_utc_today
 from mealie.db.models._model_utils.guid import GUID
 from mealie.db.models.recipe.ingredient import RecipeIngredientModel
-from mealie.db.models.recipe.instruction_timer_active import RecipeInstructionTimerActive
+from mealie.db.models.recipe.timer_active import RecipeTimerActiveModel
 
 from .._model_base import BaseMixins, SqlAlchemyBase
 from ..household.household_to_recipe import HouseholdToRecipe
@@ -150,8 +150,8 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
         "Household", secondary=HouseholdToRecipe.__tablename__, back_populates="made_recipes"
     )
 
-    timers_active: Mapped[list["RecipeInstructionTimerActive"]] = orm.relationship(
-        "RecipeInstructionTimerActive", cascade="all, delete-orphan", single_parent=True
+    timers_active: Mapped[list["RecipeTimerActiveModel"]] = orm.relationship(
+        "RecipeTimerActiveModel", cascade="all, delete-orphan", single_parent=True
     )
 
     # Shopping List Refs

@@ -53,9 +53,9 @@
 </template>
 
 <script setup lang="ts">
-import type { RecipeInstructionTimer } from "~/lib/api/types/recipe";
+import type { RecipeTimer } from "~/lib/api/types/recipe";
 
-const modelValue = defineModel<RecipeInstructionTimer>({ required: true });
+const modelValue = defineModel<RecipeTimer>({ required: true });
 
 const hours = ref(0);
 const minutes = ref(0);

@@ -42,13 +42,13 @@ from mealie.schema.recipe.recipe import (
     RecipeSummary,
 )
 from mealie.schema.recipe.recipe_asset import RecipeAsset
-from mealie.schema.recipe.recipe_instruction_timer_active import (
-    CreateRecipeInstructionTimerActive,
-    ReadRecipeInstructionTimerActive,
-    SaveRecipeInstructionTimerActive,
-)
 from mealie.schema.recipe.recipe_scraper import ScrapeRecipeTest
 from mealie.schema.recipe.recipe_suggestion import RecipeSuggestionQuery, RecipeSuggestionResponse
+from mealie.schema.recipe.recipe_timer_active import (
+    RecipeTimerActive,
+    RecipeTimerActiveCreate,
+    RecipeTimerActiveSave,
+)
 from mealie.schema.recipe.request_helpers import (
     RecipeDuplicate,
     UpdateImageResponse,
@@ -701,16 +701,16 @@ class RecipeController(BaseRecipeController):
     # Active Timers
 
     @router.post(
-        "/timers/{instruction_timer_id}/active",
-        response_model=ReadRecipeInstructionTimerActive,
+        "/timers/{timer_id}/active",
+        response_model=RecipeTimerActive,
         tags=["Recipe: Active Timers"],
     )
-    def create_active_timer(self, instruction_timer_id: UUID4, data: CreateRecipeInstructionTimerActive):
+    def create_active_timer(self, timer_id: UUID4, data: RecipeTimerActiveCreate):
         """Create an active timer for a recipe instruction"""
         save = mapper.cast(
             data,
-            SaveRecipeInstructionTimerActive,
-            recipe_instruction_timer_id=instruction_timer_id,
+            RecipeTimerActiveSave,
+            recipe_timer_id=timer_id,
             user_id=self.user.id,
             group_id=self.group_id,
             household_id=self.household_id,

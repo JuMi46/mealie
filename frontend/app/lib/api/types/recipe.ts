@@ -274,10 +274,10 @@ export interface RecipeStep {
   title?: string | null;
   summary?: string | null;
   text: string;
-  timers: RecipeInstructionTimer[];
+  timers: RecipeTimer[];
   ingredientReferences?: IngredientReferences[];
 }
-export interface RecipeInstructionTimer {
+export interface RecipeTimer {
   id?: string | null;
   duration: number;
   text?: string | null;

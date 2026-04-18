@@ -17,10 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import type { RecipeInstructionTimer } from "~/lib/api/types/recipe";
+import type { RecipeTimer } from "~/lib/api/types/recipe";
 import TimerInput from "./TimerInput.vue";
 
-const modelValue = defineModel<RecipeInstructionTimer[]>({ required: true });
+const modelValue = defineModel<RecipeTimer[]>({ required: true });
 
 function addTimer() {
   modelValue.value.push({ id: uuid4(), duration: 0, text: "" });

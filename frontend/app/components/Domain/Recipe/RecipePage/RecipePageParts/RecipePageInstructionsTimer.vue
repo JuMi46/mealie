@@ -81,10 +81,10 @@
 
 <script setup lang="ts">
 import useTimer from "~/composables/use-timer";
-import type { RecipeInstructionTimer } from "~/lib/api/types/recipe";
+import type { RecipeTimer } from "~/lib/api/types/recipe";
 
 interface Props {
-  timers?: RecipeInstructionTimer[];
+  timers?: RecipeTimer[];
 }
 const props = withDefaults(defineProps<Props>(), {
   timers: () => [],

@@ -29,11 +29,11 @@ from ...db.models.recipe import (
 )
 from .recipe_asset import RecipeAsset
 from .recipe_comments import RecipeCommentOut
-from .recipe_instruction_timer_active import ReadRecipeInstructionTimerActive
 from .recipe_notes import RecipeNote
 from .recipe_nutrition import Nutrition
 from .recipe_settings import RecipeSettings
 from .recipe_step import RecipeStep
+from .recipe_timer_active import RecipeTimerActive
 
 app_dirs = get_app_dirs()
 
@@ -193,7 +193,7 @@ class Recipe(RecipeSummary):
 
     comments: list[RecipeCommentOut] | None = []
 
-    timers_active: list[ReadRecipeInstructionTimerActive] | None = []
+    timers_active: list[RecipeTimerActive] | None = []
 
     @staticmethod
     def _get_dir(dir: Path) -> Path:

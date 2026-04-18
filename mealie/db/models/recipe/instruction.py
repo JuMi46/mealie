@@ -9,7 +9,7 @@ from .._model_utils.auto_init import auto_init
 from .._model_utils.guid import GUID
 
 if TYPE_CHECKING:
-    from .instruction_timer import RecipeInstructionTimer
+    from .timer import RecipeTimerModel
 
 
 class RecipeIngredientRefLink(SqlAlchemyBase, BaseMixins):
@@ -34,8 +34,8 @@ class RecipeInstruction(SqlAlchemyBase):
     ingredient_references: Mapped[list[RecipeIngredientRefLink]] = orm.relationship(
         RecipeIngredientRefLink, cascade="all, delete-orphan"
     )
-    timers: Mapped[list["RecipeInstructionTimer"]] = orm.relationship(
-        "RecipeInstructionTimer", cascade="all, delete-orphan", single_parent=True
+    timers: Mapped[list["RecipeTimerModel"]] = orm.relationship(
+        "RecipeTimerModel", cascade="all, delete-orphan", single_parent=True
     )
 
     model_config = ConfigDict(
