@@ -4,7 +4,7 @@ from pydantic import UUID4, ConfigDict, Field
 
 from mealie.schema._mealie import MealieModel
 
-from .recipe_instruction_timer import RecipeInstructionTimer
+from .recipe_timer import RecipeTimer
 
 
 class IngredientReferences(MealieModel):
@@ -25,6 +25,6 @@ class RecipeStep(MealieModel):
     text: str
     """The actual instruction text"""
 
-    timers: list[RecipeInstructionTimer] = []
+    timers: list[RecipeTimer] = []
     ingredient_references: list[IngredientReferences] = []
     model_config = ConfigDict(from_attributes=True)
