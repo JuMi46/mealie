@@ -6,7 +6,8 @@
 */
 
 export type GroupRecipeActionType = "link" | "post";
-export type WebhookType = "mealplan";
+export type WebhookType = "mealplan" | "timer";
+export type TimerEvent = "started" | "paused" | "resumed" | "stopped";
 
 export interface CreateGroupRecipeAction {
   actionType: GroupRecipeActionType;
@@ -34,7 +35,9 @@ export interface CreateWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string;
+  timerEvent?: TimerEvent;
+  userId?: string;
 }
 export interface EmailInitationResponse {
   success: boolean;
@@ -220,6 +223,8 @@ export interface ReadWebhook {
   url?: string;
   webhookType?: WebhookType;
   scheduledTime: string;
+  timerEvent?: TimerEvent;
+  userId?: string;
   groupId: string;
   householdId: string;
   id: string;
@@ -299,7 +304,9 @@ export interface SaveWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string;
+  timerEvent?: TimerEvent;
+  userId?: string;
   groupId: string;
   householdId: string;
 }

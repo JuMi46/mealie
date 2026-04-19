@@ -1,8 +1,9 @@
 import { useAsyncKey } from "./use-utils";
 import { useUserApi } from "~/composables/api";
-import type { ReadWebhook } from "~/lib/api/types/household";
+import { useMealieAuth } from "~/composables/use-mealie-auth";
+import type { ReadWebhook, WebhookType, TimerEvent } from "~/lib/api/types/household";
 
-export const useGroupWebhooks = function () {
+export const useGroupWebhooks = function (webhookType: Ref<WebhookType | null>) {
   const api = useUserApi();
   const loading = ref(false);
   const validForm = ref(true);
@@ -11,7 +12,7 @@ export const useGroupWebhooks = function () {
     getAll() {
       loading.value = true;
       const { data: units } = useAsyncData(useAsyncKey(), async () => {
-        const { data } = await api.groupWebhooks.getAll();
+        const { data } = await api.groupWebhooks.getAll(1, -1, { webhook_type: webhookType.value || undefined });
 
         if (data) {
           return data.items;
@@ -26,7 +27,7 @@ export const useGroupWebhooks = function () {
     },
     async refreshAll() {
       loading.value = true;
-      const { data } = await api.groupWebhooks.getAll();
+      const { data } = await api.groupWebhooks.getAll(1, -1, { webhook_type: webhookType.value || undefined });
 
       if (data && data.items) {
         webhooks.value = data.items;
@@ -35,13 +36,20 @@ export const useGroupWebhooks = function () {
       loading.value = false;
     },
     async createOne() {
+      if (!webhookType.value) {
+        return;
+      }
+      const { user } = useMealieAuth();
       loading.value = true;
 
       const payload = {
         enabled: true,
         name: "New Webhook",
         url: "",
-        scheduledTime: "00:00",
+        scheduledTime: webhookType.value == "mealplan" ? "00:00" : undefined,
+        timerEvent: webhookType.value == "timer" ? ("started" as TimerEvent) : undefined,
+        webhookType: webhookType.value,
+        userId: webhookType.value == "timer" ? user.value?.id : undefined,
       };
 
       const { data } = await api.groupWebhooks.createOne(payload);
@@ -56,19 +64,21 @@ export const useGroupWebhooks = function () {
         return;
       }
 
-      // Convert to UTC time
-      const [hours, minutes] = updateData.scheduledTime.split(":");
-
-      const newDt = new Date();
-      newDt.setHours(Number(hours));
-      newDt.setMinutes(Number(minutes));
-
-      updateData.scheduledTime = `${pad(newDt.getUTCHours(), 2)}:${pad(newDt.getUTCMinutes(), 2)}`;
-
       const payload = {
         ...updateData,
-        scheduledTime: updateData.scheduledTime,
       };
+
+      if (updateData.webhookType === "mealplan") {
+        // Convert to UTC time
+        const [hours, minutes] = updateData.scheduledTime.split(":");
+
+        const newDt = new Date();
+        newDt.setHours(Number(hours));
+        newDt.setMinutes(Number(minutes));
+
+        updateData.scheduledTime = `${pad(newDt.getUTCHours(), 2)}:${pad(newDt.getUTCMinutes(), 2)}`;
+        payload.scheduledTime = updateData.scheduledTime;
+      }
 
       loading.value = true;
       const { data } = await api.groupWebhooks.updateOne(updateData.id, payload);
@@ -88,10 +98,12 @@ export const useGroupWebhooks = function () {
     },
 
     async testOne(id: string | number) {
+      // TODO: Make different for timer vs mealplan webhooks
       loading.value = true;
       await api.groupWebhooks.testOne(id);
       loading.value = false;
     },
+
   };
 
   const webhooks = actions.getAll();

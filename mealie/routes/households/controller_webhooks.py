@@ -8,7 +8,7 @@ from mealie.routes._base.base_controllers import BaseUserController
 from mealie.routes._base.controller import controller
 from mealie.routes._base.mixins import HttpRepo
 from mealie.schema import mapper
-from mealie.schema.household.webhook import CreateWebhook, ReadWebhook, SaveWebhook, WebhookPagination
+from mealie.schema.household.webhook import CreateWebhook, ReadWebhook, SaveWebhook, WebhookPagination, WebhookType
 from mealie.schema.response.pagination import PaginationQuery
 from mealie.services.scheduler.tasks.post_webhooks import post_group_webhooks, post_test_webhook
 
@@ -26,7 +26,16 @@ class ReadWebhookController(BaseUserController):
         return HttpRepo[CreateWebhook, SaveWebhook, CreateWebhook](self.repo, self.logger)
 
     @router.get("", response_model=WebhookPagination)
-    def get_all(self, q: PaginationQuery = Depends(PaginationQuery)):
+    def get_all(self, q: PaginationQuery = Depends(PaginationQuery), webhook_type: WebhookType | None = None):
+        if webhook_type:
+            webhook_type_filter = f"webhook_type = '{webhook_type}'"
+
+            if q.query_filter:
+                q.query_filter = f"({q.query_filter}) AND ({webhook_type_filter})"
+
+            else:
+                q.query_filter = webhook_type_filter
+
         response = self.repo.page_all(
             pagination=q,
             override=ReadWebhook,

@@ -5,7 +5,8 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
-export type WebhookType = "mealplan";
+export type WebhookType = "mealplan" | "timer";
+export type TimerEvent = "started" | "paused" | "resumed" | "stopped";
 export type AuthMethod = "Mealie" | "LDAP" | "OIDC";
 
 export interface ChangePassword {
@@ -72,6 +73,8 @@ export interface ReadWebhook {
   url?: string;
   webhookType?: WebhookType;
   scheduledTime: string;
+  timerEvent?: TimerEvent;
+  userId?: string;
   groupId: string;
   householdId: string;
   id: string;
@@ -187,7 +190,9 @@ export interface CreateWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string;
+  timerEvent?: TimerEvent;
+  userId?: string;
 }
 export interface UserBase {
   id?: string | null;
