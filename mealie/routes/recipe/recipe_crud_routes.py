@@ -31,7 +31,6 @@ from mealie.pkgs import cache
 from mealie.repos.all_repositories import get_repositories
 from mealie.routes._base import controller
 from mealie.routes._base.routers import MealieCrudRoute, UserAPIRouter
-from mealie.schema import mapper
 from mealie.schema.cookbook.cookbook import ReadCookBook
 from mealie.schema.make_dependable import make_dependable
 from mealie.schema.recipe import Recipe, ScrapeRecipe, ScrapeRecipeData
@@ -44,11 +43,6 @@ from mealie.schema.recipe.recipe import (
 from mealie.schema.recipe.recipe_asset import RecipeAsset
 from mealie.schema.recipe.recipe_scraper import ScrapeRecipeTest
 from mealie.schema.recipe.recipe_suggestion import RecipeSuggestionQuery, RecipeSuggestionResponse
-from mealie.schema.recipe.recipe_timer_active import (
-    RecipeTimerActive,
-    RecipeTimerActiveCreate,
-    RecipeTimerActiveSave,
-)
 from mealie.schema.recipe.request_helpers import (
     RecipeDuplicate,
     UpdateImageResponse,
@@ -696,23 +690,3 @@ class RecipeController(BaseRecipeController):
         self.service.update_one(slug, recipe)
 
         return asset_in
-
-    # ==================================================================================================================
-    # Active Timers
-
-    @router.post(
-        "/timers/{timer_id}/active",
-        response_model=RecipeTimerActive,
-        tags=["Recipe: Active Timers"],
-    )
-    def create_active_timer(self, timer_id: UUID4, data: RecipeTimerActiveCreate):
-        """Create an active timer for a recipe instruction"""
-        save = mapper.cast(
-            data,
-            RecipeTimerActiveSave,
-            recipe_timer_id=timer_id,
-            user_id=self.user.id,
-            group_id=self.group_id,
-            household_id=self.household_id,
-        )
-        return self.mixins.create_one(save)

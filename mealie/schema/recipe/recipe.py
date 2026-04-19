@@ -10,7 +10,7 @@ from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 from pydantic_core.core_schema import ValidationInfo
 from slugify import slugify
 from sqlalchemy import Select, desc, func, or_, select, text
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload, with_loader_criteria
 from sqlalchemy.orm.interfaces import LoaderOption
 
 from mealie.core.config import get_app_dirs
@@ -26,6 +26,8 @@ from ...db.models.recipe import (
     RecipeIngredientModel,
     RecipeInstruction,
     RecipeModel,
+    RecipeTimerActiveModel,
+    RecipeTimerModel,
 )
 from .recipe_asset import RecipeAsset
 from .recipe_comments import RecipeCommentOut
@@ -316,12 +318,20 @@ class Recipe(RecipeSummary):
             .joinedload(RecipeIngredientModel.food)
             .joinedload(IngredientFoodModel.label),
             selectinload(RecipeModel.recipe_instructions).joinedload(RecipeInstruction.ingredient_references),
-            selectinload(RecipeModel.recipe_instructions).joinedload(RecipeInstruction.timers),
+            selectinload(RecipeModel.recipe_instructions).selectinload(RecipeInstruction.timers),
+            selectinload(RecipeModel.recipe_instructions)
+            .selectinload(RecipeInstruction.timers)
+            .selectinload(RecipeTimerModel.timers_active),
             joinedload(RecipeModel.nutrition),
             joinedload(RecipeModel.settings),
             # for whatever reason, joinedload can mess up the order here, so use selectinload just this once
             selectinload(RecipeModel.notes),
             selectinload(RecipeModel.timers_active),
+            with_loader_criteria(
+                RecipeTimerActiveModel,
+                lambda timer: timer.complete_time > func.current_timestamp(),
+                include_aliases=True,
+            ),
         ]
 
     @classmethod

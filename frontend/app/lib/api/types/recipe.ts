@@ -261,6 +261,7 @@ export interface Recipe {
     [k: string]: unknown;
   } | null;
   comments?: RecipeCommentOut[] | null;
+  timersActive: RecipeTimerActiveOut[];
 }
 export interface RecipeTool {
   id: string;
@@ -281,6 +282,25 @@ export interface RecipeTimer {
   id?: string | null;
   duration: number;
   text?: string | null;
+  timersActive: RecipeTimerActiveOut[];
+}
+export interface RecipeTimerActiveIn {
+  completeTime: string;
+  text?: string | null;
+}
+export interface RecipeTimerActiveUpdate {
+  completeTime: string;
+}
+export interface RecipeTimerActiveOut {
+  id: string;
+  completeTime: string;
+  text?: string | null;
+  recipeId?: string | null;
+  recipeTimerId?: string | null;
+  householdId?: string | null;
+  groupId?: string | null;
+  userId: string;
+  user: UserBase;
 }
 export interface RecipeAsset {
   name: string;

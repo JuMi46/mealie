@@ -1,6 +1,14 @@
 import timerAlarmAudio from "~/assets/audio/kitchen_alarm.mp3";
+import type { RecipeTimerActiveOut } from "~/lib/api/types/recipe";
 
-export default function createTimer(initialHour = "00", initialMin = "00", initialSec = "00", options = { padTimes: true }, text: string | null | undefined = "") {
+export default function createTimer(
+  initialHour = "00", initialMin = "00", initialSec = "00",
+  options = { padTimes: true },
+  text: string | null | undefined = "",
+  recipeId: string | null = null,
+  recipeTimerId: string | null = null,
+  recipeTimersActive: RecipeTimerActiveOut[] = [],
+) {
   const state = reactive({
     timerInitialized: false,
     timerRunning: false,
@@ -9,6 +17,9 @@ export default function createTimer(initialHour = "00", initialMin = "00", initi
     timerValue: 0,
     timerPaused: false,
     timerText: text,
+    recipeId,
+    recipeTimerId,
+    recipeTimerActiveId: "",
   });
 
   const timerAlarm = new Audio(timerAlarmAudio);
@@ -71,7 +82,21 @@ export default function createTimer(initialHour = "00", initialMin = "00", initi
 
     state.timerInitialValue = (hours * 3600) + (minutes * 60) + seconds;
     state.timerValue = state.timerInitialValue;
+
+    resumeTimerIfActive();
   };
+
+  function resumeTimerIfActive() {
+    if (recipeTimersActive.length === 0) return;
+    const activeTimer = recipeTimersActive[0];
+    state.recipeTimerActiveId = activeTimer.id;
+    const completeTime = new Date(activeTimer.completeTime);
+    const remainingSeconds = Math.floor((completeTime.getTime() - (new Date()).getTime()) / 1000);
+    if (remainingSeconds > 0) {
+      state.timerValue = remainingSeconds;
+      resumeTimer();
+    }
+  }
 
   function startTimer() {
     if (!state.timerInitialized) {
