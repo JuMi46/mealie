@@ -92,14 +92,21 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const userApi = useUserApi();
+const auth = useMealieAuth();
+const currentUserId = computed(() => auth.user.value?.id);
+const showAllHouseholdTimersInRecipe = computed(() => auth.user.value?.showAllHouseholdTimersInRecipe ?? false);
 
 const compTimers = ref<ReturnType<typeof useTimer>[]>();
 
-watch(() => props.timers, (newTimers) => {
+watch([() => props.timers, currentUserId, showAllHouseholdTimersInRecipe], ([newTimers]) => {
   console.log("new timers", newTimers);
 
   compTimers.value = newTimers.map((t) => {
-    const newTimer = useTimer("00", "00", t.duration.toString(), { padTimes: false }, t.text, null, t.id, t.timersActive);
+    const timersActive = showAllHouseholdTimersInRecipe.value
+      ? t.timersActive
+      : t.timersActive.filter(ta => ta.userId === currentUserId.value);
+
+    const newTimer = useTimer("00", "00", t.duration.toString(), { padTimes: false }, t.text, null, t.id, timersActive);
     newTimer.initializeTimer();
     return newTimer;
   });
@@ -137,7 +144,9 @@ function saveTimerActive(timer: ReturnType<typeof useTimer>) {
 
   userApi.recipes.timersActive.createTimerActive(timer.recipeTimerId, newTimerActive)
     .then((response) => {
-      timer.recipeTimerActiveId = response.data.id;
+      if (response.data) {
+        timer.recipeTimerActiveId = response.data.id;
+      }
       console.log("timer saved", response.data);
     })
     .catch((error) => {

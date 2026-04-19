@@ -1497,6 +1497,8 @@
     "hours": "Hours",
     "minutes": "Minutes",
     "seconds": "Seconds",
-    "text": "Text"
+    "text": "Text",
+    "show-all-household-timers-in-recipe": "Show all household timers in recipe",
+    "show-all-household-timers": "Show all household timers"
   }
 }

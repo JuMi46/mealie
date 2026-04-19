@@ -125,6 +125,8 @@ export interface PrivateUser {
   advanced?: boolean;
   showAnnouncements?: boolean;
   lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
@@ -199,6 +201,8 @@ export interface UserBase {
   advanced?: boolean;
   showAnnouncements?: boolean;
   lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
@@ -216,6 +220,8 @@ export interface UserIn {
   advanced?: boolean;
   showAnnouncements?: boolean;
   lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
@@ -234,6 +240,8 @@ export interface UserOut {
   advanced?: boolean;
   showAnnouncements?: boolean;
   lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;

@@ -72,6 +72,10 @@ class User(SqlAlchemyBase, BaseMixins):
     show_announcements: Mapped[bool] = mapped_column(Boolean, default=True)
     last_read_announcement: Mapped[str | None] = mapped_column(String)
 
+    # Timers
+    show_all_household_timers_in_recipe: Mapped[bool] = mapped_column(Boolean, default=False)
+    show_all_household_timers: Mapped[bool] = mapped_column(Boolean, default=False)
+
     # Permissions
     can_manage_household: Mapped[bool | None] = mapped_column(Boolean, default=False)
     can_manage: Mapped[bool | None] = mapped_column(Boolean, default=False)
