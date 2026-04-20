@@ -89,7 +89,9 @@ const i18n = useI18n();
 const isMealplan = computed(() => !props.webhook.webhookType || props.webhook.webhookType === "mealplan");
 const isTimer = computed(() => props.webhook.webhookType === "timer");
 
-const itemLocal = ref<string>(props.webhook.scheduledTime ? timeUTCToLocal(props.webhook.scheduledTime) : "00:00");
+const itemLocal = ref<string>(
+  isMealplan.value && props.webhook.scheduledTime ? timeUTCToLocal(props.webhook.scheduledTime) : "00:00",
+);
 
 const scheduledTime = computed({
   get() {
@@ -112,6 +114,9 @@ const webhookCopy = ref({ ...props.webhook });
 function handleSave() {
   if (isMealplan.value) {
     webhookCopy.value.scheduledTime = timeLocalToUTC(itemLocal.value);
+  }
+  else {
+    webhookCopy.value.scheduledTime = undefined;
   }
   emit("save", webhookCopy.value);
 }

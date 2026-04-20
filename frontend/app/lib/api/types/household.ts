@@ -223,7 +223,7 @@ export interface ReadWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string;
   timerEvent?: TimerEvent;
   isDeepLink?: boolean;
   userId?: string;
