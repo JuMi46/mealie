@@ -1420,6 +1420,7 @@
     "members": "Members",
     "members-description": "See who's in your household and manage their permissions.",
     "webhooks-description": "Set up webhooks that trigger on days that you have mealplans scheduled.",
+    "timer-webhooks-description": "Set up webhooks that trigger on timer events.",
     "notifiers": "Notifiers",
     "notifiers-description": "Set up email and push notifications that trigger on specific events.",
     "manage-data": "Manage Data",
@@ -1438,6 +1439,7 @@
     "manage-cookbooks": "Manage Cookbooks",
     "manage-members": "Manage Members",
     "manage-webhooks": "Manage Webhooks",
+    "manage-timer-webhooks": "Manage Timer Webhooks",
     "manage-notifiers": "Manage Notifiers",
     "manage-data-migrations": "Manage Data Migrations"
   },
