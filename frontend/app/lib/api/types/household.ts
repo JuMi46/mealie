@@ -37,6 +37,7 @@ export interface CreateWebhook {
   webhookType?: WebhookType;
   scheduledTime?: string;
   timerEvent?: TimerEvent;
+  isDeepLink?: boolean;
   userId?: string;
 }
 export interface EmailInitationResponse {
@@ -222,8 +223,9 @@ export interface ReadWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string;
   timerEvent?: TimerEvent;
+  isDeepLink?: boolean;
   userId?: string;
   groupId: string;
   householdId: string;
@@ -306,6 +308,7 @@ export interface SaveWebhook {
   webhookType?: WebhookType;
   scheduledTime?: string;
   timerEvent?: TimerEvent;
+  isDeepLink?: boolean;
   userId?: string;
   groupId: string;
   householdId: string;

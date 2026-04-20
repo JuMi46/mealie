@@ -182,13 +182,31 @@
             md="6"
           >
             <UserProfileLinkCard
-              :link="{ text: $t('profile.manage-webhooks'), to: `/household/webhooks` }"
+              :link="{ text: $t('profile.manage-webhooks'), to: `/household/webhooks/mealplan` }"
               image="/svgs/manage-webhooks.svg"
             >
               <template #title>
-                {{ $t('settings.webhooks.webhooks') }}
+                {{ $t('settings.webhooks.mealplan-webhooks') }}
               </template>
               {{ $t('profile.webhooks-description') }}
+            </UserProfileLinkCard>
+          </v-col>
+        </AdvancedOnly>
+        <AdvancedOnly>
+          <v-col
+            v-if="user.advanced"
+            cols="12"
+            sm="12"
+            md="6"
+          >
+            <UserProfileLinkCard
+              :link="{ text: $t('profile.manage-timer-webhooks'), to: `/household/webhooks/timer` }"
+              image="/svgs/manage-webhooks.svg"
+            >
+              <template #title>
+                {{ $t('settings.webhooks.timer-webhooks') }}
+              </template>
+              {{ $t('profile.timer-webhooks-description') }}
             </UserProfileLinkCard>
           </v-col>
         </AdvancedOnly>
