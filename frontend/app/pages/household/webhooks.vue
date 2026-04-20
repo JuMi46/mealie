@@ -1,5 +1,5 @@
 <template>
-  <div />
+  <NuxtPage />
 </template>
 
 <script setup lang="ts">
@@ -7,8 +7,12 @@ definePageMeta({
   middleware: ["advanced-only"],
 });
 
+const route = useRoute();
 const router = useRouter();
+
 onMounted(() => {
-  router.replace("/household/webhooks/mealplan");
+  if (route.path === "/household/webhooks") {
+    router.replace("/household/webhooks/mealplan");
+  }
 });
 </script>

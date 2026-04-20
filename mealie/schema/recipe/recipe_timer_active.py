@@ -8,13 +8,20 @@ from mealie.schema._mealie import MealieModel
 class RecipeTimerActiveCreate(MealieModel):
     complete_time: datetime.datetime
     text: str | None = None
+    recipe_link: str | None = None
 
 
 class RecipeTimerActiveUpdate(MealieModel):
     complete_time: datetime.datetime
 
 
-class RecipeTimerActiveSave(RecipeTimerActiveCreate):
+class RecipeTimerActiveDelete(MealieModel):
+    recipe_link: str | None = None
+
+
+class RecipeTimerActiveSave(MealieModel):
+    complete_time: datetime.datetime
+    text: str | None = None
     group_id: UUID4
     household_id: UUID4
     user_id: UUID4

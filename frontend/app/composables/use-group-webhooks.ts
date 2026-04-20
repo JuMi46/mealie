@@ -1,6 +1,7 @@
 import { useAsyncKey } from "./use-utils";
 import { useUserApi } from "~/composables/api";
 import { useMealieAuth } from "~/composables/use-mealie-auth";
+import type { TimerWebhookTestPayload } from "~/lib/api/user/group-webhooks";
 import type { ReadWebhook, WebhookType, TimerEvent } from "~/lib/api/types/household";
 
 export const useGroupWebhooks = function (webhookType: Ref<WebhookType | null>) {
@@ -68,7 +69,7 @@ export const useGroupWebhooks = function (webhookType: Ref<WebhookType | null>) 
         ...updateData,
       };
 
-      if (updateData.webhookType === "mealplan") {
+      if (updateData.webhookType === "mealplan" && updateData.scheduledTime) {
         // Convert to UTC time
         const [hours, minutes] = updateData.scheduledTime.split(":");
 
@@ -97,10 +98,16 @@ export const useGroupWebhooks = function (webhookType: Ref<WebhookType | null>) 
       loading.value = false;
     },
 
-    async testOne(id: string | number) {
-      // TODO: Make different for timer vs mealplan webhooks
+    async testMealplanOne(id: string | number) {
       loading.value = true;
-      await api.groupWebhooks.testOne(id);
+      await api.groupWebhooks.testMealplanOne(id);
+      loading.value = false;
+    },
+
+    async testTimerOne(request: { id: string | number } & TimerWebhookTestPayload) {
+      loading.value = true;
+      const { id, ...payload } = request;
+      await api.groupWebhooks.testTimerOne(id, payload);
       loading.value = false;
     },
 

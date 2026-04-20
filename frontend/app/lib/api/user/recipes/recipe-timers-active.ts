@@ -1,5 +1,5 @@
 import { BaseCRUDAPI } from "../../base/base-clients";
-import type { RecipeTimerActiveIn, RecipeTimerActiveOut, RecipeTimerActiveUpdate } from "~/lib/api/types/recipe";
+import type { RecipeTimerActiveDelete, RecipeTimerActiveIn, RecipeTimerActiveOut, RecipeTimerActiveUpdate } from "~/lib/api/types/recipe";
 
 const prefix = "/api";
 
@@ -35,7 +35,9 @@ export class TimersActiveApi extends BaseCRUDAPI<RecipeTimerActiveIn, RecipeTime
     return await this.requests.put<RecipeTimerActiveOut, RecipeTimerActiveUpdate>(routes.recipeTimerActive(timerActiveId), payload);
   }
 
-  async deleteTimerActive(timerActiveId: string) {
-    return await this.requests.delete<RecipeTimerActiveOut>(routes.recipeTimerActive(timerActiveId));
+  async deleteTimerActive(timerActiveId: string, payload?: RecipeTimerActiveDelete) {
+    return await this.requests.delete<RecipeTimerActiveOut>(routes.recipeTimerActive(timerActiveId), {
+      data: payload,
+    });
   }
 }

@@ -365,7 +365,7 @@
                       </v-col>
                     </v-row>
                     <div v-if="!isEditForm && step.timers && step.timers.length > 0 ">
-                      <RecipePageInstructionsTimer :timers="step.timers" />
+                      <RecipePageInstructionsTimer :timers="step.timers" :is-cook-mode="isCookMode" />
                     </div>
                   </v-card-text>
                 </div>

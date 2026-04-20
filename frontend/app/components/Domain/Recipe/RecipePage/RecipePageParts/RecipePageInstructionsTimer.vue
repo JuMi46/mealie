@@ -3,6 +3,7 @@
     <v-divider class="mb-2 mt-3 mb-2" />
     <div
       v-for="(timer, i) in compTimers"
+      :id="timer.recipeTimerId ? `recipe-timer-${timer.recipeTimerId}` : undefined"
       :key="i"
       class="d-flex align-center my-2 justify-center"
     >
@@ -86,15 +87,22 @@ import type { RecipeTimer, RecipeTimerActiveIn, RecipeTimerActiveUpdate } from "
 
 interface Props {
   timers?: RecipeTimer[];
+  isCookMode?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   timers: () => [],
+  isCookMode: false,
 });
 
 const userApi = useUserApi();
 const auth = useMealieAuth();
+const route = useRoute();
 const currentUserId = computed(() => auth.user.value?.id);
 const showAllHouseholdTimersInRecipe = computed(() => auth.user.value?.showAllHouseholdTimersInRecipe ?? false);
+const timerRecipeLinkByActiveId = ref<Record<string, string>>({});
+
+const groupSlug = computed(() => (route.params.groupSlug as string | undefined) || auth.user.value?.groupSlug || "");
+const recipeSlug = computed(() => (route.params.slug as string | undefined) || "");
 
 const compTimers = ref<ReturnType<typeof useTimer>[]>();
 
@@ -137,15 +145,19 @@ function changeTimerValue(timer: ReturnType<typeof useTimer>, newValue: number) 
 function saveTimerActive(timer: ReturnType<typeof useTimer>) {
   if (!timer.recipeTimerId) return;
 
+  const recipeLink = buildRecipeLink(timer.recipeTimerId, props.isCookMode);
+
   const newTimerActive: RecipeTimerActiveIn = {
     completeTime: new Date(Date.now() + timer.timerValue * 1000).toISOString(),
     text: timer.timerText,
+    recipeLink,
   };
 
   userApi.recipes.timersActive.createTimerActive(timer.recipeTimerId, newTimerActive)
     .then((response) => {
       if (response.data) {
         timer.recipeTimerActiveId = response.data.id;
+        timerRecipeLinkByActiveId.value[response.data.id] = recipeLink;
       }
       console.log("timer saved", response.data);
     })
@@ -172,8 +184,14 @@ function updateTimerActive(timer: ReturnType<typeof useTimer>) {
 function deleteTimerActive(timer: ReturnType<typeof useTimer>) {
   if (!timer.recipeTimerActiveId) return;
 
-  userApi.recipes.timersActive.deleteTimerActive(timer.recipeTimerActiveId)
+  const recipeLink = timerRecipeLinkByActiveId.value[timer.recipeTimerActiveId] || buildRecipeLink(timer.recipeTimerId || "", props.isCookMode);
+
+  userApi.recipes.timersActive.deleteTimerActive(timer.recipeTimerActiveId, { recipeLink })
     .then((response) => {
+      if (timer.recipeTimerActiveId) {
+        const { [timer.recipeTimerActiveId]: _removed, ...rest } = timerRecipeLinkByActiveId.value;
+        timerRecipeLinkByActiveId.value = rest;
+      }
       timer.recipeTimerActiveId = "";
       console.log("timer deleted", response.data);
     })
@@ -181,6 +199,36 @@ function deleteTimerActive(timer: ReturnType<typeof useTimer>) {
       console.error("Failed to delete active timer:", error);
     });
 }
+
+function buildRecipeLink(timerId: string, includeCookMode: boolean) {
+  if (!groupSlug.value || !recipeSlug.value || !timerId) {
+    return "";
+  }
+
+  const query = new URLSearchParams({ timerId });
+  if (includeCookMode) {
+    query.set("isCookMode", "true");
+  }
+
+  return `/g/${encodeURIComponent(groupSlug.value)}/r/${encodeURIComponent(recipeSlug.value)}?${query.toString()}`;
+}
+
+async function scrollToTimerFromQuery() {
+  const timerId = typeof route.query.timerId === "string" ? route.query.timerId : "";
+  if (!timerId) {
+    return;
+  }
+
+  await nextTick();
+  const target = document.getElementById(`recipe-timer-${timerId}`);
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+watch([() => compTimers.value, () => route.query.timerId], () => {
+  scrollToTimerFromQuery();
+}, { immediate: true });
 </script>
 
 <style scoped>

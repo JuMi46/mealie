@@ -287,9 +287,13 @@ export interface RecipeTimer {
 export interface RecipeTimerActiveIn {
   completeTime: string;
   text?: string | null;
+  recipeLink?: string | null;
 }
 export interface RecipeTimerActiveUpdate {
   completeTime: string;
+}
+export interface RecipeTimerActiveDelete {
+  recipeLink?: string;
 }
 export interface RecipeTimerActiveOut {
   id: string;

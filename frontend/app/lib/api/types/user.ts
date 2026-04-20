@@ -6,7 +6,7 @@
 */
 
 export type WebhookType = "mealplan" | "timer";
-export type TimerEvent = "started" | "paused" | "resumed" | "stopped";
+export type TimerEvent = "started" | "stopped";
 export type AuthMethod = "Mealie" | "LDAP" | "OIDC";
 
 export interface ChangePassword {

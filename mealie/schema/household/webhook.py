@@ -16,8 +16,6 @@ class WebhookType(enum.StrEnum):
 
 class TimerEvent(enum.StrEnum):
     started = "started"
-    paused = "paused"
-    resumed = "resumed"
     stopped = "stopped"
 
 
@@ -89,6 +87,14 @@ class SaveWebhook(CreateWebhook):
 class ReadWebhook(SaveWebhook):
     id: UUID4
     model_config = ConfigDict(from_attributes=True)
+
+
+class TimerWebhookTestIn(MealieModel):
+    length: str = "300"
+    message: str = "Test Webhook"
+    recipe_link: str = ""
+    complete_time: str = ""
+    complete_time_in_ms: int | None = None
 
 
 class WebhookPagination(PaginationBase):

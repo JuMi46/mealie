@@ -7,7 +7,7 @@
 
 export type GroupRecipeActionType = "link" | "post";
 export type WebhookType = "mealplan" | "timer";
-export type TimerEvent = "started" | "paused" | "resumed" | "stopped";
+export type TimerEvent = "started" | "stopped";
 
 export interface CreateGroupRecipeAction {
   actionType: GroupRecipeActionType;

@@ -39,7 +39,7 @@
             >
               {{ $globals.icons.webhook }}
             </v-icon>
-            {{ webhook.name }} - {{ $d(timeUTC(webhook.scheduledTime), "time") }}
+            {{ webhook.name }} - {{ $d(timeUTC(webhook.scheduledTime || "00:00"), "time") }}
           </div>
           <template #actions>
             <v-btn
@@ -60,7 +60,7 @@
             :webhook="webhook"
             @save="actions.updateOne($event)"
             @delete="actions.deleteOne($event)"
-            @test="actions.testOne($event).then(() => alert.success($t('events.test-message-sent')))"
+            @test-mealplan="actions.testMealplanOne($event).then(() => alert.success($t('events.test-message-sent')))"
           />
         </v-expansion-panel-text>
       </v-expansion-panel>

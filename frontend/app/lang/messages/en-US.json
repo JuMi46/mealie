@@ -880,9 +880,10 @@
       "timer-event": "Timer Event",
       "deep-link": "Deep Link",
       "deep-link-hint": "Send a deep-link URL instead of the standard webhook payload",
+      "timer-length": "Length",
+      "parsed-webhook-url": "Parsed Webhook URL",
+      "webhook-payload-preview": "Webhook Payload Preview",
       "timer-event-started": "Timer Started",
-      "timer-event-paused": "Timer Paused",
-      "timer-event-resumed": "Timer Resumed",
       "timer-event-stopped": "Timer Stopped"
     },
     "bug-report": "Bug Report",

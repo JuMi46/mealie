@@ -325,10 +325,15 @@ type BooleanString = "true" | "false" | "";
 
 const paramsEdit = useRouteQuery<BooleanString>("edit", "");
 const paramsParse = useRouteQuery<BooleanString>("parse", "");
+const paramsCookMode = useRouteQuery<BooleanString>("isCookMode", "");
 
 onMounted(() => {
   if (paramsEdit.value === "true" && isOwnGroup.value) {
     setMode(PageMode.EDIT);
+  }
+
+  if (paramsCookMode.value === "true") {
+    setMode(PageMode.COOK);
   }
 
   if (paramsParse.value === "true" && isOwnGroup.value) {
