@@ -100,6 +100,10 @@ const route = useRoute();
 const currentUserId = computed(() => auth.user.value?.id);
 const showAllHouseholdTimersInRecipe = computed(() => auth.user.value?.showAllHouseholdTimersInRecipe ?? false);
 const timerRecipeLinkByActiveId = ref<Record<string, string>>({});
+const stoppedByActiveScreenSentByActiveId = ref<Record<string, true>>({});
+const timerThresholdWatcherStops = ref<Array<() => void>>([]);
+const isScreenActive = ref(true);
+const timerThreshold = 3; // seconds remaining while screen is active to trigger stop timer webhooks
 
 const groupSlug = computed(() => (route.params.groupSlug as string | undefined) || auth.user.value?.groupSlug || "");
 const recipeSlug = computed(() => (route.params.slug as string | undefined) || "");
@@ -118,6 +122,35 @@ watch([() => props.timers, currentUserId, showAllHouseholdTimersInRecipe], ([new
     newTimer.initializeTimer();
     return newTimer;
   });
+}, { immediate: true });
+
+watch(compTimers, (timers) => {
+  timerThresholdWatcherStops.value.forEach(stop => stop());
+  timerThresholdWatcherStops.value = [];
+
+  if (!timers?.length) {
+    return;
+  }
+
+  timerThresholdWatcherStops.value = timers.map(timer =>
+    watch(
+      () => [timer.timerValue, timer.timerRunning, timer.timerEnded, timer.recipeTimerActiveId, isScreenActive.value],
+      () => {
+        if (!isScreenActive.value || !timer.timerRunning || timer.timerEnded || timer.timerValue !== timerThreshold) {
+          return;
+        }
+
+        const activeId = timer.recipeTimerActiveId;
+        if (!activeId || stoppedByActiveScreenSentByActiveId.value[activeId]) {
+          return;
+        }
+
+        stoppedByActiveScreenSentByActiveId.value[activeId] = true;
+        postStoppedWebhookForActiveTimer(timer);
+      },
+      { immediate: true },
+    ),
+  );
 }, { immediate: true });
 
 function startTimer(timer: ReturnType<typeof useTimer>) {
@@ -158,6 +191,8 @@ function saveTimerActive(timer: ReturnType<typeof useTimer>) {
       if (response.data) {
         timer.recipeTimerActiveId = response.data.id;
         timerRecipeLinkByActiveId.value[response.data.id] = recipeLink;
+        const { [response.data.id]: _removed, ...rest } = stoppedByActiveScreenSentByActiveId.value;
+        stoppedByActiveScreenSentByActiveId.value = rest;
       }
       console.log("timer saved", response.data);
     })
@@ -184,19 +219,41 @@ function updateTimerActive(timer: ReturnType<typeof useTimer>) {
 function deleteTimerActive(timer: ReturnType<typeof useTimer>) {
   if (!timer.recipeTimerActiveId) return;
 
+  const activeId = timer.recipeTimerActiveId;
+
   const recipeLink = timerRecipeLinkByActiveId.value[timer.recipeTimerActiveId] || buildRecipeLink(timer.recipeTimerId || "", props.isCookMode);
 
   userApi.recipes.timersActive.deleteTimerActive(timer.recipeTimerActiveId, { recipeLink })
     .then((response) => {
-      if (timer.recipeTimerActiveId) {
-        const { [timer.recipeTimerActiveId]: _removed, ...rest } = timerRecipeLinkByActiveId.value;
+      if (activeId) {
+        const { [activeId]: _removed, ...rest } = timerRecipeLinkByActiveId.value;
         timerRecipeLinkByActiveId.value = rest;
+
+        const { [activeId]: _thresholdRemoved, ...thresholdRest } = stoppedByActiveScreenSentByActiveId.value;
+        stoppedByActiveScreenSentByActiveId.value = thresholdRest;
       }
       timer.recipeTimerActiveId = "";
       console.log("timer deleted", response.data);
     })
     .catch((error) => {
       console.error("Failed to delete active timer:", error);
+    });
+}
+
+function postStoppedWebhookForActiveTimer(timer: ReturnType<typeof useTimer>) {
+  if (!timer.recipeTimerActiveId) return;
+
+  const activeId = timer.recipeTimerActiveId;
+  const recipeLink = timerRecipeLinkByActiveId.value[activeId] || buildRecipeLink(timer.recipeTimerId || "", props.isCookMode);
+
+  userApi.recipes.timersActive.postStoppedWebhookForActiveTimer(activeId, { recipeLink })
+    .then((response) => {
+      console.log("stopped webhook triggered", response.data);
+    })
+    .catch((error) => {
+      const { [activeId]: _thresholdRemoved, ...thresholdRest } = stoppedByActiveScreenSentByActiveId.value;
+      stoppedByActiveScreenSentByActiveId.value = thresholdRest;
+      console.error("Failed to trigger stopped webhook:", error);
     });
 }
 
@@ -229,6 +286,23 @@ async function scrollToTimerFromQuery() {
 watch([() => compTimers.value, () => route.query.timerId], () => {
   scrollToTimerFromQuery();
 }, { immediate: true });
+
+function updateScreenActiveState() {
+  isScreenActive.value = typeof document === "undefined"
+    ? true
+    : document.visibilityState === "visible";
+}
+
+onMounted(() => {
+  updateScreenActiveState();
+  document.addEventListener("visibilitychange", updateScreenActiveState);
+});
+
+onUnmounted(() => {
+  timerThresholdWatcherStops.value.forEach(stop => stop());
+  timerThresholdWatcherStops.value = [];
+  document.removeEventListener("visibilitychange", updateScreenActiveState);
+});
 </script>
 
 <style scoped>

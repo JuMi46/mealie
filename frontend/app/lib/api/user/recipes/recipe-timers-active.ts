@@ -7,6 +7,7 @@ const routes = {
   recipeTimers: `${prefix}/timers`,
   recipeTimersActive: `${prefix}/timers/active`,
   recipeTimerActive: (timerActiveId: string) => `${prefix}/timers/active/${timerActiveId}`,
+  recipeTimerActiveStoppedWebhook: (timerActiveId: string) => `${prefix}/timers/active/${timerActiveId}/webhook/stopped`,
   recipesTimersActive: (recipeTimerId: string) => `${prefix}/timers/${recipeTimerId}/active`,
   recipesTimersActiveOnRecipe: (recipeId: string) => `${prefix}/timers/recipes/${recipeId}/active`,
 };
@@ -39,5 +40,9 @@ export class TimersActiveApi extends BaseCRUDAPI<RecipeTimerActiveIn, RecipeTime
     return await this.requests.delete<RecipeTimerActiveOut>(routes.recipeTimerActive(timerActiveId), {
       data: payload,
     });
+  }
+
+  async postStoppedWebhookForActiveTimer(timerActiveId: string, payload?: RecipeTimerActiveDelete) {
+    return await this.requests.post<RecipeTimerActiveOut>(routes.recipeTimerActiveStoppedWebhook(timerActiveId), payload || {});
   }
 }

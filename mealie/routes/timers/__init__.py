@@ -148,6 +148,33 @@ class RecipeTimersActiveRoutes(BaseUserController):
 
         return deleted
 
+    @router.post(
+        "/active/{timer_active_id}/webhook/stopped",
+        response_model=RecipeTimerActive,
+    )
+    def post_stopped_webhook_for_active_timer(
+        self, timer_active_id: UUID4, bg_tasks: BackgroundTasks, data: RecipeTimerActiveDelete | None = None
+    ):
+        """Trigger stopped timer webhooks for an active timer without deleting it"""
+        user_id = self.user.id
+        active_timer = self.mixins.get_one(timer_active_id)
+
+        if active_timer:
+            bg_tasks.add_task(
+                post_timer_webhooks_on_event,
+                group_id=self.group_id,
+                household_id=self.household_id,
+                user_id=user_id,
+                timer_event=TimerEvent.stopped,
+                length="",
+                message=active_timer.text or "",
+                recipe_link=(data.recipe_link if data else "") or "",
+                complete_time=active_timer.complete_time.isoformat(),
+                complete_time_in_ms=int(active_timer.complete_time.timestamp() * 1000),
+            )
+
+        return active_timer
+
     @router.get(
         "/active",
         response_model=list[RecipeTimerActive],
