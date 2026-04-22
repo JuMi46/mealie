@@ -1506,6 +1506,8 @@
     "show-announcements-setting-description": "Whether or not you want to allow users to see announcements from Mealie. When enabled users can still opt-out from seeing them in their user settings"
   },
   "timer": {
+    "timer-index": "Timer: {index}",
+    "step-title-and-timer-title": "{stepTitle} - {timerTitle}",
     "hours": "Hours",
     "minutes": "Minutes",
     "seconds": "Seconds",

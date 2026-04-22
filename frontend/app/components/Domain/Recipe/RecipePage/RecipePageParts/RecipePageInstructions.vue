@@ -365,7 +365,11 @@
                       </v-col>
                     </v-row>
                     <div v-if="!isEditForm && step.timers && step.timers.length > 0 ">
-                      <RecipePageInstructionsTimer :timers="step.timers" :is-cook-mode="isCookMode" />
+                      <RecipePageInstructionsTimer
+                        :timers="step.timers"
+                        :is-cook-mode="isCookMode"
+                        :step-title="parseStepTitle(step, index)"
+                      />
                     </div>
                   </v-card-text>
                 </div>
@@ -419,6 +423,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["click-instruction-field", "update:assets"]);
+const i18n = useI18n();
 
 const { isCookMode, toggleCookMode, isEditForm } = usePageState(props.recipe.slug);
 const { extractIngredientReferences } = useExtractIngredientReferences();
@@ -480,6 +485,10 @@ function toggleDisabled(stepIndex: number) {
   else {
     disabledSteps.value.push(stepIndex);
   }
+}
+
+function parseStepTitle(step: RecipeStep, stepIndex: number): string {
+  return step.summary && step.summary.trim().length > 0 ? step.summary.trim() : i18n.t("recipe.step-index", { step: stepIndex + 1 });
 }
 
 function isChecked(stepIndex: number) {

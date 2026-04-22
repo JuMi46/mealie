@@ -1,13 +1,10 @@
 <template>
-  <v-sheet max-width="300" class="d-flex align-center justify-space-between mt-3">
-    <v-icon class="mr-2">
-      {{ $globals.icons.alarm }}
-    </v-icon>
+  <v-sheet class="timer-input-row d-flex mt-3">
     <v-text-field
       :model-value="hours"
       :label="$t('timer.hours')"
       type="number"
-      class="mr-2"
+      class="timer-number-field"
       min="0"
       max="99"
       outlined
@@ -19,7 +16,7 @@
       :model-value="minutes"
       :label="$t('timer.minutes')"
       type="number"
-      class="mr-2"
+      class="timer-number-field"
       min="0"
       max="59"
       outlined
@@ -31,6 +28,7 @@
       :model-value="seconds"
       :label="$t('timer.seconds')"
       type="number"
+      class="timer-number-field"
       min="0"
       max="59"
       outlined
@@ -42,13 +40,13 @@
       :model-value="modelValue.text"
       :label="$t('timer.text')"
       type="text"
+      class="timer-text-field"
       outlined
       dense
       hide-details
       clearable
       @update:model-value="modelValue.text = $event"
     />
-    <!-- TODO: Fix styling of this text input -->
   </v-sheet>
 </template>
 
@@ -92,8 +90,22 @@ function updateSeconds() {
 </script>
 
 <style scoped>
-.v-card {
-  display: flex;
-  justify-content: space-around;
+.timer-input-row {
+  --timer-gap: 8px;
+  --timer-number-width: 80px;
+
+  flex-wrap: wrap;
+  gap: var(--timer-gap);
+  flex-grow: 1;
+}
+
+.timer-number-field {
+  flex: 0 0 var(--timer-number-width);
+  width: var(--timer-number-width);
+}
+
+.timer-text-field {
+  flex-grow: 1;
+  min-width: calc(var(--timer-number-width) * 2 + var(--timer-gap) * 2);
 }
 </style>

@@ -88,15 +88,18 @@ import type { RecipeTimer, RecipeTimerActiveIn, RecipeTimerActiveUpdate } from "
 interface Props {
   timers?: RecipeTimer[];
   isCookMode?: boolean;
+  stepTitle?: string;
 }
 const props = withDefaults(defineProps<Props>(), {
   timers: () => [],
   isCookMode: false,
+  stepTitle: () => "",
 });
 
 const userApi = useUserApi();
 const auth = useMealieAuth();
 const route = useRoute();
+const i18n = useI18n();
 const currentUserId = computed(() => auth.user.value?.id);
 const showAllHouseholdTimersInRecipe = computed(() => auth.user.value?.showAllHouseholdTimersInRecipe ?? false);
 const timerRecipeLinkByActiveId = ref<Record<string, string>>({});
@@ -182,7 +185,7 @@ function saveTimerActive(timer: ReturnType<typeof useTimer>) {
 
   const newTimerActive: RecipeTimerActiveIn = {
     completeTime: new Date(Date.now() + timer.timerValue * 1000).toISOString(),
-    text: timer.timerText,
+    text: resolveTimerWebhookText(timer),
     recipeLink,
   };
 
@@ -199,6 +202,15 @@ function saveTimerActive(timer: ReturnType<typeof useTimer>) {
     .catch((error) => {
       console.error("Failed to save active timer:", error);
     });
+}
+
+function resolveTimerWebhookText(timer: ReturnType<typeof useTimer>) {
+  if (compTimers.value?.length === 1 && !timer.timerText) {
+    return `${props.stepTitle}`;
+  }
+  const timerIndex = compTimers.value?.indexOf(timer) ?? -1;
+  const timerTitle = (timer.timerText || i18n.t("timer.timer-index", { index: timerIndex + 1 })).trim();
+  return i18n.t("step-title-and-timer-title", { stepTitle: props.stepTitle, timerTitle });
 }
 
 function updateTimerActive(timer: ReturnType<typeof useTimer>) {

@@ -1,7 +1,10 @@
 <template>
   <div>
     <template v-for="time, index in modelValue" :key="index">
-      <div class="d-flex align-center">
+      <div class="timer-wrapper d-flex align-center">
+        <v-icon>
+          {{ $globals.icons.alarm }}
+        </v-icon>
         <TimerInput v-model="modelValue[index]" class="mb-3" />
         <v-btn icon class="ml-2" @click="deleteTimer(index)">
           <v-icon>{{ $globals.icons.delete }}</v-icon>
@@ -23,10 +26,16 @@ import TimerInput from "./TimerInput.vue";
 const modelValue = defineModel<RecipeTimer[]>({ required: true });
 
 function addTimer() {
-  modelValue.value.push({ id: uuid4(), duration: 0, text: "" });
+  modelValue.value = [...modelValue.value, { id: uuid4(), duration: 0, text: "", timersActive: [] }];
 }
 
 function deleteTimer(index: number) {
   modelValue.value = [...modelValue.value.slice(0, index), ...modelValue.value.slice(index + 1)];
 }
 </script>
+
+<style scoped>
+.timer-wrapper {
+  gap: 8px;
+}
+</style>
