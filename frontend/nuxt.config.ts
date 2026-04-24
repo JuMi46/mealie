@@ -80,6 +80,7 @@ export default defineNuxtConfig({
     public: {
       AUTH_TOKEN,
       GLOBAL_MIDDLEWARE: process.env.GLOBAL_MIDDLEWARE || undefined,
+      API_URL: process.env.API_URL || "http://localhost:9000",
       SUB_PATH: process.env.SUB_PATH || "",
       // ==============================================
       // Theme Runtime Config

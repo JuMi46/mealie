@@ -106,6 +106,7 @@ def post_test_webhook(webhook: ReadWebhook, message: str = "") -> None:
 
 def post_test_timer_webhook(
     webhook: ReadWebhook,
+    timer_id: str = "",
     length: str = "300",
     message: str = "Test Webhook",
     recipe_link: str = "",
@@ -119,6 +120,7 @@ def post_test_timer_webhook(
     )
     _send_timer_webhook(
         webhook,
+        timer_id=timer_id,
         timer_event=timer_event,
         length=length,
         message=message,
@@ -133,6 +135,7 @@ def post_timer_webhooks_on_event(
     group_id: UUID4,
     household_id: UUID4,
     user_id: UUID4,
+    timer_id: str,
     timer_event: TimerEvent,
     length: str,
     message: str,
@@ -155,6 +158,7 @@ def post_timer_webhooks_on_event(
     for webhook in webhooks:
         _send_timer_webhook(
             webhook,
+            timer_id=timer_id,
             timer_event=timer_event,
             length=length,
             message=message,
@@ -167,6 +171,7 @@ def post_timer_webhooks_on_event(
 def _send_timer_webhook(
     webhook: ReadWebhook,
     *,
+    timer_id: str,
     timer_event: TimerEvent,
     length: str,
     message: str,
@@ -174,7 +179,7 @@ def _send_timer_webhook(
     complete_time: str,
     complete_time_in_ms: int,
 ) -> None:
-    show_length = timer_event == TimerEvent.started
+    show_length = timer_event in (TimerEvent.started, TimerEvent.updated)
     safe_length = quote(length if show_length else "", safe="")
     safe_message = quote(message, safe="")
 
@@ -185,6 +190,8 @@ def _send_timer_webhook(
         return
 
     payload: dict[str, str | int] = {
+        "action": _timer_action_for_event(timer_event),
+        "timerId": timer_id,
         "length": length if show_length else "",
         "message": message,
         "recipeLink": recipe_link,
@@ -193,6 +200,14 @@ def _send_timer_webhook(
     }
 
     requests.post(parsed_url, json=payload, timeout=15)
+
+
+def _timer_action_for_event(timer_event: TimerEvent) -> str:
+    if timer_event == TimerEvent.started:
+        return "create"
+    if timer_event == TimerEvent.updated:
+        return "update"
+    return "delete"
 
 
 def _resolve_complete_time_values(complete_time: str, complete_time_in_ms: int | None) -> tuple[str, int]:

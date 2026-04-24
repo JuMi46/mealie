@@ -156,7 +156,7 @@ def test_post_test_timer_webhook_with_parsed_url_and_payload(
             "name": "Timer Test",
             "url": "https://example.com/hook?length={length}&message={message}",
             "webhookType": "timer",
-            "timerEvent": "started",
+            "timerEvent": "updated",
             "isDeepLink": False,
         },
         headers=unique_user.token,
@@ -166,6 +166,7 @@ def test_post_test_timer_webhook_with_parsed_url_and_payload(
     response = api_client.post(
         f"{api_routes.households_webhooks_item_id_test(webhook['id'])}/timer",
         json={
+            "timerId": "timer-test-123",
             "length": "120",
             "message": "hello world",
             "completeTime": "2026-01-01T00:00:00Z",
@@ -180,6 +181,8 @@ def test_post_test_timer_webhook_with_parsed_url_and_payload(
     args, kwargs = mock_calls[0]
     assert args[0] == "https://example.com/hook?length=120&message=hello%20world"
     assert kwargs["json"] == {
+        "action": "update",
+        "timerId": "timer-test-123",
         "length": "120",
         "message": "hello world",
         "recipeLink": "",

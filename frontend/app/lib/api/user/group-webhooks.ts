@@ -2,6 +2,7 @@ import { BaseCRUDAPI } from "../base/base-clients";
 import type { CreateWebhook, ReadWebhook } from "~/lib/api/types/household";
 
 export interface TimerWebhookTestPayload {
+  timerId?: string;
   length?: string;
   message?: string;
   recipeLink?: string;

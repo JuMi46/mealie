@@ -16,6 +16,7 @@ class WebhookType(enum.StrEnum):
 
 class TimerEvent(enum.StrEnum):
     started = "started"
+    updated = "updated"
     stopped = "stopped"
 
 
@@ -90,6 +91,7 @@ class ReadWebhook(SaveWebhook):
 
 
 class TimerWebhookTestIn(MealieModel):
+    timer_id: str = ""
     length: str = "300"
     message: str = "Test Webhook"
     recipe_link: str = ""

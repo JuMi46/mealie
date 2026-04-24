@@ -7,7 +7,7 @@
 
 export type GroupRecipeActionType = "link" | "post";
 export type WebhookType = "mealplan" | "timer";
-export type TimerEvent = "started" | "stopped";
+export type TimerEvent = "started" | "updated" | "stopped";
 
 export interface CreateGroupRecipeAction {
   actionType: GroupRecipeActionType;
@@ -35,10 +35,10 @@ export interface CreateWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime?: string;
-  timerEvent?: TimerEvent;
-  isDeepLink?: boolean;
-  userId?: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
 }
 export interface EmailInitationResponse {
   success: boolean;
@@ -223,10 +223,10 @@ export interface ReadWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime?: string;
-  timerEvent?: TimerEvent;
-  isDeepLink?: boolean;
-  userId?: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
   groupId: string;
   householdId: string;
   id: string;
@@ -306,10 +306,10 @@ export interface SaveWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime?: string;
-  timerEvent?: TimerEvent;
-  isDeepLink?: boolean;
-  userId?: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
   groupId: string;
   householdId: string;
 }
@@ -355,6 +355,7 @@ export interface IngredientUnit {
 }
 export interface IngredientUnitAlias {
   name: string;
+  [k: string]: unknown;
 }
 export interface CreateIngredientUnit {
   id?: string | null;
@@ -371,9 +372,11 @@ export interface CreateIngredientUnit {
   aliases?: CreateIngredientUnitAlias[];
   standardQuantity?: number | null;
   standardUnit?: string | null;
+  [k: string]: unknown;
 }
 export interface CreateIngredientUnitAlias {
   name: string;
+  [k: string]: unknown;
 }
 export interface IngredientFood {
   id: string;
@@ -392,6 +395,7 @@ export interface IngredientFood {
 }
 export interface IngredientFoodAlias {
   name: string;
+  [k: string]: unknown;
 }
 export interface MultiPurposeLabelSummary {
   name: string;
@@ -410,9 +414,11 @@ export interface CreateIngredientFood {
   labelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
+  [k: string]: unknown;
 }
 export interface CreateIngredientFoodAlias {
   name: string;
+  [k: string]: unknown;
 }
 export interface Recipe {
   id?: string | null;
@@ -450,18 +456,22 @@ export interface Recipe {
     [k: string]: unknown;
   } | null;
   comments?: RecipeCommentOut[] | null;
+  timersActive?: RecipeTimerActive[] | null;
+  [k: string]: unknown;
 }
 export interface RecipeCategory {
   id?: string | null;
   groupId?: string | null;
   name: string;
   slug: string;
+  [k: string]: unknown;
 }
 export interface RecipeTag {
   id?: string | null;
   groupId?: string | null;
   name: string;
   slug: string;
+  [k: string]: unknown;
 }
 export interface RecipeTool {
   id: string;
@@ -469,16 +479,38 @@ export interface RecipeTool {
   name: string;
   slug: string;
   householdsWithTool?: string[];
+  [k: string]: unknown;
 }
 export interface RecipeStep {
   id?: string | null;
   title?: string | null;
   summary?: string | null;
   text: string;
+  timers?: RecipeTimer[];
   ingredientReferences?: IngredientReferences[];
+  [k: string]: unknown;
+}
+export interface RecipeTimer {
+  id: string;
+  duration: number;
+  text?: string | null;
+  timersActive?: RecipeTimerActive[] | null;
+  [k: string]: unknown;
+}
+export interface RecipeTimerActive {
+  completeTime: string;
+  text?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
+  recipeId?: string | null;
+  recipeTimerId?: string | null;
+  id: string;
+  [k: string]: unknown;
 }
 export interface IngredientReferences {
   referenceId?: string | null;
+  [k: string]: unknown;
 }
 export interface Nutrition {
   calories?: string | null;
@@ -492,6 +524,7 @@ export interface Nutrition {
   sugarContent?: string | null;
   transFatContent?: string | null;
   unsaturatedFatContent?: string | null;
+  [k: string]: unknown;
 }
 export interface RecipeSettings {
   public?: boolean;
@@ -500,15 +533,18 @@ export interface RecipeSettings {
   landscapeView?: boolean;
   disableComments?: boolean;
   locked?: boolean;
+  [k: string]: unknown;
 }
 export interface RecipeAsset {
   name: string;
   icon: string;
   fileName?: string | null;
+  [k: string]: unknown;
 }
 export interface RecipeNote {
   title: string;
   text: string;
+  [k: string]: unknown;
 }
 export interface RecipeCommentOut {
   recipeId: string;
@@ -518,12 +554,14 @@ export interface RecipeCommentOut {
   updatedAt: string;
   userId: string;
   user: UserBase;
+  [k: string]: unknown;
 }
 export interface UserBase {
   id: string;
   username?: string | null;
   admin: boolean;
   fullName?: string | null;
+  [k: string]: unknown;
 }
 export interface ShoppingListAddRecipeParamsBulk {
   recipeIncrementQuantity?: number;
@@ -767,6 +805,14 @@ export interface ShoppingListUpdate {
   userId: string;
   id: string;
   listItems?: ShoppingListItemOut[];
+}
+export interface TimerWebhookTestIn {
+  timerId?: string;
+  length?: string;
+  message?: string;
+  recipeLink?: string;
+  completeTime?: string;
+  completeTimeInMs?: number | null;
 }
 export interface UpdateHousehold {
   groupId: string;

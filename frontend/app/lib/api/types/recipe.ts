@@ -261,7 +261,7 @@ export interface Recipe {
     [k: string]: unknown;
   } | null;
   comments?: RecipeCommentOut[] | null;
-  timersActive: RecipeTimerActiveOut[];
+  timersActive?: RecipeTimerActive[] | null;
 }
 export interface RecipeTool {
   id: string;
@@ -275,36 +275,24 @@ export interface RecipeStep {
   title?: string | null;
   summary?: string | null;
   text: string;
-  timers: RecipeTimer[];
+  timers?: RecipeTimer[];
   ingredientReferences?: IngredientReferences[];
 }
 export interface RecipeTimer {
-  id?: string | null;
+  id: string;
   duration: number;
   text?: string | null;
-  timersActive: RecipeTimerActiveOut[];
+  timersActive?: RecipeTimerActive[] | null;
 }
-export interface RecipeTimerActiveIn {
+export interface RecipeTimerActive {
   completeTime: string;
   text?: string | null;
-  recipeLink?: string | null;
-}
-export interface RecipeTimerActiveUpdate {
-  completeTime: string;
-}
-export interface RecipeTimerActiveDelete {
-  recipeLink?: string;
-}
-export interface RecipeTimerActiveOut {
-  id: string;
-  completeTime: string;
-  text?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
   recipeId?: string | null;
   recipeTimerId?: string | null;
-  householdId?: string | null;
-  groupId?: string | null;
-  userId: string;
-  user: UserBase;
+  id: string;
 }
 export interface RecipeAsset {
   name: string;
@@ -481,6 +469,26 @@ export interface RecipeTimelineEventUpdate {
   subject: string;
   eventMessage?: string | null;
   image?: TimelineEventImage | null;
+}
+export interface RecipeTimerActiveCreate {
+  completeTime: string;
+  text?: string | null;
+  recipeLink?: string | null;
+}
+export interface RecipeTimerActiveDelete {
+  recipeLink?: string | null;
+}
+export interface RecipeTimerActiveSave {
+  completeTime: string;
+  text?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
+  recipeId?: string | null;
+  recipeTimerId?: string | null;
+}
+export interface RecipeTimerActiveUpdate {
+  completeTime: string;
 }
 export interface RecipeToolCreate {
   name: string;

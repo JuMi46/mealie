@@ -6,7 +6,7 @@
 */
 
 export type WebhookType = "mealplan" | "timer";
-export type TimerEvent = "started" | "stopped";
+export type TimerEvent = "started" | "updated" | "stopped";
 export type AuthMethod = "Mealie" | "LDAP" | "OIDC";
 
 export interface ChangePassword {
@@ -72,9 +72,10 @@ export interface ReadWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
-  timerEvent?: TimerEvent;
-  userId?: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
   groupId: string;
   householdId: string;
   id: string;
@@ -190,9 +191,10 @@ export interface CreateWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime?: string;
-  timerEvent?: TimerEvent;
-  userId?: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
 }
 export interface UserBase {
   id?: string | null;

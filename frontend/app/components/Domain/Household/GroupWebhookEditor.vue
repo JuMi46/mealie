@@ -65,6 +65,11 @@
               :label="$t('general.message')"
               variant="underlined"
             />
+            <v-text-field
+              v-model="timerTestTimerId"
+              :label="$t('settings.webhooks.timer-id')"
+              variant="underlined"
+            />
 
             <p class="text-body-2 mb-1">
               {{ $t('settings.webhooks.parsed-webhook-url') }}
@@ -124,7 +129,14 @@ const emit = defineEmits<{
   delete: [id: string];
   save: [webhook: ReadWebhook];
   testMealplan: [id: string];
-  testTimer: [{ id: string; length?: string; message?: string; completeTime?: string; completeTimeInMs?: number }];
+  testTimer: [{
+    id: string;
+    timerId?: string;
+    length?: string;
+    message?: string;
+    completeTime?: string;
+    completeTimeInMs?: number;
+  }];
 }>();
 
 const i18n = useI18n();
@@ -149,6 +161,7 @@ const scheduledTime = computed({
 
 const timerEventOptions = computed(() => [
   { title: i18n.t("settings.webhooks.timer-event-started"), value: "started" as TimerEvent },
+  { title: i18n.t("settings.webhooks.timer-event-updated"), value: "updated" as TimerEvent },
   { title: i18n.t("settings.webhooks.timer-event-stopped"), value: "stopped" as TimerEvent },
 ]);
 
@@ -161,8 +174,19 @@ const timerUserOptions = computed(() =>
 
 const webhookCopy = ref({ ...props.webhook });
 const showTimerTestPanel = ref(false);
+const timerTestTimerId = ref("timer-1");
 const timerTestLength = ref("300");
 const timerTestMessage = ref("Test Webhook");
+
+const timerTestAction = computed<"create" | "update" | "delete">(() => {
+  if (webhookCopy.value.timerEvent === "updated") {
+    return "update";
+  }
+  if (webhookCopy.value.timerEvent === "stopped") {
+    return "delete";
+  }
+  return "create";
+});
 
 function getTimerTestCompleteTime(): string {
   const parsedSeconds = Number.parseInt(timerTestLength.value, 10);
@@ -184,7 +208,9 @@ watch(timerTestLength, () => {
   timerTestCompleteTimeInMs.value = getTimerTestCompleteTimeInMs();
 });
 
-const showTimerLength = computed(() => webhookCopy.value.timerEvent === "started");
+const showTimerLength = computed(
+  () => webhookCopy.value.timerEvent === "started" || webhookCopy.value.timerEvent === "updated",
+);
 
 const parsedWebhookUrl = computed(() => {
   const safeLength = showTimerLength.value ? encodeURIComponent(timerTestLength.value) : "";
@@ -197,6 +223,8 @@ const parsedWebhookUrl = computed(() => {
 
 const renderedWebhookPayload = computed(() => {
   const payload: Record<string, string | number> = {
+    action: timerTestAction.value,
+    timerId: timerTestTimerId.value,
     message: timerTestMessage.value,
   };
 
@@ -222,6 +250,7 @@ function handleTest() {
 
     emit("testTimer", {
       id: webhookCopy.value.id,
+      timerId: timerTestTimerId.value,
       length: showTimerLength.value ? timerTestLength.value : undefined,
       message: timerTestMessage.value,
       completeTime: timerTestCompleteTime.value,
