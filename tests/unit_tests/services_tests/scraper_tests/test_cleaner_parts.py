@@ -244,6 +244,23 @@ instruction_test_cases = (
         input="Instruction A\r\nInstruction B\r\nInstruction C\r\n",
         expected=None,
     ),
+)
+
+
+@pytest.mark.parametrize("instructions", instruction_test_cases, ids=(x.test_id for x in instruction_test_cases))
+def test_cleaner_instructions(instructions: CleanerCase):
+    reuslt = cleaner.clean_instructions(instructions.input)
+
+    expected = [
+        {"text": "Instruction A"},
+        {"text": "Instruction B"},
+        {"text": "Instruction C"},
+    ]
+
+    assert reuslt == expected
+
+
+timer_instruction_test_cases = (
     CleanerCase(
         test_id="parse timer (1)",
         input="Bake for 30 minutes",
@@ -272,17 +289,19 @@ instruction_test_cases = (
 )
 
 
-@pytest.mark.parametrize("instructions", instruction_test_cases, ids=(x.test_id for x in instruction_test_cases))
-def test_cleaner_instructions(instructions: CleanerCase):
-    reuslt = cleaner.clean_instructions(instructions.input)
+@pytest.mark.parametrize("case", timer_instruction_test_cases, ids=(x.test_id for x in timer_instruction_test_cases))
+def test_cleaner_instructions_timers(case: CleanerCase):
+    result = cleaner.clean_instructions(case.input)
 
-    expected = [
-        {"text": "Instruction A"},
-        {"text": "Instruction B"},
-        {"text": "Instruction C"},
-    ]
-
-    assert reuslt == expected
+    assert len(result) == len(case.expected)
+    for result_inst, expected_inst in zip(result, case.expected, strict=False):
+        assert result_inst["text"] == expected_inst["text"]
+        result_timers = result_inst.get("timers", [])
+        expected_timers = expected_inst.get("timers", [])
+        assert len(result_timers) == len(expected_timers)
+        for result_timer, expected_timer in zip(result_timers, expected_timers, strict=False):
+            assert result_timer["duration"] == expected_timer["duration"]
+            assert "id" in result_timer  # timer was assigned an id
 
 
 ingredients_test_cases = (

@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from mealie.schema.recipe.recipe import Recipe
 from mealie.schema.recipe.recipe_step import IngredientReferences
+from mealie.schema.recipe.recipe_timer import RecipeTimer
 from tests.utils import api_routes, jsonify
 from tests.utils.factories import random_int
 from tests.utils.fixture_schemas import TestUser
@@ -54,9 +55,8 @@ def test_timers_crud(api_client: TestClient, unique_user: TestUser, random_recip
 
     step_idx = random.randint(0, len(recipe.recipe_instructions) - 1)
     recipe.recipe_instructions[step_idx].timers = [
-        {"duration": random_int(), "text": "", "recipe_instruction_id": recipe.recipe_instructions[step_idx].id}
-        for _ in range(random_int(2, 5))
-    ]  # type: ignore
+        RecipeTimer(duration=random_int(), text="") for _ in range(random_int(2, 5))
+    ]
 
     response = api_client.put(
         api_routes.recipes_slug(recipe.slug),
@@ -66,8 +66,8 @@ def test_timers_crud(api_client: TestClient, unique_user: TestUser, random_recip
     assert response.status_code == 200
     # Check that timers were updated (compare durations since ids will be generated)
     response_timers = response.json()["recipeInstructions"][step_idx]["timers"]
-    assert len(response_timers) == len(recipe.recipe_instructions[step_idx].timers)
-    for i, timer in enumerate(recipe.recipe_instructions[step_idx].timers):
-        assert response_timers[i]["duration"] == timer["duration"]
-        assert response_timers[i]["text"] == timer["text"]
-    assert response.json()["recipeInstructions"][step_idx]["timers"] == recipe.recipe_instructions[step_idx].timers
+    expected_timers = recipe.recipe_instructions[step_idx].timers
+    assert len(response_timers) == len(expected_timers)
+    for response_timer, expected_timer in zip(response_timers, expected_timers, strict=False):
+        assert response_timer["duration"] == expected_timer.duration
+        assert response_timer["text"] == expected_timer.text
