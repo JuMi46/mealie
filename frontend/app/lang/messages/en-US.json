@@ -1356,6 +1356,8 @@
       "action-clean-temporary-files-description": "Removes all files and folders in the .temp directory",
       "action-clean-images-name": "Clean Images",
       "action-clean-images-description": "Removes all the images that don't end with .webp",
+      "action-parse-instruction-timers-name": "Parse Instruction Timers",
+      "action-parse-instruction-timers-description": "Parses all recipe instructions and adds timers only for instructions that do not already have timers",
       "actions-description": "Maintenance actions are {destructive_in_bold} and should be used with caution. Performing any of these actions is {irreversible_in_bold}.",
       "actions-description-destructive": "destructive",
       "actions-description-irreversible": "irreversible",
