@@ -638,10 +638,56 @@ function updateScreenActiveState() {
     : document.visibilityState === "visible";
 }
 
+function reconcileTimerCountdownsFromActives() {
+  if (!compTimers.value?.length) {
+    return;
+  }
+
+  compTimers.value.forEach((timer) => {
+    const sourceTimer = getSourceTimerById(timer.recipeTimerId);
+    if (!sourceTimer) {
+      return;
+    }
+
+    const allTimersActive = sourceTimer.timersActive ?? [];
+    const timersActive = showAllHouseholdTimersInRecipe.value
+      ? allTimersActive
+      : allTimersActive.filter(ta => ta.userId === currentUserId.value);
+
+    syncExistingTimerFromActives(timer, timersActive);
+  });
+}
+
+function onAppBecameActive() {
+  updateScreenActiveState();
+  if (!isScreenActive.value) {
+    return;
+  }
+
+  // Recalculate remaining values immediately from known active timers,
+  // then refresh from server for cross-device/background updates.
+  reconcileTimerCountdownsFromActives();
+  refreshActiveTimersFromServer();
+
+  const socket = timerActiveSocket.value;
+  if (!socket || socket.readyState === WebSocket.CLOSED || socket.readyState === WebSocket.CLOSING) {
+    connectTimerActiveSocket();
+  }
+}
+
+function onVisibilityChange() {
+  updateScreenActiveState();
+  if (isScreenActive.value) {
+    onAppBecameActive();
+  }
+}
+
 onMounted(() => {
   isComponentUnmounted.value = false;
   updateScreenActiveState();
-  document.addEventListener("visibilitychange", updateScreenActiveState);
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("focus", onAppBecameActive);
+  window.addEventListener("pageshow", onAppBecameActive);
 
   refreshActiveTimersFromServer();
   connectTimerActiveSocket();
@@ -661,7 +707,9 @@ onUnmounted(() => {
   isComponentUnmounted.value = true;
   timerThresholdWatcherStops.value.forEach(stop => stop());
   timerThresholdWatcherStops.value = [];
-  document.removeEventListener("visibilitychange", updateScreenActiveState);
+  document.removeEventListener("visibilitychange", onVisibilityChange);
+  window.removeEventListener("focus", onAppBecameActive);
+  window.removeEventListener("pageshow", onAppBecameActive);
 
   if (timerActiveSocketReconnectTimeout.value) {
     clearTimeout(timerActiveSocketReconnectTimeout.value);
