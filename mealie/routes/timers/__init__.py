@@ -232,7 +232,7 @@ class RecipeTimersActiveRoutes(BaseUserController):
             timer_event=TimerEvent.updated,
             length=_timer_length_from_complete_time(updated.complete_time),
             message=updated.text or "",
-            recipe_link="",
+            recipe_link=data.recipe_link or "",
             complete_time=updated.complete_time.isoformat(),
             complete_time_in_ms=int(updated.complete_time.timestamp() * 1000),
         )

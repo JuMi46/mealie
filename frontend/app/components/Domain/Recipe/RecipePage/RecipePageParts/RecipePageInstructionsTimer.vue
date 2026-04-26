@@ -539,8 +539,13 @@ function resolveTimerWebhookText(timer: ReturnType<typeof useTimer>) {
 
 function updateTimerActive(timer: ReturnType<typeof useTimer>) {
   if (!timer.recipeTimerActiveId) return;
+
+  const activeId = timer.recipeTimerActiveId;
+  const recipeLink = timerRecipeLinkByActiveId.value[activeId] || buildRecipeLink(timer.recipeTimerId || "", props.isCookMode);
+
   const updatedTimerActive: RecipeTimerActiveUpdate = {
     completeTime: new Date(Date.now() + timer.timerValue * 1000).toISOString(),
+    recipeLink,
   };
 
   userApi.recipes.timersActive.updateTimerActive(timer.recipeTimerActiveId, updatedTimerActive)
