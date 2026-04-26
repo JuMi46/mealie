@@ -71,3 +71,41 @@ def test_timers_crud(api_client: TestClient, unique_user: TestUser, random_recip
     for response_timer, expected_timer in zip(response_timers, expected_timers, strict=False):
         assert response_timer["duration"] == expected_timer.duration
         assert response_timer["text"] == expected_timer.text
+
+
+def test_parse_instruction_timers_for_recipe_without_save(
+    api_client: TestClient,
+    unique_user: TestUser,
+    random_recipe: Recipe,
+):
+    recipe = random_recipe
+
+    response_before = api_client.get(api_routes.recipes_slug(recipe.slug), headers=unique_user.token)
+    assert response_before.status_code == 200
+    before_data = response_before.json()
+
+    assert before_data["recipeInstructions"]
+    step_index = 0
+    before_timer_count = len(before_data["recipeInstructions"][step_index]["timers"])
+
+    response_parse = api_client.post(
+        f"/api/recipes/{recipe.slug}/parse-instruction-timers",
+        json={"steps": [{"index": step_index, "text": "Simmer for 5 minutes and rest for 1 hour."}]},
+        headers=unique_user.token,
+    )
+
+    assert response_parse.status_code == 200
+    parsed_data = response_parse.json()
+    assert parsed_data["steps"]
+    assert parsed_data["steps"][0]["index"] == step_index
+    parsed_durations = [timer["duration"] for timer in parsed_data["steps"][0]["timers"]]
+    assert 300 in parsed_durations
+    assert 3600 in parsed_durations
+
+    response_after = api_client.get(api_routes.recipes_slug(recipe.slug), headers=unique_user.token)
+    assert response_after.status_code == 200
+    after_data = response_after.json()
+    after_timer_count = len(after_data["recipeInstructions"][step_index]["timers"])
+
+    # Endpoint parses from provided text only and does not persist recipe timers.
+    assert after_timer_count == before_timer_count

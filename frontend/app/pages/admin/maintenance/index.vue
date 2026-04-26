@@ -209,6 +209,12 @@ async function handleCleanTemp() {
   state.actionLoading = false;
 }
 
+async function handleParseInstructionTimers() {
+  state.actionLoading = true;
+  await adminApi.maintenance.parseInstructionTimers();
+  state.actionLoading = false;
+}
+
 const actions = [
   {
     name: i18n.t("admin.maintenance.action-clean-directories-name"),
@@ -224,6 +230,11 @@ const actions = [
     name: i18n.t("admin.maintenance.action-clean-images-name"),
     handler: handleCleanImages,
     subtitle: i18n.t("admin.maintenance.action-clean-images-description"),
+  },
+  {
+    name: i18n.t("admin.maintenance.action-parse-instruction-timers-name"),
+    handler: handleParseInstructionTimers,
+    subtitle: i18n.t("admin.maintenance.action-parse-instruction-timers-description"),
   },
 ];
 </script>

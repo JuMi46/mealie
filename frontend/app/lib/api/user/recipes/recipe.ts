@@ -8,6 +8,7 @@ import { TimersActiveApi } from "./recipe-timers-active";
 import type {
   Recipe,
   CreateRecipe,
+  RecipeTimer,
   RecipeAsset,
   CreateRecipeByUrlBulk,
   ParsedIngredient,
@@ -59,7 +60,26 @@ const routes = {
   recipesSlugLastMade: (slug: string) => `${prefix}/recipes/${slug}/last-made`,
   recipesTimelineEventId: (id: string) => `${prefix}/recipes/timeline/events/${id}`,
   recipesTimelineEventIdImage: (id: string) => `${prefix}/recipes/timeline/events/${id}/image`,
+  recipesParseInstructionTimers: (slug: string) => `${prefix}/recipes/${slug}/parse-instruction-timers`,
 };
+
+export interface ParseInstructionTimersStepIn {
+  index: number;
+  text: string;
+}
+
+export interface ParseInstructionTimersIn {
+  steps: ParseInstructionTimersStepIn[];
+}
+
+export interface ParseInstructionTimersStepOut {
+  index: number;
+  timers: RecipeTimer[];
+}
+
+export interface ParseInstructionTimersOut {
+  steps: ParseInstructionTimersStepOut[];
+}
 
 export type RecipeSearchQuery = {
   search?: string;
@@ -241,6 +261,10 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
   async parseIngredient(parser: Parser, ingredient: string) {
     parser = parser || "nlp";
     return await this.requests.post<ParsedIngredient>(routes.recipesParseIngredient, { parser, ingredient });
+  }
+
+  async parseInstructionTimers(slug: string, payload: ParseInstructionTimersIn) {
+    return await this.requests.post<ParseInstructionTimersOut>(routes.recipesParseInstructionTimers(slug), payload);
   }
 
   async updateMany(payload: Recipe[]) {

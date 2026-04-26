@@ -2,7 +2,7 @@ import asyncio
 from collections import defaultdict
 from collections.abc import AsyncIterable
 from shutil import copyfileobj
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import orjson
 import sqlalchemy
@@ -20,7 +20,7 @@ from fastapi import (
 )
 from fastapi.datastructures import UploadFile
 from fastapi.sse import EventSourceResponse, ServerSentEvent
-from pydantic import UUID4
+from pydantic import UUID4, BaseModel
 from slugify import slugify
 
 from mealie.core import exceptions
@@ -43,6 +43,7 @@ from mealie.schema.recipe.recipe import (
 from mealie.schema.recipe.recipe_asset import RecipeAsset
 from mealie.schema.recipe.recipe_scraper import ScrapeRecipeTest
 from mealie.schema.recipe.recipe_suggestion import RecipeSuggestionQuery, RecipeSuggestionResponse
+from mealie.schema.recipe.recipe_timer import RecipeTimer
 from mealie.schema.recipe.request_helpers import (
     RecipeDuplicate,
     UpdateImageResponse,
@@ -64,6 +65,7 @@ from mealie.services.event_bus_service.event_types import (
     EventRecipeData,
     EventTypes,
 )
+from mealie.services.parser_services.parser_utils.duration_parser import DurationParser
 from mealie.services.recipe.recipe_data_service import (
     InvalidDomainError,
     NotAnImageError,
@@ -81,6 +83,24 @@ from mealie.services.scraper.scraper_strategies import (
 from ._base import BaseRecipeController, JSONBytes
 
 router = UserAPIRouter(prefix="/recipes", route_class=MealieCrudRoute)
+
+
+class ParseInstructionTimersStepIn(BaseModel):
+    index: int
+    text: str
+
+
+class ParseInstructionTimersIn(BaseModel):
+    steps: list[ParseInstructionTimersStepIn]
+
+
+class ParseInstructionTimersStepOut(BaseModel):
+    index: int
+    timers: list[RecipeTimer]
+
+
+class ParseInstructionTimersOut(BaseModel):
+    steps: list[ParseInstructionTimersStepOut]
 
 
 @controller(router)
@@ -419,6 +439,34 @@ class RecipeController(BaseRecipeController):
             return None
 
         return recipe
+
+    @router.post("/{slug}/parse-instruction-timers", response_model=ParseInstructionTimersOut)
+    def parse_instruction_timers(self, slug: str, data: ParseInstructionTimersIn) -> ParseInstructionTimersOut:
+        """
+        Parse timer durations from instruction text provided by the client for a single recipe.
+        This endpoint does not persist any data.
+        """
+        # Ensure the recipe exists and the user has access to it.
+        self.service.get_one(slug)
+
+        duration_parser = DurationParser()
+        parsed_steps: list[ParseInstructionTimersStepOut] = []
+
+        for step in data.steps:
+            step_text = step.text.strip()
+            if not step_text:
+                continue
+
+            durations = duration_parser.get_all_durations(step_text)
+            if not durations:
+                continue
+
+            timers = [
+                RecipeTimer(id=uuid4(), duration=int(duration), text=None, timers_active=[]) for duration in durations
+            ]
+            parsed_steps.append(ParseInstructionTimersStepOut(index=step.index, timers=timers))
+
+        return ParseInstructionTimersOut(steps=parsed_steps)
 
     @router.post("", status_code=201, response_model=str)
     def create_one(self, data: CreateRecipe) -> str | None:

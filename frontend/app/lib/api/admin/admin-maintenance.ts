@@ -12,6 +12,7 @@ const routes = {
   cleanImages: `${prefix}/admin/maintenance/clean/images`,
   cleanRecipeFolders: `${prefix}/admin/maintenance/clean/recipe-folders`,
   cleanLogFile: `${prefix}/admin/maintenance/clean/logs`,
+  parseInstructionTimers: `${prefix}/admin/maintenance/parse/instruction-timers`,
 };
 
 export class AdminMaintenanceApi extends BaseAPI {
@@ -37,6 +38,10 @@ export class AdminMaintenanceApi extends BaseAPI {
 
   async cleanLogFile() {
     return await this.requests.post<SuccessResponse>(routes.cleanLogFile, {});
+  }
+
+  async parseInstructionTimers() {
+    return await this.requests.post<SuccessResponse>(routes.parseInstructionTimers, {});
   }
 
   async logs(lines: number) {

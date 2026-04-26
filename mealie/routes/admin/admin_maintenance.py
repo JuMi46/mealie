@@ -3,12 +3,16 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import orm
 
+from mealie.db.models.recipe.instruction import RecipeInstruction
+from mealie.db.models.recipe.timer import RecipeTimerModel
 from mealie.pkgs.stats import fs_stats
 from mealie.routes._base import BaseAdminController, controller
 from mealie.schema.admin import MaintenanceSummary
 from mealie.schema.admin.maintenance import MaintenanceStorageDetails
 from mealie.schema.response import ErrorResponse, SuccessResponse
+from mealie.services.parser_services.parser_utils.duration_parser import DurationParser
 
 router = APIRouter(prefix="/maintenance")
 
@@ -119,3 +123,60 @@ class AdminMaintenanceController(BaseAdminController):
             return SuccessResponse.respond(f"{cleaned_dirs} Recipe folders removed")
         except Exception as e:
             raise HTTPException(status_code=500, detail=ErrorResponse.respond("Failed to clean directories")) from e
+
+    @router.post("/parse/instruction-timers", response_model=SuccessResponse)
+    def parse_instruction_timers(self):
+        """
+        Parse and add instruction timers for instructions that do not already have timers.
+        Safe to run multiple times without creating duplicates per instruction.
+        """
+        try:
+            duration_parser = DurationParser()
+            created_timers = 0
+            parsed_instructions = 0
+            skipped_instructions = 0
+
+            instructions = (
+                self.session.query(RecipeInstruction)
+                .options(orm.selectinload(RecipeInstruction.timers))
+                .filter(RecipeInstruction.text.isnot(None), RecipeInstruction.text != "")
+                .all()
+            )
+
+            timers_to_create: list[RecipeTimerModel] = []
+            for instruction in instructions:
+                if instruction.timers:
+                    skipped_instructions += 1
+                    continue
+
+                timers = duration_parser.get_all_durations(instruction.text or "")
+                if not timers:
+                    continue
+
+                parsed_instructions += 1
+                for timer in timers:
+                    timers_to_create.append(
+                        RecipeTimerModel(
+                            id=uuid.uuid4(),
+                            duration=int(timer),
+                            text=None,
+                            recipe_instruction_id=instruction.id,
+                            session=self.session,
+                        )
+                    )
+                    created_timers += 1
+
+            if timers_to_create:
+                self.session.add_all(timers_to_create)
+                self.session.commit()
+
+            return SuccessResponse.respond(
+                f"Added {created_timers} timers across {parsed_instructions} instructions; "
+                f"skipped {skipped_instructions} instructions that already had timers"
+            )
+        except Exception as e:
+            self.session.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=ErrorResponse.respond("Failed to parse instruction timers"),
+            ) from e
