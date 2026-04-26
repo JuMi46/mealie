@@ -489,6 +489,7 @@ export interface RecipeTimerActiveSave {
 }
 export interface RecipeTimerActiveUpdate {
   completeTime: string;
+  recipeLink?: string | null;
 }
 export interface RecipeToolCreate {
   name: string;

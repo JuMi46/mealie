@@ -13,6 +13,7 @@ class RecipeTimerActiveCreate(MealieModel):
 
 class RecipeTimerActiveUpdate(MealieModel):
     complete_time: datetime.datetime
+    recipe_link: str | None = None
 
 
 class RecipeTimerActiveDelete(MealieModel):
