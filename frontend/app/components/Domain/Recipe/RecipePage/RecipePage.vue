@@ -90,6 +90,9 @@
                 :scale="scale"
               />
               <div v-if="isEditForm" class="d-flex">
+                <BaseButton class="my-2 mr-1" :disabled="isParsingTimers" @click="parseTimersForRecipe">
+                  {{ $t("recipe.parse-timers") }}
+                </BaseButton>
                 <RecipeDialogBulkAdd class="ml-auto my-2 mr-1" @bulk-data="addStep" />
                 <BaseButton class="my-2" @click="addStep()">
                   {{ $t("general.add") }}
@@ -213,6 +216,7 @@ import {
 } from "~/composables/recipe-page/shared-state";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import type { Recipe, RecipeCategory, RecipeIngredient, RecipeTag, RecipeTool } from "~/lib/api/types/recipe";
+import type { ParseInstructionTimersStepOut } from "~/lib/api/user/recipes/recipe";
 import { useRouteQuery } from "~/composables/use-router";
 import { useUserApi } from "~/composables/api";
 import { uuid4, deepCopy } from "~/composables/use-utils";
@@ -427,6 +431,44 @@ function addStep(steps: Array<string> | null = null) {
       timers: [],
     });
   }
+}
+
+const isParsingTimers = ref(false);
+
+async function parseTimersForRecipe() {
+  if (!recipe.value.recipeInstructions?.length || isParsingTimers.value) {
+    return;
+  }
+
+  const stepsToParse = recipe.value.recipeInstructions
+    .map((step, index) => ({
+      index,
+      text: step.text?.trim() ?? "",
+      hasTimers: !!step.timers?.length,
+    }))
+    .filter(step => !step.hasTimers && step.text.length > 0)
+    .map(({ index, text }) => ({ index, text }));
+
+  if (!stepsToParse.length) {
+    return;
+  }
+
+  isParsingTimers.value = true;
+  const { data } = await api.recipes.parseInstructionTimers(recipe.value.slug, { steps: stepsToParse });
+  isParsingTimers.value = false;
+
+  if (!data?.steps?.length || !recipe.value.recipeInstructions) {
+    return;
+  }
+
+  // Merge into current unsaved state and avoid duplicates by re-checking each step.
+  data.steps.forEach((parsedStep: ParseInstructionTimersStepOut) => {
+    const targetStep = recipe.value.recipeInstructions?.[parsedStep.index];
+    if (!targetStep || (targetStep.timers && targetStep.timers.length > 0) || parsedStep.timers.length === 0) {
+      return;
+    }
+    targetStep.timers = [...(targetStep.timers ?? []), ...parsedStep.timers];
+  });
 }
 
 /** =============================================================
