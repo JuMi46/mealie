@@ -51,6 +51,12 @@
         </v-tooltip>
       </div>
 
+      <RecipeTimerMenu
+        fab
+        color="info"
+        class="ml-1"
+      />
+
       <RecipeContextMenu
         show-print
         :menu-top="false"
@@ -103,6 +109,7 @@
 import RecipeContextMenu from "./RecipeContextMenu/RecipeContextMenu.vue";
 import RecipeFavoriteBadge from "./RecipeFavoriteBadge.vue";
 import RecipeTimelineBadge from "./RecipeTimelineBadge.vue";
+import RecipeTimerMenu from "./RecipeTimerMenu.vue";
 import { usePageState } from "~/composables/recipe-page/shared-state";
 import type { Recipe } from "~/lib/api/types/recipe";
 

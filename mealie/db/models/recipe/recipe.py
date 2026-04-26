@@ -15,6 +15,7 @@ from mealie.db.models._model_utils.auto_init import auto_init
 from mealie.db.models._model_utils.datetime import NaiveDateTime, get_utc_today
 from mealie.db.models._model_utils.guid import GUID
 from mealie.db.models.recipe.ingredient import RecipeIngredientModel
+from mealie.db.models.recipe.timer_active import RecipeTimerActiveModel
 
 from .._model_base import BaseMixins, SqlAlchemyBase
 from ..household.household_to_recipe import HouseholdToRecipe
@@ -149,6 +150,10 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
         "Household", secondary=HouseholdToRecipe.__tablename__, back_populates="made_recipes"
     )
 
+    timers_active: Mapped[list["RecipeTimerActiveModel"]] = orm.relationship(
+        "RecipeTimerActiveModel", cascade="all, delete-orphan", single_parent=True
+    )
+
     # Shopping List Refs
     shopping_list_refs: Mapped[list["ShoppingListRecipeReference"]] = orm.relationship(
         "ShoppingListRecipeReference",
@@ -170,8 +175,6 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
             "assets",
             "notes",
             "nutrition",
-            "recipe_ingredient",
-            "recipe_instructions",
             "settings",
             "comments",
             "timeline_events",
@@ -197,18 +200,10 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
         assets: list | None = None,
         notes: list[dict] | None = None,
         nutrition: dict | None = None,
-        recipe_ingredient: list[dict] | None = None,
-        recipe_instructions: list[dict] | None = None,
         settings: dict | None = None,
         **_,
     ) -> None:
         self.nutrition = Nutrition(**(nutrition or {}))
-
-        if recipe_instructions is not None:
-            self.recipe_instructions = [RecipeInstruction(**step, session=session) for step in recipe_instructions]
-
-        if recipe_ingredient is not None:
-            self.recipe_ingredient = [RecipeIngredientModel(**ingr, session=session) for ingr in recipe_ingredient]
 
         if assets:
             self.assets = [RecipeAsset(**a) for a in assets]

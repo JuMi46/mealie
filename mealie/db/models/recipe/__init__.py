@@ -11,4 +11,6 @@ from .recipe_timeline import *
 from .settings import *
 from .shared import *
 from .tag import *
+from .timer import *
+from .timer_active import *
 from .tool import *

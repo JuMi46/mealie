@@ -93,6 +93,16 @@ def handle_one_to_many_list(
         elif isinstance(elem, dict):
             for key, value in elem.items():
                 if key not in cfg.exclude:
+                    if key in relation_cls.__mapper__.relationships:
+                        rel_prop = relation_cls.__mapper__.relationships[key]
+
+                        if rel_prop.direction == ONETOMANY and rel_prop.uselist and isinstance(value, list):
+                            nested_cls: type[SqlAlchemyBase] = rel_prop.mapper.entity
+                            nested_get_attr = get_lookup_attr(nested_cls)
+                            nested_instances = handle_one_to_many_list(session, nested_get_attr, nested_cls, value)
+                            setattr(existing_elem, key, nested_instances)
+                            continue
+
                     setattr(existing_elem, key, value)
 
         updated_elems.append(existing_elem)

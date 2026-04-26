@@ -229,7 +229,17 @@ class RecipeScraperPackage(ABCScraperStrategy):
             self.logger.debug(f"Cleaned Instructions: (Type: {type(instruction_as_text)}) \n {instruction_as_text}")
 
             try:
-                return [RecipeStep(title="", text=x.get("text")) for x in instruction_as_text]
+                return [
+                    RecipeStep(
+                        title="",
+                        text=x.get("text"),
+                        timers=[
+                            timer["duration"] if isinstance(timer, dict) else int(timer)
+                            for timer in x.get("timers", [])
+                        ],
+                    )
+                    for x in instruction_as_text
+                ]
             except TypeError:
                 return []
 

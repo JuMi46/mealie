@@ -260,6 +260,50 @@ def test_cleaner_instructions(instructions: CleanerCase):
     assert reuslt == expected
 
 
+timer_instruction_test_cases = (
+    CleanerCase(
+        test_id="parse timer (1)",
+        input="Bake for 30 minutes",
+        expected=[{"text": "Bake for 30 minutes", "timers": [{"duration": 1800}]}],
+    ),
+    CleanerCase(
+        test_id="parse timer (2)",
+        input="Bake for one hour",
+        expected=[{"text": "Bake for one hour", "timers": [{"duration": 3600}]}],
+    ),
+    CleanerCase(
+        test_id="parse multiple timers",
+        input="Bake for 1 hour, then let sit for 30 minutes",
+        expected=[
+            {
+                "text": "Bake for 1 hour, then let sit for 30 minutes",
+                "timers": [{"duration": 3600}, {"duration": 1800}],
+            }
+        ],
+    ),
+    CleanerCase(
+        test_id="parse timer range",
+        input="Bake for 1-2 hours, until golden brown",
+        expected=[{"text": "Bake for 1-2 hours, until golden brown", "timers": [{"duration": 7200}]}],
+    ),
+)
+
+
+@pytest.mark.parametrize("case", timer_instruction_test_cases, ids=(x.test_id for x in timer_instruction_test_cases))
+def test_cleaner_instructions_timers(case: CleanerCase):
+    result = cleaner.clean_instructions(case.input)
+
+    assert len(result) == len(case.expected)
+    for result_inst, expected_inst in zip(result, case.expected, strict=False):
+        assert result_inst["text"] == expected_inst["text"]
+        result_timers = result_inst.get("timers", [])
+        expected_timers = expected_inst.get("timers", [])
+        assert len(result_timers) == len(expected_timers)
+        for result_timer, expected_timer in zip(result_timers, expected_timers, strict=False):
+            assert result_timer["duration"] == expected_timer["duration"]
+            assert "id" in result_timer  # timer was assigned an id
+
+
 ingredients_test_cases = (
     CleanerCase(
         input="",

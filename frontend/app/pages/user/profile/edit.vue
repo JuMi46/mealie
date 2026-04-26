@@ -184,7 +184,29 @@
             persistent-hint
           />
           <v-checkbox
+            v-model="userCopy.showAnnouncements"
+            hide-details
+            :label="$t('announcements.show-announcements-from-mealie')"
+            color="primary"
+            @change="updateUser"
+          />
+          <v-checkbox
+            v-model="userCopy.showAllHouseholdTimersInRecipe"
+            hide-details
+            :label="$t('timer.show-all-household-timers-in-recipe')"
+            color="primary"
+            @change="updateUser"
+          />
+          <v-checkbox
+            v-model="userCopy.showAllHouseholdTimers"
+            hide-details
+            :label="$t('timer.show-all-household-timers')"
+            color="primary"
+            @change="updateUser"
+          />
+          <v-checkbox
             v-model="userCopy.advanced"
+            hide-details
             :label="$t('profile.show-advanced-description')"
             color="primary"
             @change="updateUser"
@@ -268,6 +290,9 @@ async function updateUser() {
     admin: userData.admin,
     group: userData.group,
     household: userData.household,
+    showAnnouncements: userData.showAnnouncements,
+    showAllHouseholdTimersInRecipe: userData.showAllHouseholdTimersInRecipe,
+    showAllHouseholdTimers: userData.showAllHouseholdTimers,
     advanced: userData.advanced,
     canInvite: userData.canInvite,
     canManage: userData.canManage,

@@ -4,6 +4,7 @@ import { BaseCRUDAPI } from "../../base/base-clients";
 import { route } from "../../base";
 import { CommentsApi } from "./recipe-comments";
 import { RecipeShareApi } from "./recipe-share";
+import { TimersActiveApi } from "./recipe-timers-active";
 import type {
   Recipe,
   CreateRecipe,
@@ -96,12 +97,14 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
 
   comments: CommentsApi;
   share: RecipeShareApi;
+  timersActive: TimersActiveApi;
 
   constructor(requests: ApiRequestInstance) {
     super(requests);
 
     this.comments = new CommentsApi(requests);
     this.share = new RecipeShareApi(requests);
+    this.timersActive = new TimersActiveApi(requests);
   }
 
   async search(rsq: RecipeSearchQuery) {

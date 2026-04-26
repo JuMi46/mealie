@@ -116,6 +116,15 @@ class UserBase(MealieModel):
     household: str | None = None
     advanced: bool = False
 
+    # Announcements
+    show_announcements: bool = True
+    last_read_announcement: str | None = None
+
+    # Timers
+    show_all_household_timers_in_recipe: bool = False
+    show_all_household_timers: bool = False
+
+    # Permissions
     can_invite: bool = False
     can_manage: bool = False
     can_manage_household: bool = False

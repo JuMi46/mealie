@@ -98,6 +98,7 @@
     "dashboard": "Dashboard",
     "delete": "Delete",
     "disabled": "Disabled",
+    "done": "Done",
     "download": "Download",
     "duplicate": "Duplicate",
     "edit": "Edit",
@@ -596,6 +597,18 @@
     "increase-scale-label": "Increase Scale by 1",
     "locked": "Locked",
     "public-link": "Public Link",
+    "timer": {
+      "kitchen-timer": "Kitchen Timer",
+      "start-timer": "Start Timer",
+      "pause-timer": "Pause Timer",
+      "resume-timer": "Resume Timer",
+      "stop-timer": "Stop Timer",
+      "add-timer": "Add Timer",
+      "pause": "Pause",
+      "continue": "Continue",
+      "minute": "minute",
+      "minutes": "minutes"
+    },
     "edit-timeline-event": "Edit Timeline Event",
     "timeline": "Timeline",
     "timeline-is-empty": "Nothing on the timeline yet. Try making this recipe!",
@@ -864,7 +877,23 @@
       "webhooks-caps": "WEBHOOKS",
       "webhooks": "Webhooks",
       "webhook-name": "Webhook Name",
-      "description": "The webhooks defined below will be executed when a meal is defined for the day. At the scheduled time the webhooks will be sent with the data from the recipe that is scheduled for the day. Note that webhook execution is not exact. The webhooks are executed on a 5 minutes interval so the webhooks will be executed within 5 +/- minutes of the scheduled."
+      "description": "The webhooks defined below will be executed when a meal is defined for the day. At the scheduled time the webhooks will be sent with the data from the recipe that is scheduled for the day. Note that webhook execution is not exact. The webhooks are executed on a 5 minutes interval so the webhooks will be executed within 5 +/- minutes of the scheduled.",
+      "mealplan-webhooks": "Mealplan Webhooks",
+      "timer-webhooks": "Timer Webhooks",
+      "timer-event": "Timer Event",
+      "deep-link": "Deep Link",
+      "deep-link-hint": "Send a deep-link URL instead of the standard webhook payload",
+      "action": "Action",
+      "action-create": "Create",
+      "action-update": "Update",
+      "action-delete": "Delete",
+      "timer-id": "Timer ID",
+      "timer-length": "Length",
+      "parsed-webhook-url": "Parsed Webhook URL",
+      "webhook-payload-preview": "Webhook Payload Preview",
+      "timer-event-started": "Timer Started",
+      "timer-event-updated": "Timer Updated",
+      "timer-event-stopped": "Timer Stopped"
     },
     "bug-report": "Bug Report",
     "bug-report-information": "Use this information to report a bug. Providing details of your instance to developers is the best way to get your issues resolved quickly.",
@@ -1401,6 +1430,7 @@
     "members": "Members",
     "members-description": "See who's in your household and manage their permissions.",
     "webhooks-description": "Set up webhooks that trigger on days that you have mealplans scheduled.",
+    "timer-webhooks-description": "Set up webhooks that trigger on timer events.",
     "notifiers": "Notifiers",
     "notifiers-description": "Set up email and push notifications that trigger on specific events.",
     "manage-data": "Manage Data",
@@ -1419,6 +1449,7 @@
     "manage-cookbooks": "Manage Cookbooks",
     "manage-members": "Manage Members",
     "manage-webhooks": "Manage Webhooks",
+    "manage-timer-webhooks": "Manage Timer Webhooks",
     "manage-notifiers": "Manage Notifiers",
     "manage-data-migrations": "Manage Data Migrations"
   },
@@ -1475,5 +1506,22 @@
     "no-whitespace": "No Whitespace Allowed",
     "min-length": "Must Be At Least {min} Characters",
     "max-length": "Must Be At Most {max} Character|Must Be At Most {max} Characters"
+  },
+  "announcements": {
+    "announcements": "Announcements",
+    "all-announcements": "All announcements",
+    "mark-all-as-read": "Mark All as Read",
+    "show-announcements-from-mealie": "Show announcements from Mealie",
+    "show-announcements-setting-description": "Whether or not you want to allow users to see announcements from Mealie. When enabled users can still opt-out from seeing them in their user settings"
+  },
+  "timer": {
+    "timer-index": "Timer: {index}",
+    "step-title-and-timer-title": "{stepTitle} - {timerTitle}",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "seconds": "Seconds",
+    "text": "Text",
+    "show-all-household-timers-in-recipe": "Show all household timers in recipe",
+    "show-all-household-timers": "Show all household timers"
   }
 }

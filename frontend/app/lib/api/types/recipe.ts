@@ -276,6 +276,7 @@ export interface Recipe {
     [k: string]: unknown;
   } | null;
   comments?: RecipeCommentOut[] | null;
+  timersActive?: RecipeTimerActive[] | null;
 }
 export interface RecipeTool {
   id: string;
@@ -294,7 +295,24 @@ export interface RecipeStep {
   title?: string | null;
   summary?: string | null;
   text: string;
+  timers?: RecipeTimer[];
   ingredientReferences?: IngredientReferences[];
+}
+export interface RecipeTimer {
+  id: string;
+  duration: number;
+  text?: string | null;
+  timersActive?: RecipeTimerActive[] | null;
+}
+export interface RecipeTimerActive {
+  completeTime: string;
+  text?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
+  recipeId?: string | null;
+  recipeTimerId?: string | null;
+  id: string;
 }
 export interface RecipeAsset {
   name: string;
@@ -471,6 +489,26 @@ export interface RecipeTimelineEventUpdate {
   subject: string;
   eventMessage?: string | null;
   image?: TimelineEventImage | null;
+}
+export interface RecipeTimerActiveCreate {
+  completeTime: string;
+  text?: string | null;
+  recipeLink?: string | null;
+}
+export interface RecipeTimerActiveDelete {
+  recipeLink?: string | null;
+}
+export interface RecipeTimerActiveSave {
+  completeTime: string;
+  text?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
+  recipeId?: string | null;
+  recipeTimerId?: string | null;
+}
+export interface RecipeTimerActiveUpdate {
+  completeTime: string;
 }
 export interface RecipeToolCreate {
   name: string;

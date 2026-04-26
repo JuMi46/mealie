@@ -33,6 +33,7 @@ from mealie.db.models.recipe.recipe import RecipeModel
 from mealie.db.models.recipe.recipe_timeline import RecipeTimelineEvent
 from mealie.db.models.recipe.shared import RecipeShareTokenModel
 from mealie.db.models.recipe.tag import Tag
+from mealie.db.models.recipe.timer_active import RecipeTimerActiveModel
 from mealie.db.models.recipe.tool import Tool
 from mealie.db.models.users import LongLiveToken, User
 from mealie.db.models.users.password_reset import PasswordResetModel
@@ -66,6 +67,7 @@ from mealie.schema.recipe.recipe_category import CategoryOut, TagOut
 from mealie.schema.recipe.recipe_ingredient import IngredientFood, IngredientUnit
 from mealie.schema.recipe.recipe_share_token import RecipeShareToken
 from mealie.schema.recipe.recipe_timeline_events import RecipeTimelineEventOut
+from mealie.schema.recipe.recipe_timer_active import RecipeTimerActive
 from mealie.schema.reports.reports import ReportEntryOut, ReportOut
 from mealie.schema.user import GroupInDB, LongLiveTokenInDB, PrivateUser
 from mealie.schema.user.user import UserRatingOut
@@ -381,4 +383,15 @@ class AllRepositories:
     def webhooks(self) -> HouseholdRepositoryGeneric[ReadWebhook, GroupWebhooksModel]:
         return HouseholdRepositoryGeneric(
             self.session, PK_ID, GroupWebhooksModel, ReadWebhook, group_id=self.group_id, household_id=self.household_id
+        )
+
+    @cached_property
+    def recipe_timers_active(self) -> HouseholdRepositoryGeneric[RecipeTimerActive, RecipeTimerActiveModel]:
+        return HouseholdRepositoryGeneric(
+            self.session,
+            PK_ID,
+            RecipeTimerActiveModel,
+            RecipeTimerActive,
+            group_id=self.group_id,
+            household_id=self.household_id,
         )

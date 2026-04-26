@@ -351,11 +351,16 @@ type BooleanString = "true" | "false" | "";
 
 const paramsEdit = useRouteQuery<BooleanString>("edit", "");
 const paramsParse = useRouteQuery<BooleanString>("parse", "");
+const paramsCookMode = useRouteQuery<BooleanString>("isCookMode", "");
 const paramsServings = useRouteQuery<BooleanString>("servings", "");
 
 onMounted(() => {
   if (paramsEdit.value === "true" && isOwnGroup.value) {
     setMode(PageMode.EDIT);
+  }
+
+  if (paramsCookMode.value === "true") {
+    setMode(PageMode.COOK);
   }
 
   if (paramsParse.value === "true" && isOwnGroup.value) {
@@ -443,7 +448,7 @@ function addStep(steps: Array<string> | null = null) {
 
   if (steps) {
     const cleanedSteps = steps.map((step) => {
-      return { id: uuid4(), text: step, title: "", summary: "", ingredientReferences: [] };
+      return { id: uuid4(), text: step, title: "", summary: "", ingredientReferences: [], timers: [] };
     });
 
     recipe.value.recipeInstructions.push(...cleanedSteps);
@@ -455,6 +460,7 @@ function addStep(steps: Array<string> | null = null) {
       title: "",
       summary: "",
       ingredientReferences: [],
+      timers: [],
     });
   }
 }

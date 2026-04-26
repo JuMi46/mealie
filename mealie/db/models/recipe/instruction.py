@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from pydantic import ConfigDict
 from sqlalchemy import ForeignKey, Integer, String, orm
 from sqlalchemy.orm import Mapped, mapped_column
@@ -5,6 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .._model_base import BaseMixins, SqlAlchemyBase
 from .._model_utils.auto_init import auto_init
 from .._model_utils.guid import GUID
+
+if TYPE_CHECKING:
+    from .timer import RecipeTimerModel
 
 
 class RecipeIngredientRefLink(SqlAlchemyBase, BaseMixins):
@@ -26,10 +31,13 @@ class RecipeInstruction(SqlAlchemyBase):
     title: Mapped[str | None] = mapped_column(String)  # This is the section title
     text: Mapped[str | None] = mapped_column(String)
     summary: Mapped[str | None] = mapped_column(String)
-
     ingredient_references: Mapped[list[RecipeIngredientRefLink]] = orm.relationship(
         RecipeIngredientRefLink, cascade="all, delete-orphan"
     )
+    timers: Mapped[list["RecipeTimerModel"]] = orm.relationship(
+        "RecipeTimerModel", cascade="all, delete-orphan", single_parent=True
+    )
+
     model_config = ConfigDict(
         exclude={
             "id",

@@ -327,6 +327,7 @@
                       />
                     </div>
                   </div>
+                  <RecipeEditTimers v-model="step.timers" />
                 </v-card-text>
               </DropZone>
               <v-expand-transition>
@@ -363,6 +364,13 @@
                         />
                       </v-col>
                     </v-row>
+                    <div v-if="!isEditForm && step.timers && step.timers.length > 0 ">
+                      <RecipePageInstructionsTimer
+                        :timers="step.timers"
+                        :is-cook-mode="isCookMode"
+                        :step-title="parseStepTitle(step, index)"
+                      />
+                    </div>
                   </v-card-text>
                 </div>
               </v-expand-transition>
@@ -390,6 +398,8 @@ import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import DropZone from "~/components/global/DropZone.vue";
 import RecipeIngredients from "~/components/Domain/Recipe/RecipeIngredients.vue";
 import RecipeIngredientHtml from "~/components/Domain/Recipe/RecipeIngredientHtml.vue";
+import RecipePageInstructionsTimer from "./RecipePageInstructionsTimer.vue";
+import RecipeEditTimers from "./RecipeEditTimers.vue";
 
 interface MergerHistory {
   target: number;
@@ -413,6 +423,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["click-instruction-field", "update:assets"]);
+const i18n = useI18n();
 
 const { isCookMode, toggleCookMode, isEditForm } = usePageState(props.recipe.slug);
 const { extractIngredientReferences } = useExtractIngredientReferences();
@@ -474,6 +485,10 @@ function toggleDisabled(stepIndex: number) {
   else {
     disabledSteps.value.push(stepIndex);
   }
+}
+
+function parseStepTitle(step: RecipeStep, stepIndex: number): string {
+  return step.summary && step.summary.trim().length > 0 ? step.summary.trim() : i18n.t("recipe.step-index", { step: stepIndex + 1 });
 }
 
 function isChecked(stepIndex: number) {

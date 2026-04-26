@@ -131,3 +131,61 @@ def test_post_test_webhook(
     assert kwargs["json"]["message"]["body"] == test_message
     assert kwargs["timeout"] == 15
     assert args[0] == webhook.url
+
+
+def test_post_test_timer_webhook_with_parsed_url_and_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    api_client: TestClient,
+    unique_user: TestUser,
+):
+    class MockResponse:
+        status_code = 200
+
+    mock_calls = []
+
+    def mock_post(*args, **kwargs):
+        mock_calls.append((args, kwargs))
+        return MockResponse()
+
+    monkeypatch.setattr("mealie.services.scheduler.tasks.post_webhooks.requests.post", mock_post)
+
+    create_response = api_client.post(
+        api_routes.households_webhooks,
+        json={
+            "enabled": True,
+            "name": "Timer Test",
+            "url": "https://example.com/hook?length={length}&message={message}",
+            "webhookType": "timer",
+            "timerEvent": "updated",
+            "isDeepLink": False,
+        },
+        headers=unique_user.token,
+    )
+    webhook = assert_deserialize(create_response, 201)
+
+    response = api_client.post(
+        f"{api_routes.households_webhooks_item_id_test(webhook['id'])}/timer",
+        json={
+            "timerId": "timer-test-123",
+            "length": "120",
+            "message": "hello world",
+            "completeTime": "2026-01-01T00:00:00Z",
+            "completeTimeInMs": 1767225600000,
+        },
+        headers=unique_user.token,
+    )
+
+    assert response.status_code == 200
+    assert len(mock_calls) == 1
+
+    args, kwargs = mock_calls[0]
+    assert args[0] == "https://example.com/hook?length=120&message=hello%20world"
+    assert kwargs["json"] == {
+        "action": "update",
+        "timerId": "timer-test-123",
+        "length": "120",
+        "message": "hello world",
+        "recipeLink": "",
+        "completeTime": "2026-01-01T00:00:00Z",
+        "completeTimeInMs": 1767225600000,
+    }

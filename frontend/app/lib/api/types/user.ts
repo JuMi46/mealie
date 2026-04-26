@@ -5,7 +5,8 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
-export type WebhookType = "mealplan";
+export type WebhookType = "mealplan" | "timer";
+export type TimerEvent = "started" | "updated" | "stopped";
 export type AuthMethod = "Mealie" | "LDAP" | "OIDC";
 
 export interface ChangePassword {
@@ -71,7 +72,10 @@ export interface ReadWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
   groupId: string;
   householdId: string;
   id: string;
@@ -85,6 +89,7 @@ export interface UserSummary {
 }
 export interface ReadGroupPreferences {
   privateGroup?: boolean;
+  showAnnouncements?: boolean;
   groupId: string;
   id: string;
 }
@@ -122,6 +127,10 @@ export interface PrivateUser {
   group: string;
   household: string;
   advanced?: boolean;
+  showAnnouncements?: boolean;
+  lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
@@ -182,7 +191,10 @@ export interface CreateWebhook {
   name?: string;
   url?: string;
   webhookType?: WebhookType;
-  scheduledTime: string;
+  scheduledTime?: string | null;
+  timerEvent?: TimerEvent | null;
+  isDeepLink?: boolean | null;
+  userId?: string | null;
 }
 export interface UserBase {
   id?: string | null;
@@ -194,6 +206,10 @@ export interface UserBase {
   group?: string | null;
   household?: string | null;
   advanced?: boolean;
+  showAnnouncements?: boolean;
+  lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
@@ -209,6 +225,10 @@ export interface UserIn {
   group?: string | null;
   household?: string | null;
   advanced?: boolean;
+  showAnnouncements?: boolean;
+  lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
@@ -225,6 +245,10 @@ export interface UserOut {
   group: string;
   household: string;
   advanced?: boolean;
+  showAnnouncements?: boolean;
+  lastReadAnnouncement?: string | null;
+  showAllHouseholdTimersInRecipe?: boolean;
+  showAllHouseholdTimers?: boolean;
   canInvite?: boolean;
   canManage?: boolean;
   canManageHousehold?: boolean;
