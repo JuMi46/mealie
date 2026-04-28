@@ -250,6 +250,17 @@ const tableHeaders: TableHeaders[] = [
     show: true,
   },
   {
+    text: i18n.t("data-pages.foods.density"),
+    value: "density",
+    show: false,
+    sortable: true,
+  },
+  {
+    text: i18n.t("data-pages.foods.tip"),
+    value: "tip",
+    show: false,
+  },
+  {
     text: i18n.t("shopping-list.label"),
     value: "label",
     show: true,
@@ -299,6 +310,22 @@ const formItems = computed<AutoFormItems>(() => [
   {
     label: i18n.t("recipe.description"),
     varName: "description",
+    type: fieldTypes.TEXT,
+  },
+  {
+    label: i18n.t("data-pages.foods.density"),
+    varName: "density",
+    type: fieldTypes.NUMBER,
+    numberInputConfig: {
+      min: 0,
+      max: undefined,
+      precision: null,
+      controlVariant: "hidden",
+    },
+  },
+  {
+    label: i18n.t("data-pages.foods.tip"),
+    varName: "tip",
     type: fieldTypes.TEXT,
   },
   {

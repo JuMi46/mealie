@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint, orm
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint, orm
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mealie.db.models._model_base import BaseMixins, SqlAlchemyBase
@@ -21,6 +21,9 @@ class MultiPurposeLabel(SqlAlchemyBase, BaseMixins):
     id: Mapped[GUID] = mapped_column(GUID, default=GUID.generate, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     color: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    label_text: Mapped[str | None] = mapped_column(String)
+    position: Mapped[int | None] = mapped_column(Integer)
+    place: Mapped[str | None] = mapped_column(String)
 
     group_id: Mapped[GUID] = mapped_column(GUID, ForeignKey("groups.id"), nullable=False, index=True)
     group: Mapped["Group"] = orm.relationship("Group", back_populates="labels")

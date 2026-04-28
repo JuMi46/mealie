@@ -9,6 +9,10 @@ from mealie.schema._mealie import MealieModel
 class RecipeToolCreate(MealieModel):
     name: str
     households_with_tool: list[str] = []
+    position: int | None = None
+    label_text: str | None = None
+    weight: float | None = None
+    serving_category: str | None = None
 
 
 class RecipeToolSave(RecipeToolCreate):

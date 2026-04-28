@@ -11,6 +11,9 @@ from mealie.schema.response.pagination import PaginationBase
 class MultiPurposeLabelCreate(MealieModel):
     name: str
     color: str = "#959595"
+    label_text: str | None = None
+    position: int | None = None
+    place: str | None = None
 
 
 class MultiPurposeLabelSave(MultiPurposeLabelCreate):

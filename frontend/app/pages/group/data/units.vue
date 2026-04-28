@@ -231,6 +231,17 @@ const tableHeaders: TableHeaders[] = [
     show: false,
   },
   {
+    text: i18n.t("general.position"),
+    value: "position",
+    show: false,
+    sortable: true,
+  },
+  {
+    text: i18n.t("general.range"),
+    value: "range",
+    show: false,
+  },
+  {
     text: i18n.t("general.date-added"),
     value: "createdAt",
     show: false,
@@ -287,7 +298,7 @@ const formItems = computed<AutoFormItems>(() => [
     numberInputConfig: {
       min: 0,
       max: undefined,
-      precision: null,
+      precision: undefined,
       controlVariant: "hidden",
     },
   },
@@ -332,6 +343,25 @@ const formItems = computed<AutoFormItems>(() => [
     ] as StandardizedUnitTypeOption[],
   },
   {
+    cols: 4,
+    label: i18n.t("general.position"),
+    varName: "position",
+    type: fieldTypes.NUMBER,
+    numberInputConfig: {
+      min: 0,
+      max: undefined,
+      precision: undefined,
+      controlVariant: "hidden",
+    },
+  },
+  {
+    section: i18n.t("general.advanced"),
+    label: i18n.t("general.range"),
+    varName: "rangeText",
+    type: fieldTypes.TEXT_AREA,
+    hint: "JSON array, e.g. [{\"start\":0,\"end\":1}]",
+  },
+  {
     section: i18n.t("general.settings"),
     cols: 4,
     label: i18n.t("data-pages.units.use-abbv"),
@@ -354,16 +384,40 @@ const createForm = reactive({
     name: "",
     fraction: false,
     useAbbreviation: false,
+    position: null,
+    rangeText: "",
   } as CreateIngredientUnit,
 });
 
-async function handleCreate(createFormData: CreateIngredientUnit) {
+function parseRangeText(rangeText: unknown): IngredientUnit["range"] {
+  if (!rangeText || typeof rangeText !== "string" || !rangeText.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rangeText);
+  }
+  catch {
+    return null;
+  }
+}
+
+async function handleCreate(createFormData: CreateIngredientUnit & { rangeText?: string }) {
+  const payload = {
+    ...createFormData,
+    range: parseRangeText(createFormData.rangeText),
+  } as CreateIngredientUnit;
+
+  delete (payload as CreateIngredientUnit & { rangeText?: string }).rangeText;
+
   // @ts-expect-error createOne eroniusly expects id which is not preset at time of creation
-  await unitActions.createOne(createFormData);
+  await unitActions.createOne(payload);
   createForm.data = {
     name: "",
     fraction: false,
     useAbbreviation: false,
+    position: null,
+    rangeText: "",
   } as CreateIngredientUnit;
 }
 
@@ -371,12 +425,26 @@ async function handleCreate(createFormData: CreateIngredientUnit) {
 // Edit
 const editForm = reactive({
   items: formItems,
-  data: {} as IngredientUnit,
+  data: {} as IngredientUnit & { rangeText?: string },
 });
 
-async function handleEdit(editFormData: IngredientUnit) {
-  await unitActions.updateOne(editFormData);
-  editForm.data = {} as IngredientUnit;
+watch(() => editForm.data.id, () => {
+  if (!editForm.data) {
+    return;
+  }
+  editForm.data.rangeText = editForm.data.range?.length ? JSON.stringify(editForm.data.range) : "";
+});
+
+async function handleEdit(editFormData: IngredientUnit & { rangeText?: string }) {
+  const payload = {
+    ...editFormData,
+    range: parseRangeText(editFormData.rangeText),
+  } as IngredientUnit;
+
+  delete (payload as IngredientUnit & { rangeText?: string }).rangeText;
+
+  await unitActions.updateOne(payload);
+  editForm.data = {} as IngredientUnit & { rangeText?: string };
 }
 
 // ============================================================

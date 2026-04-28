@@ -94,6 +94,7 @@ export interface CreateIngredientUnit {
   standardQuantity?: number | null;
   standardUnit?: string | null;
   system?: string | null;
+  position?: number | null;
   range?: IngredientUnitRange[] | null;
 }
 export interface CreateIngredientUnitAlias {
@@ -166,6 +167,7 @@ export interface MultiPurposeLabelSummary {
   groupId: string;
   id: string;
   labelText?: string | null;
+  position?: number | null;
   sortOrder?: number | null;
   place?: string | null;
 }
@@ -194,6 +196,7 @@ export interface IngredientUnit {
   createdAt?: string | null;
   updatedAt?: string | null;
   system?: string | null;
+  position?: number | null;
   range?: IngredientUnitRange[] | null;
 }
 export interface IngredientUnitAlias {
@@ -286,6 +289,7 @@ export interface RecipeTool {
   householdsWithTool?: string[];
   toolName?: string | null;
   sortOrder?: number | null;
+  position?: number | null;
   labelText?: string | null;
   weight?: number | null;
   servingCategory?: string | null;
@@ -514,10 +518,18 @@ export interface RecipeTimerActiveUpdate {
 export interface RecipeToolCreate {
   name: string;
   householdsWithTool?: string[];
+  position?: number | null;
+  labelText?: string | null;
+  weight?: number | null;
+  servingCategory?: string | null;
 }
 export interface RecipeToolOut {
   name: string;
   householdsWithTool?: string[];
+  position?: number | null;
+  labelText?: string | null;
+  weight?: number | null;
+  servingCategory?: string | null;
   id: string;
   groupId: string;
   slug: string;
@@ -525,6 +537,10 @@ export interface RecipeToolOut {
 export interface RecipeToolResponse {
   name: string;
   householdsWithTool?: string[];
+  position?: number | null;
+  labelText?: string | null;
+  weight?: number | null;
+  servingCategory?: string | null;
   id: string;
   groupId: string;
   slug: string;
@@ -533,6 +549,10 @@ export interface RecipeToolResponse {
 export interface RecipeToolSave {
   name: string;
   householdsWithTool?: string[];
+  position?: number | null;
+  labelText?: string | null;
+  weight?: number | null;
+  servingCategory?: string | null;
   groupId: string;
 }
 export interface SaveIngredientFood {
@@ -546,6 +566,8 @@ export interface SaveIngredientFood {
   labelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
+  density?: number | null;
+  tip?: string | null;
   groupId: string;
 }
 export interface SaveIngredientUnit {
@@ -563,6 +585,8 @@ export interface SaveIngredientUnit {
   aliases?: CreateIngredientUnitAlias[];
   standardQuantity?: number | null;
   standardUnit?: string | null;
+  position?: number | null;
+  range?: IngredientUnitRange[] | null;
   groupId: string;
 }
 export interface ScrapeRecipe {

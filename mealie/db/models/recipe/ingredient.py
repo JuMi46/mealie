@@ -55,6 +55,8 @@ class IngredientUnitModel(SqlAlchemyBase, BaseMixins):
     # Standardization
     standard_quantity: Mapped[float | None] = mapped_column(Float)
     standard_unit: Mapped[str | None] = mapped_column(String)
+    position: Mapped[int | None] = mapped_column(Integer)
+    range: Mapped[list[dict[str, float]] | None] = mapped_column(sa.JSON)
 
     # Automatically updated by sqlalchemy event, do not write to this manually
     name_normalized: Mapped[str | None] = mapped_column(sa.String, index=True)
@@ -164,6 +166,8 @@ class IngredientFoodModel(SqlAlchemyBase, BaseMixins):
     name: Mapped[str | None] = mapped_column(String)
     plural_name: Mapped[str | None] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(String)
+    density: Mapped[float | None] = mapped_column(Float)
+    tip: Mapped[str | None] = mapped_column(String)
 
     ingredients: Mapped[list["RecipeIngredientModel"]] = orm.relationship(
         "RecipeIngredientModel", back_populates="food"

@@ -30,7 +30,10 @@ export const useToolData = function () {
 
 export const useToolStore = function (i18n?: Composer) {
   const api = useUserApi(i18n);
-  return useStore<RecipeTool>("tool", store, loading, api.tools);
+  return useStore<RecipeTool>("tool", store, loading, api.tools, {
+    orderBy: "position",
+    orderDirection: "asc",
+  });
 };
 
 export const usePublicToolStore = function (groupSlug: string, i18n?: Composer) {

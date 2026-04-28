@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import ConfigDict
 from slugify import slugify
-from sqlalchemy import Boolean, Column, ForeignKey, String, Table, UniqueConstraint, orm
+from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table, UniqueConstraint, orm
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mealie.db.models._model_base import BaseMixins, SqlAlchemyBase
@@ -50,6 +50,10 @@ class Tool(SqlAlchemyBase, BaseMixins):
 
     name: Mapped[str] = mapped_column(String, index=True, nullable=False)
     slug: Mapped[str] = mapped_column(String, index=True, nullable=False)
+    position: Mapped[int | None] = mapped_column(Integer)
+    label_text: Mapped[str | None] = mapped_column(String)
+    weight: Mapped[float | None] = mapped_column(Float)
+    serving_category: Mapped[str | None] = mapped_column(String)
 
     households_with_tool: Mapped[list["Household"]] = orm.relationship(
         "Household", secondary=households_to_tools, back_populates="tools_on_hand"

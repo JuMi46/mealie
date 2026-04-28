@@ -55,6 +55,29 @@ const tableHeaders: TableHeaders[] = [
     sortable: true,
   },
   {
+    text: i18n.t("general.position"),
+    value: "position",
+    show: false,
+    sortable: true,
+  },
+  {
+    text: i18n.t("shopping-list.label"),
+    value: "labelText",
+    show: false,
+    sortable: true,
+  },
+  {
+    text: i18n.t("data-pages.tools.weight"),
+    value: "weight",
+    show: false,
+    sortable: true,
+  },
+  {
+    text: i18n.t("data-pages.tools.serving-category"),
+    value: "servingCategory",
+    show: false,
+  },
+  {
     text: i18n.t("tool.on-hand"),
     value: "onHand",
     show: true,
@@ -80,6 +103,38 @@ const formItems = [
     rules: [validators.required],
   },
   {
+    label: i18n.t("general.position"),
+    varName: "position",
+    type: fieldTypes.NUMBER,
+    numberInputConfig: {
+      min: 0,
+      max: undefined,
+      precision: null,
+      controlVariant: "hidden",
+    },
+  },
+  {
+    label: i18n.t("shopping-list.label"),
+    varName: "labelText",
+    type: fieldTypes.TEXT,
+  },
+  {
+    label: i18n.t("data-pages.tools.weight"),
+    varName: "weight",
+    type: fieldTypes.NUMBER,
+    numberInputConfig: {
+      min: 0,
+      max: undefined,
+      precision: null,
+      controlVariant: "hidden",
+    },
+  },
+  {
+    label: i18n.t("data-pages.tools.serving-category"),
+    varName: "servingCategory",
+    type: fieldTypes.TEXT,
+  },
+  {
     label: i18n.t("tool.on-hand"),
     varName: "onHand",
     type: fieldTypes.BOOLEAN,
@@ -90,13 +145,30 @@ const formItems = [
 // Create
 const createForm = reactive({
   items: formItems,
-  data: { name: "", onHand: false } as RecipeToolCreate,
+  data: {
+    name: "",
+    onHand: false,
+    position: null,
+    labelText: "",
+    weight: null,
+    servingCategory: "",
+  } as RecipeToolCreate,
 });
 
 async function handleCreate(createFormData: RecipeToolCreate) {
   // @ts-expect-error createOne eroniusly expects id and slug which are not preset at time of creation
-  await toolStore.actions.createOne({ name: createFormData.name, householdsWithTool: createFormData.onHand ? [userHousehold.value] : [] } as RecipeToolCreate);
-  createForm.data = { name: "", onHand: false } as RecipeToolCreate;
+  await toolStore.actions.createOne({
+    ...createFormData,
+    householdsWithTool: createFormData.onHand ? [userHousehold.value] : [],
+  } as RecipeToolCreate);
+  createForm.data = {
+    name: "",
+    onHand: false,
+    position: null,
+    labelText: "",
+    weight: null,
+    servingCategory: "",
+  } as RecipeToolCreate;
 }
 
 // ============================================================

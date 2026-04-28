@@ -93,6 +93,8 @@ class CreateIngredientFood(UnitFoodBase):
     label_id: UUID4 | None = None
     aliases: list[CreateIngredientFoodAlias] = []
     households_with_ingredient_food: list[str] = []
+    density: float | None = None
+    tip: str | None = None
 
 
 class SaveIngredientFood(CreateIngredientFood):
@@ -145,6 +147,11 @@ class IngredientUnitAlias(CreateIngredientUnitAlias):
     model_config = ConfigDict(from_attributes=True)
 
 
+class IngredientUnitRange(MealieModel):
+    start: float
+    end: float
+
+
 class CreateIngredientUnit(UnitFoodBase):
     fraction: bool = True
     abbreviation: str = ""
@@ -154,6 +161,8 @@ class CreateIngredientUnit(UnitFoodBase):
     aliases: list[CreateIngredientUnitAlias] = []
     standard_quantity: float | None = None
     standard_unit: str | None = None
+    position: int | None = None
+    range: list[IngredientUnitRange] | None = None
 
     @model_validator(mode="after")
     def validate_standardization_fields(self):
