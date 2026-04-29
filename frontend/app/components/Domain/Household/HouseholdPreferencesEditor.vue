@@ -54,17 +54,135 @@
         </p>
       </div>
     </div>
+
+    <BaseCardSectionTitle class="mt-5" title="Household Unit Display Preferences">
+      Choose unit lists used when displaying volume and mass values for this household.
+    </BaseCardSectionTitle>
+    <div class="preference-container">
+      <v-select
+        v-model="local.volumeDisplayMode"
+        :items="displayModeItems"
+        item-title="title"
+        item-value="value"
+        label="Volume display mode"
+        variant="underlined"
+        flat
+      />
+      <v-select
+        v-model="local.primaryVolumeUnits"
+        :items="volumeUnitItems"
+        item-title="title"
+        item-value="value"
+        label="Primary volume units"
+        variant="underlined"
+        flat
+        chips
+        multiple
+      />
+      <v-select
+        v-model="local.secondaryVolumeUnits"
+        :items="volumeUnitItems"
+        item-title="title"
+        item-value="value"
+        label="Secondary volume units"
+        variant="underlined"
+        flat
+        chips
+        multiple
+      />
+
+      <v-select
+        v-model="local.massDisplayMode"
+        :items="displayModeItems"
+        item-title="title"
+        item-value="value"
+        label="Mass display mode"
+        variant="underlined"
+        flat
+      />
+      <v-select
+        v-model="local.primaryMassUnits"
+        :items="massUnitItems"
+        item-title="title"
+        item-value="value"
+        label="Primary mass units"
+        variant="underlined"
+        flat
+        chips
+        multiple
+      />
+      <v-select
+        v-model="local.secondaryMassUnits"
+        :items="massUnitItems"
+        item-title="title"
+        item-value="value"
+        label="Secondary mass units"
+        variant="underlined"
+        flat
+        chips
+        multiple
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { ReadHouseholdPreferences } from "~/lib/api/types/household";
+import type { IngredientUnit } from "~/lib/api/types/recipe";
+import { useUnitStore } from "~/composables/store";
 
 const preferences = defineModel<ReadHouseholdPreferences>({ required: true });
-const local = reactive({ ...preferences.value });
+const local = reactive({
+  ...preferences.value,
+  primaryVolumeUnits: preferences.value.primaryVolumeUnits ?? [],
+  secondaryVolumeUnits: preferences.value.secondaryVolumeUnits ?? [],
+  primaryMassUnits: preferences.value.primaryMassUnits ?? [],
+  secondaryMassUnits: preferences.value.secondaryMassUnits ?? [],
+  volumeDisplayMode: preferences.value.volumeDisplayMode ?? "primary_only",
+  massDisplayMode: preferences.value.massDisplayMode ?? "primary_only",
+});
 watch(local, (newVal) => { preferences.value = { ...newVal }; });
 
 const i18n = useI18n();
+const unitStore = useUnitStore();
+
+type UnitType = "mass" | "volume";
+type UnitItem = { title: string; value: string; kind: UnitType };
+
+const MASS_STANDARD_UNITS = new Set(["gram", "kilogram", "ounce", "pound"]);
+const VOLUME_STANDARD_UNITS = new Set(["milliliter", "liter", "fluid_ounce", "cup"]);
+
+function unitTypeByStandardUnit(standardUnit: IngredientUnit["standardUnit"]): UnitType | null {
+  if (!standardUnit) return null;
+  if (MASS_STANDARD_UNITS.has(standardUnit)) return "mass";
+  if (VOLUME_STANDARD_UNITS.has(standardUnit)) return "volume";
+  return null;
+}
+
+const unitItems = ref<UnitItem[]>([]);
+const volumeUnitItems = computed(() => unitItems.value.filter(unit => unit.kind === "volume"));
+const massUnitItems = computed(() => unitItems.value.filter(unit => unit.kind === "mass"));
+const displayModeItems = [
+  { title: "Primary only", value: "primary_only" },
+  { title: "Secondary only", value: "secondary_only" },
+  { title: "Both", value: "both" },
+];
+
+watch(() => unitStore.store.value, (newUnits) => {
+  unitItems.value = (newUnits ?? []).flatMap((unit) => {
+    const kind = unitTypeByStandardUnit(unit.standardUnit);
+
+    if (!kind) {
+      return [];
+    }
+
+    return {
+      title: unit.name,
+      value: unit.id,
+      kind,
+    };
+  });
+});
 
 type Preference = {
   key: keyof ReadHouseholdPreferences;

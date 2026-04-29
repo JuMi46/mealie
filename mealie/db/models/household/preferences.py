@@ -34,6 +34,14 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
     recipe_landscape_view: Mapped[bool | None] = mapped_column(sa.Boolean, default=False)
     recipe_disable_comments: Mapped[bool | None] = mapped_column(sa.Boolean, default=False)
 
+    # Household unit display preferences
+    primary_volume_units: Mapped[list[str]] = mapped_column(sa.JSON, nullable=False, default=list)
+    secondary_volume_units: Mapped[list[str]] = mapped_column(sa.JSON, nullable=False, default=list)
+    primary_mass_units: Mapped[list[str]] = mapped_column(sa.JSON, nullable=False, default=list)
+    secondary_mass_units: Mapped[list[str]] = mapped_column(sa.JSON, nullable=False, default=list)
+    volume_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
+    mass_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
+
     # Deprecated
     recipe_disable_amount: Mapped[bool | None] = mapped_column(sa.Boolean, default=True)
 

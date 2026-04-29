@@ -1,4 +1,6 @@
-from pydantic import UUID4, ConfigDict
+from typing import Literal
+
+from pydantic import UUID4, ConfigDict, Field
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.interfaces import LoaderOption
 
@@ -20,6 +22,13 @@ class UpdateHouseholdPreferences(MealieModel):
     recipe_show_assets: bool = False
     recipe_landscape_view: bool = False
     recipe_disable_comments: bool = False
+
+    primary_volume_units: list[str] = Field(default_factory=list)
+    secondary_volume_units: list[str] = Field(default_factory=list)
+    primary_mass_units: list[str] = Field(default_factory=list)
+    secondary_mass_units: list[str] = Field(default_factory=list)
+    volume_display_mode: Literal["primary_only", "secondary_only", "both"] = "primary_only"
+    mass_display_mode: Literal["primary_only", "secondary_only", "both"] = "primary_only"
 
 
 class CreateHouseholdPreferences(UpdateHouseholdPreferences): ...

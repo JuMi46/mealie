@@ -212,6 +212,12 @@ export interface ReadHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
+  primaryVolumeUnits?: string[];
+  secondaryVolumeUnits?: string[];
+  primaryMassUnits?: string[];
+  secondaryMassUnits?: string[];
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
   id: string;
 }
 export interface HouseholdUserSummary {
@@ -293,6 +299,12 @@ export interface SaveHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
+  primaryVolumeUnits?: string[];
+  secondaryVolumeUnits?: string[];
+  primaryMassUnits?: string[];
+  secondaryMassUnits?: string[];
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
   householdId: string;
 }
 export interface SaveInviteToken {
@@ -852,6 +864,12 @@ export interface UpdateHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
+  primaryVolumeUnits?: string[];
+  secondaryVolumeUnits?: string[];
+  primaryMassUnits?: string[];
+  secondaryMassUnits?: string[];
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
 }
 export interface RecipeIngredientBase {
   quantity?: number | null;
