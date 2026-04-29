@@ -46,9 +46,16 @@
     9091, // used by docker production
     24678 // used by nuxt when hot-reloading using polling
   ],
+  // Set environment variables for the dev container
+  "remoteEnv": {
+    "DATA_DIR": "${containerWorkspaceFolder}/data",
+    "PRODUCTION": "false"
+  },
   // Use 'onCreateCommand' to run commands at the end of container creation.
   // Use 'postCreateCommand' to run commands after the container is created.
   "onCreateCommand": "sudo chown -R vscode:vscode /workspaces/mealie/frontend/node_modules /home/vscode/commandhistory && task setup --force",
+  // Download nltk data on each container start (idempotent)
+  "postStartCommand": "uv run python -m nltk.downloader -d ~/nltk_data averaged_perceptron_tagger_eng punkt_tab",
   // Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "features": {

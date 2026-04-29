@@ -163,6 +163,8 @@ scratch.py
 dev/data/backups/dev_sample_data*.zip
 !dev/data/backups/test*.zip
 dev/data/recipes/*
+dev/data/branch-dbs/*
+dev/data/.branch-bootstrap/*
 dev/scripts/output/app_routes.py
 dev/scripts/output/javascriptAPI/*
 dev/code-generation/generated/openapi.json
@@ -170,7 +172,9 @@ dev/code-generation/generated/test_routes.py
 lcov.info
 dev/code-generation/openapi.json
 
+
 .run/
 .task/*
 .dev.env
 frontend/eslint.config.deprecated.js
+branch-db-switch.sh
