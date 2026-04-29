@@ -93,7 +93,6 @@ export interface CreateIngredientUnit {
   aliases?: CreateIngredientUnitAlias[];
   standardQuantity?: number | null;
   standardUnit?: string | null;
-  system?: string | null;
   position?: number | null;
   range?: IngredientUnitRange[] | null;
 }
@@ -195,7 +194,6 @@ export interface IngredientUnit {
   standardUnit?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  system?: string | null;
   position?: number | null;
   range?: IngredientUnitRange[] | null;
 }
@@ -288,7 +286,6 @@ export interface RecipeTool {
   slug: string;
   householdsWithTool?: string[];
   toolName?: string | null;
-  sortOrder?: number | null;
   position?: number | null;
   labelText?: string | null;
   weight?: number | null;

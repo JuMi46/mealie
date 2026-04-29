@@ -226,7 +226,6 @@ import RecipeDialogBulkAdd from "~/components/Domain/Recipe/RecipeDialogBulkAdd.
 import RecipeNotes from "~/components/Domain/Recipe/RecipeNotes.vue";
 import { useLoggedInState } from "~/composables/use-logged-in-state";
 import { useNavigationWarning } from "~/composables/use-navigation-warning";
-import { extendRecipe } from "~/composables/use-extend-object";
 
 const recipe = defineModel<NoUndefinedField<Recipe>>({ required: true });
 
@@ -374,8 +373,6 @@ onMounted(() => {
   if (paramsServings.value) {
     scale.value = paramsServings.value;
   }
-
-  extendRecipe(recipe.value);
 });
 
 watch(isEditMode, (newVal) => {

@@ -126,7 +126,6 @@ import type { IngredientUnit, RecipeIngredient, ShoppingListAddRecipeParamsBulk,
 import type { IngredientFood, Recipe } from "~/lib/api/types/recipe";
 import { reduceIngredients } from "~/composables/recipes/use-recipe";
 import { UnitNames } from "~/composables/use-unit";
-import { extendLabel } from "~/composables/use-extend-object";
 
 export interface RecipeWithScale extends Recipe {
   scale: number;
@@ -336,9 +335,7 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
     let label: string;
     let labelSortOrder: number;
     const labelObject = (ing.ingredientSum.food as IngredientFood)?.label;
-    if (labelObject && !labelObject.sortOrder) {
-      extendLabel(labelObject);
-    }
+
     if (labelObject?.sortOrder) {
       label = labelObject.labelText || labelObject.name;
       labelSortOrder = labelObject.sortOrder;

@@ -3,7 +3,6 @@ import { useFraction } from "./use-fraction";
 import { useLocales } from "../use-locales";
 import type { CreateIngredientFood, CreateIngredientUnit, IngredientFood, IngredientUnit, Recipe, RecipeIngredient } from "~/lib/api/types/recipe";
 import { UnitNames } from "../use-unit";
-import { extendUnit } from "../use-extend-object";
 
 const { simpleFrac } = useFraction();
 
@@ -108,7 +107,6 @@ export function useIngredientTextParser() {
     const quantityInMl = convertToMilliliter(scaledQuantity, returnUnit);
 
     if (returnUnit) {
-      extendUnit(returnUnit);
       if (quantityInMl && !returnUnit.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end) && unitsWithRange?.value) {
         for (const unitObject of unitsWithRange.value) {
           if (unitObject.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end)) {

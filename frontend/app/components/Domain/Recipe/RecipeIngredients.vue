@@ -237,8 +237,8 @@ const sortedIngredientsByPlace = computed(() => {
           aFood = refIng.food as IngredientFood;
         }
       }
-      if (aFood?.label?.sortOrder) {
-        aSortOrder = aFood.label.sortOrder;
+      if (aFood?.label?.position) {
+        aSortOrder = aFood.label.position;
       }
 
       let bFood = b.food as IngredientFood;
@@ -248,8 +248,8 @@ const sortedIngredientsByPlace = computed(() => {
           bFood = refIng.food as IngredientFood;
         }
       }
-      if (bFood?.label?.sortOrder) {
-        bSortOrder = bFood.label.sortOrder;
+      if (bFood?.label?.position) {
+        bSortOrder = bFood.label.position;
       }
       return aSortOrder - bSortOrder;
     });

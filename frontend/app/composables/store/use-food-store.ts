@@ -2,7 +2,6 @@ import type { Composer } from "vue-i18n";
 import { useData, useReadOnlyStore, useStore } from "../partials/use-store-factory";
 import type { IngredientFood } from "~/lib/api/types/recipe";
 import { usePublicExploreApi, useUserApi } from "~/composables/api";
-import { extendFood, extendLabel } from "~/composables/use-extend-object";
 
 const store: Ref<IngredientFood[]> = ref([]);
 const loading = ref(false);
@@ -32,10 +31,3 @@ export const usePublicFoodStore = function (groupSlug: string, i18n?: Composer) 
   const api = usePublicExploreApi(groupSlug, i18n).explore;
   return useReadOnlyStore<IngredientFood>("food", store, publicLoading, api.foods);
 };
-
-watch(store, () => {
-  for (const food of store.value) {
-    extendFood(food);
-    extendLabel(food.label);
-  }
-});
