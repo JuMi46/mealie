@@ -88,3 +88,31 @@ def test_clean_scraper_preserves_notes():
     assert recipe.notes[0].text == "Keep refrigerated up to 3 days"
     assert recipe.notes[1].title == "Variation"
     assert recipe.notes[1].text == "Add chili flakes for extra heat"
+
+
+def test_clean_scraper_normalizes_numeric_timers():
+    """Regression test: instructions with numeric timers should parse as RecipeTimer objects."""
+
+    class _Schema:
+        data = {"name": "Timer Test Recipe", "recipeIngredient": ["1 cup flour"]}
+
+    class _FakeScraper:
+        schema = _Schema()
+
+        @staticmethod
+        def instructions():
+            return [{"text": "Mix everything together", "timers": [300]}]
+
+        def __getattr__(self, _name):
+            return lambda: None
+
+    scraped = _FakeScraper()
+    translator = get_locale_provider()
+    strategy = RecipeScraperPackage("https://example.com", translator)
+
+    recipe, _ = strategy.clean_scraper(scraped, "https://example.com")
+
+    assert recipe.recipe_instructions is not None
+    assert len(recipe.recipe_instructions) == 1
+    assert len(recipe.recipe_instructions[0].timers) == 1
+    assert recipe.recipe_instructions[0].timers[0].duration == 300

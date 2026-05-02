@@ -216,6 +216,37 @@ class RecipeScraperPackage(ABCScraperStrategy):
             return value
 
         def get_instructions() -> list[RecipeStep]:
+            def normalize_timers(raw_timers: Any) -> list[dict[str, Any]]:
+                """Convert mixed timer representations into RecipeTimer-compatible dicts."""
+                if not isinstance(raw_timers, list):
+                    return []
+
+                normalized: list[dict[str, Any]] = []
+                for timer in raw_timers:
+                    if isinstance(timer, dict):
+                        duration = timer.get("duration", timer.get("value"))
+                        if duration is None:
+                            continue
+
+                        try:
+                            normalized_timer: dict[str, Any] = {"duration": int(duration)}
+                        except (TypeError, ValueError):
+                            continue
+
+                        text = timer.get("text")
+                        if isinstance(text, str) and text.strip():
+                            normalized_timer["text"] = text.strip()
+
+                        normalized.append(normalized_timer)
+                        continue
+
+                    try:
+                        normalized.append({"duration": int(timer)})
+                    except (TypeError, ValueError):
+                        continue
+
+                return normalized
+
             instruction_as_text = try_get_default(
                 scraped_data.instructions,
                 "recipeInstructions",
@@ -233,10 +264,7 @@ class RecipeScraperPackage(ABCScraperStrategy):
                     RecipeStep(
                         title="",
                         text=x.get("text"),
-                        timers=[
-                            timer["duration"] if isinstance(timer, dict) else int(timer)
-                            for timer in x.get("timers", [])
-                        ],
+                        timers=normalize_timers(x.get("timers", [])),
                     )
                     for x in instruction_as_text
                 ]
