@@ -129,33 +129,66 @@
 <script setup lang="ts">
 import type { ReadHouseholdPreferences } from "~/lib/api/types/household";
 import type { IngredientUnit } from "~/lib/api/types/recipe";
-import { useUnitStore } from "~/composables/store";
+import { useUserApi } from "~/composables/api";
+
+type UnitPreferenceValue = string | { id?: string | null };
+
+function normalizeUnitPreferenceValues(values: UnitPreferenceValue[] | undefined): string[] {
+  if (!values?.length) {
+    return [];
+  }
+
+  return values.flatMap((value) => {
+    if (typeof value === "string") {
+      return value;
+    }
+
+    return value.id ? [value.id] : [];
+  });
+}
 
 const preferences = defineModel<ReadHouseholdPreferences>({ required: true });
 const local = reactive({
   ...preferences.value,
-  primaryVolumeUnits: preferences.value.primaryVolumeUnits ?? [],
-  secondaryVolumeUnits: preferences.value.secondaryVolumeUnits ?? [],
-  primaryMassUnits: preferences.value.primaryMassUnits ?? [],
-  secondaryMassUnits: preferences.value.secondaryMassUnits ?? [],
+  primaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.primaryVolumeUnits as UnitPreferenceValue[] | undefined),
+  secondaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),
+  primaryMassUnits: normalizeUnitPreferenceValues(preferences.value.primaryMassUnits as UnitPreferenceValue[] | undefined),
+  secondaryMassUnits: normalizeUnitPreferenceValues(preferences.value.secondaryMassUnits as UnitPreferenceValue[] | undefined),
   volumeDisplayMode: preferences.value.volumeDisplayMode ?? "primary_only",
   massDisplayMode: preferences.value.massDisplayMode ?? "primary_only",
 });
-watch(local, (newVal) => { preferences.value = { ...newVal }; });
+watch(local, (newVal) => {
+  preferences.value = {
+    ...newVal,
+    primaryVolumeUnits: normalizeUnitPreferenceValues(newVal.primaryVolumeUnits as UnitPreferenceValue[] | undefined),
+    secondaryVolumeUnits: normalizeUnitPreferenceValues(newVal.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),
+    primaryMassUnits: normalizeUnitPreferenceValues(newVal.primaryMassUnits as UnitPreferenceValue[] | undefined),
+    secondaryMassUnits: normalizeUnitPreferenceValues(newVal.secondaryMassUnits as UnitPreferenceValue[] | undefined),
+  };
+});
 
 const i18n = useI18n();
-const unitStore = useUnitStore();
+const api = useUserApi();
 
-type UnitType = "mass" | "volume";
-type UnitItem = { title: string; value: string; kind: UnitType };
+type UnitKind = "mass" | "volume";
+type UnitItem = { title: string; value: string; kind: UnitKind };
 
 const MASS_STANDARD_UNITS = new Set(["gram", "kilogram", "ounce", "pound"]);
 const VOLUME_STANDARD_UNITS = new Set(["milliliter", "liter", "fluid_ounce", "cup"]);
 
-function unitTypeByStandardUnit(standardUnit: IngredientUnit["standardUnit"]): UnitType | null {
-  if (!standardUnit) return null;
-  if (MASS_STANDARD_UNITS.has(standardUnit)) return "mass";
-  if (VOLUME_STANDARD_UNITS.has(standardUnit)) return "volume";
+function unitKindByStandardUnit(standardUnit: IngredientUnit["standardUnit"]): UnitKind | null {
+  if (!standardUnit) {
+    return null;
+  }
+
+  if (MASS_STANDARD_UNITS.has(standardUnit)) {
+    return "mass";
+  }
+
+  if (VOLUME_STANDARD_UNITS.has(standardUnit)) {
+    return "volume";
+  }
+
   return null;
 }
 
@@ -168,9 +201,10 @@ const displayModeItems = [
   { title: "Both", value: "both" },
 ];
 
-watch(() => unitStore.store.value, (newUnits) => {
-  unitItems.value = (newUnits ?? []).flatMap((unit) => {
-    const kind = unitTypeByStandardUnit(unit.standardUnit);
+onMounted(async () => {
+  const { data } = await api.units.getAll(1, -1, { orderBy: "name", orderDirection: "asc" });
+  unitItems.value = (data?.items ?? []).flatMap((unit) => {
+    const kind = unitKindByStandardUnit(unit.standardUnit);
 
     if (!kind) {
       return [];

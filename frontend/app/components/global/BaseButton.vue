@@ -169,33 +169,33 @@ const buttonOptions = {
   },
 };
 
-    const btnAttrs = computed(() => {
-      if (props.delete) {
-        return buttonOptions.delete;
-      }
-      else if (props.update) {
-        return buttonOptions.update;
-      }
-      else if (props.edit) {
-        return buttonOptions.edit;
-      }
-      else if (props.cancel) {
-        return buttonOptions.cancel;
-      }
-      else if (props.save) {
-        return buttonOptions.save;
-      }
-      else if (props.download) {
-        return buttonOptions.download;
-      }
-      else if (props.onlyIcon) {
-        return buttonOptions.onlyIcon;
-      }
-      else if (props.onlyText) {
-        return buttonOptions.onlyText;
-      }
-      return buttonOptions.create;
-    });
+const btnAttrs = computed(() => {
+  if (props.delete) {
+    return buttonOptions.delete;
+  }
+  else if (props.update) {
+    return buttonOptions.update;
+  }
+  else if (props.edit) {
+    return buttonOptions.edit;
+  }
+  else if (props.cancel) {
+    return buttonOptions.cancel;
+  }
+  else if (props.save) {
+    return buttonOptions.save;
+  }
+  else if (props.download) {
+    return buttonOptions.download;
+  }
+  else if (props.onlyIcon) {
+    return buttonOptions.onlyIcon;
+  }
+  else if (props.onlyText) {
+    return buttonOptions.onlyText;
+  }
+  return buttonOptions.create;
+});
 
 const buttonStyles = {
   defaults: { text: false, outlined: false },

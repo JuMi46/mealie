@@ -15,12 +15,11 @@ export interface MultiPurposeLabelCreate {
 export interface MultiPurposeLabelOut {
   name: string;
   color?: string;
-  groupId: string;
-  id: string;
   labelText?: string | null;
   position?: number | null;
-  sortOrder?: number | null;
   place?: string | null;
+  groupId: string;
+  id: string;
 }
 export interface MultiPurposeLabelSave {
   name: string;
@@ -33,12 +32,11 @@ export interface MultiPurposeLabelSave {
 export interface MultiPurposeLabelSummary {
   name: string;
   color?: string;
-  groupId: string;
-  id: string;
   labelText?: string | null;
   position?: number | null;
-  sortOrder?: number | null;
   place?: string | null;
+  groupId: string;
+  id: string;
 }
 export interface MultiPurposeLabelUpdate {
   name: string;

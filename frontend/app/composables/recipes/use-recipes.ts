@@ -139,9 +139,6 @@ export const useRecipes = (
   async function refreshRecipes() {
     const { data } = await api.recipes.getAll(page, perPage, { loadFood, orderBy: "created_at", queryFilter });
     if (data) {
-      for (const recipe of data.items) {
-        extendRecipe(recipe);
-      }
       recipes.value = data.items;
     }
   }

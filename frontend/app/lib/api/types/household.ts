@@ -24,6 +24,12 @@ export interface CreateHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  primaryVolumeUnits?: string[];
+  secondaryVolumeUnits?: string[];
+  primaryMassUnits?: string[];
+  secondaryMassUnits?: string[];
 }
 export interface CreateInviteToken {
   uses: number;
@@ -212,13 +218,42 @@ export interface ReadHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
-  primaryVolumeUnits?: string[];
-  secondaryVolumeUnits?: string[];
-  primaryMassUnits?: string[];
-  secondaryMassUnits?: string[];
   volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
   massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  primaryVolumeUnits?: IngredientUnit[];
+  secondaryVolumeUnits?: IngredientUnit[];
+  primaryMassUnits?: IngredientUnit[];
+  secondaryMassUnits?: IngredientUnit[];
   id: string;
+}
+export interface IngredientUnit {
+  id: string;
+  name: string;
+  pluralName?: string | null;
+  description?: string;
+  extras?: {
+    [k: string]: unknown;
+  } | null;
+  fraction?: boolean;
+  abbreviation?: string;
+  pluralAbbreviation?: string | null;
+  useAbbreviation?: boolean;
+  aliases?: IngredientUnitAlias[];
+  standardQuantity?: number | null;
+  standardUnit?: string | null;
+  position?: number | null;
+  range?: IngredientUnitRange[] | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+export interface IngredientUnitAlias {
+  name: string;
+  [k: string]: unknown;
+}
+export interface IngredientUnitRange {
+  start: number;
+  end: number;
+  [k: string]: unknown;
 }
 export interface HouseholdUserSummary {
   id: string;
@@ -236,6 +271,19 @@ export interface ReadWebhook {
   groupId: string;
   householdId: string;
   id: string;
+}
+export interface HouseholdPreferencesBase {
+  privateHousehold?: boolean;
+  showAnnouncements?: boolean;
+  lockRecipeEditsFromOtherHouseholds?: boolean;
+  firstDayOfWeek?: number;
+  recipePublic?: boolean;
+  recipeShowNutrition?: boolean;
+  recipeShowAssets?: boolean;
+  recipeLandscapeView?: boolean;
+  recipeDisableComments?: boolean;
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
 }
 export interface HouseholdRecipeBase {
   lastMade?: string | null;
@@ -299,12 +347,12 @@ export interface SaveHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
   primaryVolumeUnits?: string[];
   secondaryVolumeUnits?: string[];
   primaryMassUnits?: string[];
   secondaryMassUnits?: string[];
-  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
-  massDisplayMode?: "primary_only" | "secondary_only" | "both";
   householdId: string;
 }
 export interface SaveInviteToken {
@@ -347,34 +395,6 @@ export interface RecipeIngredient {
   originalText?: string | null;
   referenceId?: string;
 }
-export interface IngredientUnitRange {
-  start: number;
-  end: number;
-}
-export interface IngredientUnit {
-  id: string;
-  name: string;
-  pluralName?: string | null;
-  description?: string;
-  extras?: {
-    [k: string]: unknown;
-  } | null;
-  fraction?: boolean;
-  abbreviation?: string;
-  pluralAbbreviation?: string | null;
-  useAbbreviation?: boolean;
-  aliases?: IngredientUnitAlias[];
-  standardQuantity?: number | null;
-  standardUnit?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  system?: string | null;
-  range?: IngredientUnitRange[] | null;
-}
-export interface IngredientUnitAlias {
-  name: string;
-  [k: string]: unknown;
-}
 export interface CreateIngredientUnit {
   id?: string | null;
   name: string;
@@ -390,9 +410,9 @@ export interface CreateIngredientUnit {
   aliases?: CreateIngredientUnitAlias[];
   standardQuantity?: number | null;
   standardUnit?: string | null;
-  [k: string]: unknown;
-  system?: string | null;
+  position?: number | null;
   range?: IngredientUnitRange[] | null;
+  [k: string]: unknown;
 }
 export interface CreateIngredientUnitAlias {
   name: string;
@@ -409,6 +429,8 @@ export interface IngredientFood {
   labelId?: string | null;
   aliases?: IngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
+  density?: number | null;
+  tip?: string | null;
   label?: MultiPurposeLabelSummary | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -420,11 +442,11 @@ export interface IngredientFoodAlias {
 export interface MultiPurposeLabelSummary {
   name: string;
   color?: string;
+  labelText?: string | null;
+  position?: number | null;
+  place?: string | null;
   groupId: string;
   id: string;
-  labelText?: string | null;
-  sortOrder?: number | null;
-  place?: string | null;
 }
 export interface CreateIngredientFood {
   id?: string | null;
@@ -437,6 +459,8 @@ export interface CreateIngredientFood {
   labelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
+  density?: number | null;
+  tip?: string | null;
   [k: string]: unknown;
 }
 export interface CreateIngredientFoodAlias {
@@ -503,11 +527,6 @@ export interface RecipeTool {
   slug: string;
   householdsWithTool?: string[];
   [k: string]: unknown;
-  toolName?: string | null;
-  sortOrder?: number | null;
-  labelText?: string | null;
-  weight?: number | null;
-  servingCategory?: string | null;
 }
 export interface RecipeStep {
   id?: string | null;
@@ -519,7 +538,7 @@ export interface RecipeStep {
   [k: string]: unknown;
 }
 export interface RecipeTimer {
-  id: string;
+  id?: string;
   duration: number;
   text?: string | null;
   timersActive?: RecipeTimerActive[] | null;
@@ -864,12 +883,12 @@ export interface UpdateHouseholdPreferences {
   recipeShowAssets?: boolean;
   recipeLandscapeView?: boolean;
   recipeDisableComments?: boolean;
+  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
+  massDisplayMode?: "primary_only" | "secondary_only" | "both";
   primaryVolumeUnits?: string[];
   secondaryVolumeUnits?: string[];
   primaryMassUnits?: string[];
   secondaryMassUnits?: string[];
-  volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
-  massDisplayMode?: "primary_only" | "secondary_only" | "both";
 }
 export interface RecipeIngredientBase {
   quantity?: number | null;

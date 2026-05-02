@@ -14,7 +14,7 @@ export { useHouseholdStore, usePublicHouseholdStore, resetHouseholdStore } from 
 export { useLabelStore, useLabelData, resetLabelStore } from "./use-label-store";
 export { useTagStore, usePublicTagStore, useTagData, resetTagStore } from "./use-tag-store";
 export { useToolStore, usePublicToolStore, useToolData, resetToolStore } from "./use-tool-store";
-export { useUnitStore, useUnitData, resetUnitStore, unitsWithRange } from "./use-unit-store";
+export { useUnitStore, useUnitData, resetUnitStore, milliliterUnit, gramUnit, unitsWithRange } from "./use-unit-store";
 export { useCookbookStore, usePublicCookbookStore, resetCookbookStore } from "./use-cookbook-store";
 export { useUserStore, resetUserStore } from "./use-user-store";
 

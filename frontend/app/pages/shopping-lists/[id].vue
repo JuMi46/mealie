@@ -347,7 +347,7 @@ import MultiPurposeLabelSection from "~/components/Domain/ShoppingList/MultiPurp
 import ShoppingListItem from "~/components/Domain/ShoppingList/ShoppingListItem.vue";
 import ShoppingListItemEditor from "~/components/Domain/ShoppingList/ShoppingListItemEditor.vue";
 import { useShoppingListPage } from "~/composables/shopping-list-page/use-shopping-list-page";
-import { useFoodStore, useLabelStore, useUnitStore, unitsWithRange } from "~/composables/store";
+import { useFoodStore, useLabelStore, useUnitStore } from "~/composables/store";
 
 const { mdAndUp } = useDisplay();
 const i18n = useI18n();
@@ -359,10 +359,10 @@ useSeoMeta({
 const route = useRoute();
 const id = route.params.id as string;
 
-    const { store: allLabels } = useLabelStore();
-    const { store: allUnits } = useUnitStore();
-    const { store: allFoods } = useFoodStore();
-    const shoppingListPage = useShoppingListPage(id, allUnits, unitsWithRange);
+const { store: allLabels } = useLabelStore();
+const { store: allUnits } = useUnitStore();
+const { store: allFoods } = useFoodStore();
+const shoppingListPage = useShoppingListPage(id);
 
 const {
   shoppingList,

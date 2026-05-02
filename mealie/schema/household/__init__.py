@@ -61,6 +61,7 @@ from .household import (
 from .household_permissions import SetPermissions
 from .household_preferences import (
     CreateHouseholdPreferences,
+    HouseholdPreferencesBase,
     ReadHouseholdPreferences,
     SaveHouseholdPreferences,
     UpdateHouseholdPreferences,
@@ -112,6 +113,7 @@ __all__ = [
     "UpdateHousehold",
     "UpdateHouseholdAdmin",
     "CreateHouseholdPreferences",
+    "HouseholdPreferencesBase",
     "ReadHouseholdPreferences",
     "SaveHouseholdPreferences",
     "UpdateHouseholdPreferences",

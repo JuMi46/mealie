@@ -40,7 +40,6 @@
 <script setup lang="ts">
 import type { RecipeIngredient } from "~/lib/api/types/household";
 import { useIngredientTextParser } from "~/composables/recipes";
-import { useUnitStore, unitsWithRange } from "~/composables/store";
 
 interface Props {
   ingredient: RecipeIngredient;
@@ -51,12 +50,11 @@ const props = withDefaults(defineProps<Props>(), {
 });
 const route = useRoute();
 const auth = useMealieAuth();
-const unitStore = useUnitStore();
 const groupSlug = computed(() => route.params.groupSlug || auth.user?.value?.groupSlug || "");
 const { useParsedIngredientText } = useIngredientTextParser();
 
 const parsedIng = computed(() => {
-  return useParsedIngredientText(props.ingredient, props.scale, true, groupSlug.value.toString(), unitStore.store, unitsWithRange);
+  return useParsedIngredientText(props.ingredient, props.scale, true, groupSlug.value.toString());
 });
 </script>
 

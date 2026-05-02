@@ -6,7 +6,6 @@ import { parseLabelName } from "~/composables/use-extend-object";
  * Composable for managing shopping list label state and operations
  */
 export function useShoppingListLabels(shoppingList: Ref<ShoppingListOut | null>) {
-  const { t } = useI18n();
   const labelOpenState = ref<{ [key: string]: boolean }>({});
   const [showChecked, toggleShowChecked] = useToggle(false);
 

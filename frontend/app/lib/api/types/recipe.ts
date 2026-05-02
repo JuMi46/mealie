@@ -74,10 +74,6 @@ export interface CreateIngredientFood {
 export interface CreateIngredientFoodAlias {
   name: string;
 }
-export interface IngredientUnitRange {
-  start: number;
-  end: number;
-}
 export interface CreateIngredientUnit {
   id?: string | null;
   name: string;
@@ -98,6 +94,10 @@ export interface CreateIngredientUnit {
 }
 export interface CreateIngredientUnitAlias {
   name: string;
+}
+export interface IngredientUnitRange {
+  start: number;
+  end: number;
 }
 export interface CreateRecipe {
   name: string;
@@ -151,11 +151,11 @@ export interface IngredientFood {
   labelId?: string | null;
   aliases?: IngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
+  density?: number | null;
+  tip?: string | null;
   label?: MultiPurposeLabelSummary | null;
   createdAt?: string | null;
   updatedAt?: string | null;
-  density?: number | null;
-  tip?: string | null;
 }
 export interface IngredientFoodAlias {
   name: string;
@@ -163,12 +163,11 @@ export interface IngredientFoodAlias {
 export interface MultiPurposeLabelSummary {
   name: string;
   color?: string;
-  groupId: string;
-  id: string;
   labelText?: string | null;
   position?: number | null;
-  sortOrder?: number | null;
   place?: string | null;
+  groupId: string;
+  id: string;
 }
 export interface IngredientReferences {
   referenceId?: string | null;
@@ -192,10 +191,10 @@ export interface IngredientUnit {
   aliases?: IngredientUnitAlias[];
   standardQuantity?: number | null;
   standardUnit?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
   position?: number | null;
   range?: IngredientUnitRange[] | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 export interface IngredientUnitAlias {
   name: string;
@@ -285,11 +284,6 @@ export interface RecipeTool {
   name: string;
   slug: string;
   householdsWithTool?: string[];
-  toolName?: string | null;
-  position?: number | null;
-  labelText?: string | null;
-  weight?: number | null;
-  servingCategory?: string | null;
 }
 export interface RecipeStep {
   id?: string | null;
@@ -300,7 +294,7 @@ export interface RecipeStep {
   ingredientReferences?: IngredientReferences[];
 }
 export interface RecipeTimer {
-  id: string;
+  id?: string;
   duration: number;
   text?: string | null;
   timersActive?: RecipeTimerActive[] | null;

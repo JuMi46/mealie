@@ -178,3 +178,4 @@ dev/code-generation/openapi.json
 .dev.env
 frontend/eslint.config.deprecated.js
 branch-db-switch.sh
+.devcontainer/devcontainer-lock.json

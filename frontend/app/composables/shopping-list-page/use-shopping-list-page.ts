@@ -1,5 +1,5 @@
 import type { ShoppingListItemOut } from "~/lib/api/types/household";
-import type { IngredientUnit, RecipeIngredient } from "~/lib/api/types/recipe";
+import type { RecipeIngredient } from "~/lib/api/types/recipe";
 import { useShoppingListState } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-state";
 import { useShoppingListData } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-data";
 import { useShoppingListSorting } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-sorting";
@@ -7,15 +7,14 @@ import { useShoppingListLabels } from "~/composables/shopping-list-page/sub-comp
 import { useShoppingListCopy } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-copy";
 import { useShoppingListCrud } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-crud";
 import { useShoppingListRecipes } from "~/composables/shopping-list-page/sub-composables/use-shopping-list-recipes";
-import { extendLabel, compareLabel } from "~/composables/use-extend-object";
+import { compareLabel } from "~/composables/use-extend-object";
 import { printFromNewWindow } from "~/composables/use-utils";
 import { useIngredientTextParser } from "~/composables/recipes";
 
 /**
  * Main composable that orchestrates all shopping list page functionality
  */
-export function useShoppingListPage(listId: string, allUnits?: globalThis.Ref<IngredientUnit[], IngredientUnit[]>,
-  unitsWithRange?: globalThis.Ref<IngredientUnit[], IngredientUnit[]>) {
+export function useShoppingListPage(listId: string) {
   // Initialize state
   const state = useShoppingListState();
   const {
@@ -37,16 +36,7 @@ export function useShoppingListPage(listId: string, allUnits?: globalThis.Ref<In
   function updateListItemOrder() {
     if (!shoppingList.value) return;
 
-    if (shoppingList.value?.listItems) {
-      for (const item of shoppingList.value.listItems) {
-        extendLabel(item.label);
-      }
-    }
     if (shoppingList.value?.labelSettings) {
-      for (const item of shoppingList.value.labelSettings) {
-        extendLabel(item.label);
-      }
-
       shoppingList.value.labelSettings.sort((a, b) => compareLabel(a.label, b.label));
     }
 
@@ -179,7 +169,7 @@ export function useShoppingListPage(listId: string, allUnits?: globalThis.Ref<In
       printableList += `<p class="label-name">- ${labelName}</p>`;
       for (const item of items) {
         if (item.food) {
-          const parsedIng = useParsedIngredientText(item as RecipeIngredient, 1, false, undefined, allUnits, unitsWithRange);
+          const parsedIng = useParsedIngredientText(item as RecipeIngredient, 1, false);
           printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.alternativeMeasurement)}${parseText(parsedIng.name)}</p>`;
         }
         else {

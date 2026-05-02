@@ -157,7 +157,9 @@ def auto_init():  # sourcery no-metrics
 
                 if key in relationships:
                     prop: RelationshipProperty = relationships[key]
-
+                    # Skip viewonly relationships - they cannot be set through auto_init
+                    if prop.viewonly:
+                        continue
                     # Identifies the type of relationship (ONETOMANY, MANYTOONE, many-to-one, many-to-many)
                     relation_dir = prop.direction
 

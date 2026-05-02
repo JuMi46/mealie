@@ -2,6 +2,7 @@ import type { Composer } from "vue-i18n";
 import { useData, useStore } from "../partials/use-store-factory";
 import type { IngredientUnit } from "~/lib/api/types/recipe";
 import { useUserApi } from "~/composables/api";
+import { UnitNames } from "~/composables/use-unit";
 
 const store: Ref<IngredientUnit[]> = ref([]);
 const loading = ref(false);
@@ -9,6 +10,9 @@ const loading = ref(false);
 export function resetUnitStore() {
   store.value = [];
   loading.value = false;
+  unitsWithRange.value = [];
+  milliliterUnit.value = null;
+  gramUnit.value = null;
 }
 
 export const useUnitData = function () {
@@ -30,12 +34,11 @@ export const useUnitStore = function (i18n?: Composer) {
 };
 
 export const unitsWithRange: Ref<IngredientUnit[]> = ref([]);
+export const milliliterUnit: Ref<IngredientUnit | null> = ref(null);
+export const gramUnit: Ref<IngredientUnit | null> = ref(null);
 
-watch(store, () => {
-  unitsWithRange.value = [];
-  for (const unit of store.value) {
-    if (unit.range) {
-      unitsWithRange.value.push(unit);
-    }
-  }
+watch(store, (units) => {
+  unitsWithRange.value = units.filter(unit => !!unit.range);
+  milliliterUnit.value = units.find(unit => unit.standardUnit === UnitNames.milliliter && unit.standardQuantity === 1) || null;
+  gramUnit.value = units.find(unit => unit.standardUnit === UnitNames.gram && unit.standardQuantity === 1) || null;
 });

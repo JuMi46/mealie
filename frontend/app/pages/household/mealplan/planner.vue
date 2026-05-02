@@ -27,26 +27,26 @@
           </v-btn>
         </template>
 
-      <v-card>
-        <v-date-picker
-          v-model="state.range"
-          hide-header
-          :multiple="'range'"
-          :first-day-of-week="firstDayOfWeek"
-          :local="$i18n.locale"
-        />
-
-        <v-card-text>
-          <v-number-input
-            v-model="numberOfDaysPast"
-            :min="0"
-            control-variant="stacked"
-            inset
-            :label="$t('meal-plan.numberOfDaysPast-label')"
-            :hint="$t('meal-plan.numberOfDaysPast-hint')"
-            persistent-hint
+        <v-card>
+          <v-date-picker
+            v-model="state.range"
+            hide-header
+            :multiple="'range'"
+            :first-day-of-week="firstDayOfWeek"
+            :local="$i18n.locale"
           />
-        </v-card-text>
+
+          <v-card-text>
+            <v-number-input
+              v-model="numberOfDaysPast"
+              :min="0"
+              control-variant="stacked"
+              inset
+              :label="$t('meal-plan.numberOfDaysPast-label')"
+              :hint="$t('meal-plan.numberOfDaysPast-hint')"
+              persistent-hint
+            />
+          </v-card-text>
 
           <v-card-text>
             <v-number-input
