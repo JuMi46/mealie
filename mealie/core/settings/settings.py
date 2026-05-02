@@ -125,7 +125,7 @@ class AppSettings(AppLoggingSettings):
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 9000
     API_DOCS: bool = True
-    TOKEN_TIME: int = 48
+    TOKEN_TIME: int = 8800
     """time in hours"""
 
     @field_validator("TOKEN_TIME")
@@ -343,7 +343,7 @@ class AppSettings(AppLoggingSettings):
     OIDC_ADMIN_GROUP: str | None = None
     OIDC_AUTO_REDIRECT: bool = False
     OIDC_PROVIDER_NAME: str = "OAuth"
-    OIDC_REMEMBER_ME: bool = False
+    OIDC_REMEMBER_ME: bool = True
     OIDC_USER_CLAIM: str = "email"
     OIDC_NAME_CLAIM: str = "name"
     OIDC_GROUPS_CLAIM: str | None = "groups"

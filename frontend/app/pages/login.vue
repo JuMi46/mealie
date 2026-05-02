@@ -242,7 +242,7 @@ useSeoMeta({
 const form = reactive({
   email: "",
   password: "",
-  remember: false,
+  remember: true,
 });
 
 useAsyncData(useAsyncKey(), async () => {
