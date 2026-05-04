@@ -5,6 +5,7 @@ export interface UseNewRecipeOptionsProps {
   enableImportCategories?: boolean;
   enableStayInEditMode?: boolean;
   enableParseRecipe?: boolean;
+  enableParseRecipeWithAI?: boolean;
 }
 
 export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
@@ -13,6 +14,7 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     enableImportCategories = true,
     enableStayInEditMode = true,
     enableParseRecipe = true,
+    enableParseRecipeWithAI = true,
   } = props;
 
   const router = useRouter();
@@ -62,16 +64,31 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     },
   });
 
+  const parseRecipeWithAI = computed({
+    get() {
+      if (!enableParseRecipeWithAI) return false;
+      return recipeCreatePreferences.value.parseRecipeWithAI;
+    },
+    set(v: boolean) {
+      if (!enableParseRecipeWithAI) return;
+      recipeCreatePreferences.value.parseRecipeWithAI = v;
+    },
+  });
+
   function navigateToRecipe(recipeSlug: string, groupSlug: string, createPagePath: string) {
     const editParam = enableStayInEditMode ? stayInEditMode.value : false;
     const parseParam = enableParseRecipe ? parseRecipe.value : false;
+    const parseAIParam = enableParseRecipeWithAI ? parseRecipeWithAI.value : false;
 
     const queryParams = new URLSearchParams();
-    if (editParam) {
+    if (editParam || parseAIParam) {
       queryParams.set("edit", "true");
     }
     if (parseParam) {
       queryParams.set("parse", "true");
+    }
+    if (parseAIParam) {
+      queryParams.set("parse_ai", "true");
     }
 
     const queryString = queryParams.toString();
@@ -87,6 +104,7 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     importCategories,
     stayInEditMode,
     parseRecipe,
+    parseRecipeWithAI,
 
     // Helper functions
     navigateToRecipe,
@@ -96,5 +114,6 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     enableImportCategories,
     enableStayInEditMode,
     enableParseRecipe,
+    enableParseRecipeWithAI,
   };
 }

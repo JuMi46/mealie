@@ -16,6 +16,7 @@
       :open="isEditMode"
       :recipe-id="recipe.id"
       :parse-with-ai-loading="parseWithAILoading"
+      :hide-parse-actions="hideParseActions"
       class="ml-auto mt-n7 pb-4"
       @close="$emit('close')"
       @json="toggleEditMode()"
@@ -45,11 +46,13 @@ interface Props {
   recipeScale?: number;
   landscape?: boolean;
   parseWithAILoading?: boolean;
+  hideParseActions?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
   landscape: false,
   parseWithAILoading: false,
+  hideParseActions: false,
 });
 
 defineEmits(["save", "delete", "print", "close", "link-ingredients", "parse-with-ai"]);

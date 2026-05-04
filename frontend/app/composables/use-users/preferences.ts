@@ -67,6 +67,7 @@ export interface UserRecipeCreatePreferences {
   importCategories: boolean;
   stayInEditMode: boolean;
   parseRecipe: boolean;
+  parseRecipeWithAI: boolean;
 }
 
 export interface UserActivityPreferences {
@@ -239,6 +240,7 @@ export function useRecipeCreatePreferences(): Ref<UserRecipeCreatePreferences> {
       importCategories: false,
       stayInEditMode: false,
       parseRecipe: true,
+      parseRecipeWithAI: false,
     },
     { mergeDefaults: true },
     // we cast to a Ref because by default it will return an optional type ref

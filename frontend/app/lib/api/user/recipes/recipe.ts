@@ -8,6 +8,7 @@ import { TimersActiveApi } from "./recipe-timers-active";
 import type {
   Recipe,
   CreateRecipe,
+  IngredientConfidence,
   RecipeTimer,
   RecipeAsset,
   CreateRecipeByUrlBulk,
@@ -96,9 +97,10 @@ export interface ParseWithAIStep {
 export interface ParseWithAIIngredientOut {
   display?: string | null;
   referenceId?: string | null;
+  confidence?: IngredientConfidence | null;
   quantity?: number | null;
-  unit?: { name: string } | null;
-  food?: { name: string } | null;
+  unit?: { id?: string | null; name: string } | null;
+  food?: { id?: string | null; name: string } | null;
   note?: string | null;
   quantityInMl?: number | null;
 }

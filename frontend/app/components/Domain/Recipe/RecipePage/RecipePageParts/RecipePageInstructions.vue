@@ -119,7 +119,7 @@
     </div>
     <VueDraggable
       v-model="instructionList"
-      :disabled="!isEditForm"
+      :disabled="!isEditForm || props.disabled"
       handle=".handle"
       :delay="250"
       :delay-on-touch-only="true"
@@ -364,7 +364,7 @@
                         />
                       </v-col>
                     </v-row>
-                    <div v-if="!isEditForm && step.timers && step.timers.length > 0 ">
+                    <div v-if="!isEditForm && step.timers && step.timers.length > 0">
                       <RecipePageInstructionsTimer
                         :timers="step.timers"
                         :is-cook-mode="isCookMode"
@@ -419,6 +419,10 @@ const props = defineProps({
   scale: {
     type: Number,
     default: 1,
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -864,9 +868,11 @@ defineExpose({
   line-height: 1.25;
   word-break: break-word;
 }
+
 .summary-wrapper {
   flex: 1 1 auto;
-  min-width: 0; /* wrapping in flex container */
+  min-width: 0;
+  /* wrapping in flex container */
   white-space: normal;
   overflow-wrap: anywhere;
   cursor: pointer;

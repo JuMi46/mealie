@@ -133,12 +133,14 @@ interface Props {
   recipeId: string;
   canEdit?: boolean;
   parseWithAILoading?: boolean;
+  hideParseActions?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
   loggedIn: false,
   canEdit: false,
   parseWithAILoading: false,
+  hideParseActions: false,
 });
 
 const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "edit", "link-ingredients", "parse-with-ai"]);
@@ -200,7 +202,7 @@ const editorButtons = computed(() => {
       }
     }
 
-    if (!recipeHasLinkedIngredients) {
+    if (!recipeHasLinkedIngredients && !props.hideParseActions) {
       buttons.unshift({
         text: i18n.t("recipe.link-ingredients"),
         icon: $globals.icons.wrench,
@@ -210,7 +212,7 @@ const editorButtons = computed(() => {
     }
   }
 
-  if (!hasFoodOrUnit()) {
+  if (!hasFoodOrUnit() && !props.hideParseActions) {
     if ($appInfo.enableOpenai) {
       buttons.unshift({
         text: i18n.t("recipe.parse-with-ai"),

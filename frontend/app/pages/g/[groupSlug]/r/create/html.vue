@@ -82,6 +82,12 @@
           hide-details
           :label="$t('recipe.parse-recipe-ingredients-after-import')"
         />
+        <v-checkbox
+          v-model="parseRecipeWithAI"
+          color="primary"
+          hide-details
+          :label="$t('recipe.parse-recipe-with-ai-after-import')"
+        />
       </v-card-text>
       <v-card-actions class="justify-center">
         <div style="width: 100%" class="text-center">
@@ -130,6 +136,7 @@ const {
   importCategories,
   stayInEditMode,
   parseRecipe,
+  parseRecipeWithAI,
   navigateToRecipe,
 } = useNewRecipeOptions();
 

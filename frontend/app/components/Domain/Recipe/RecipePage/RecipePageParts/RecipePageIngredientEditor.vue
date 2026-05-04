@@ -17,7 +17,7 @@
       v-bind="{
         animation: 200,
         group: 'recipe-ingredients',
-        disabled: false,
+        disabled: props.disabled || false,
         ghostClass: 'ghost',
       }"
       @start="drag = true"
@@ -51,13 +51,13 @@
         location="top"
         color="accent"
       >
-        <template #activator="{ props }">
+        <template #activator="{ props: activatorProps }">
           <span>
             <BaseButton
               class="mb-1"
               :disabled="hasFoodOrUnit"
               color="accent"
-              v-bind="props"
+              v-bind="activatorProps"
               @click="toggleIsParsing(true)"
             >
               <template #icon>
@@ -89,11 +89,11 @@
         </v-btn>
         <!-- Dropdown button -->
         <v-menu>
-          <template #activator="{ props }">
+          <template #activator="{ props: activatorProps }">
             <v-btn
               color="success"
               class="split-dropdown"
-              v-bind="props"
+              v-bind="activatorProps"
             >
               <v-icon>{{ $globals.icons.chevronDown }}</v-icon>
             </v-btn>
@@ -137,6 +137,10 @@ import { usePageState } from "~/composables/recipe-page/shared-state";
 import { uuid4 } from "~/composables/use-utils";
 
 const recipe = defineModel<NoUndefinedField<Recipe>>({ required: true });
+const props = defineProps<{
+  disabled?: boolean;
+}>();
+
 const ingredientsWithRecipe = new Map<string, boolean>();
 const i18n = useI18n();
 
@@ -267,6 +271,7 @@ function insertNewIngredient(dest: number) {
   border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }
+
 .split-dropdown {
   border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;

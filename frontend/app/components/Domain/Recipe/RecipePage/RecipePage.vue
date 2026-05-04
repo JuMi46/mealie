@@ -21,6 +21,14 @@
       can-confirm
       @confirm="applyAIParsedRecipe"
     >
+      <template #custom-card-action>
+        <BaseButton v-if="aiLowConfidenceCount > 0" color="warning" @click="reviewAIIngredients">
+          <template #icon>
+            {{ $globals.icons.search }}
+          </template>
+          {{ $t("recipe.review-ai-ingredients", { count: aiLowConfidenceCount }) }}
+        </BaseButton>
+      </template>
       <v-card-text>
         {{ $t("recipe.apply-ai-parsed-recipe-confirmation") }}
       </v-card-text>
@@ -60,6 +68,9 @@
             </v-list-item-title>
           </v-list-item>
         </v-list>
+        <v-alert v-if="aiLowConfidenceCount > 0" type="warning" variant="tonal" density="compact" class="mt-3">
+          {{ $t("recipe.ai-parse-low-confidence-warning", { count: aiLowConfidenceCount }) }}
+        </v-alert>
         <template v-if="aiIngredientPreview.length > 0 || aiInstructionPreview.length > 0">
           <v-divider class="my-3" />
           <div class="text-subtitle-2 mb-1">
@@ -101,17 +112,32 @@
     <RecipePageParseDialog
       :model-value="isParsing"
       :ingredients="recipe.recipeIngredient"
+      :preloaded-ingredients="aiParsedIngredientsForReview.length ? aiParsedIngredientsForReview : undefined"
       :width="$vuetify.display.smAndDown ? '100%' : '80%'"
-      @update:model-value="toggleIsParsing"
+      @update:model-value="onParseDialogClose"
       @save="saveParsedIngredients"
+      @review-ai="onAIReviewComplete"
     />
     <v-container v-show="!isCookMode" key="recipe-page" class="px-0" :class="{ 'pa-0': $vuetify.display.smAndDown }">
-      <v-card flat class="d-print-none">
+      <v-card flat class="d-print-none" :class="{ 'opacity-50': parseWithAILoading }">
+        <!-- Loading Overlay -->
+        <v-overlay v-if="parseWithAILoading" contained absolute class="d-flex align-center justify-center">
+          <div class="text-center">
+            <v-progress-circular indeterminate color="accent" size="64" class="mb-4" />
+            <p class="text-body-1 font-weight-medium">
+              {{ $t('recipe.parse-with-ai') }}
+            </p>
+            <p class="text-caption opacity-75">
+              {{ $t('general.loading') }}
+            </p>
+          </div>
+        </v-overlay>
         <RecipePageHeader
           :recipe="recipe"
           :recipe-scale="scale"
           :landscape="landscape"
           :parse-with-ai-loading="parseWithAILoading"
+          :hide-parse-actions="isImportParseAIMode"
           @save="saveRecipe"
           @delete="deleteRecipe"
           @close="closeEditor"
@@ -125,7 +151,10 @@
           mode="text"
           :main-menu-bar="false"
         />
-        <v-card-text v-else>
+        <v-card-text
+          v-else
+          :class="{ 'pointer-events-none': parseWithAILoading }"
+        >
           <!--
             This is where most of the main content is rendered. Some components include state for both Edit and View modes
             which is why some have explicit v-if statements and others use the composition API to determine and manage
@@ -140,7 +169,7 @@
             <RecipePageInfoEditor v-if="isEditMode" v-model="recipe" />
           </div>
           <div>
-            <RecipePageIngredientEditor v-if="isEditForm" v-model="recipe" />
+            <RecipePageIngredientEditor v-if="isEditForm" v-model="recipe" :disabled="parseWithAILoading" />
           </div>
           <div>
             <RecipePageScale v-model="scale" :recipe="recipe" />
@@ -161,7 +190,12 @@
               :class="$vuetify.display.mdAndUp ? 'border-e-thin' : null"
             >
               <RecipePageIngredientToolsView v-if="!isEditForm" :recipe="recipe" :scale="scale" class="pr-2" />
-              <RecipePageOrganizers v-if="$vuetify.display.mdAndUp" v-model="recipe" class="pr-2" @item-selected="chipClicked" />
+              <RecipePageOrganizers
+                v-if="$vuetify.display.mdAndUp"
+                v-model="recipe"
+                class="pr-2"
+                @item-selected="chipClicked"
+              />
             </v-col>
             <!--
               the right column is always rendered, but it's layout width is determined by where the left column is
@@ -174,6 +208,7 @@
                 v-model:assets="recipe.assets"
                 :recipe="recipe"
                 :scale="scale"
+                :disabled="parseWithAILoading"
               />
               <div v-if="isEditForm" class="d-flex">
                 <BaseButton class="my-2 mr-1" :disabled="isParsingTimers" @click="parseTimersForRecipe">
@@ -228,7 +263,7 @@
         </v-col>
         <v-col
           class="overflow-y-auto"
-          :class="$vuetify.display.smAndDown ? 'py-2': 'py-6'"
+          :class="$vuetify.display.smAndDown ? 'py-2' : 'py-6'"
           style="height: 100%"
           cols="12"
           sm="7"
@@ -304,7 +339,7 @@ import {
   usePageState,
 } from "~/composables/recipe-page/shared-state";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
-import type { Recipe, RecipeCategory, RecipeIngredient, RecipeTag, RecipeTool } from "~/lib/api/types/recipe";
+import type { ParsedIngredient, Recipe, RecipeCategory, RecipeIngredient, RecipeTag, RecipeTool } from "~/lib/api/types/recipe";
 import type { ParseInstructionTimersStepOut, ParseWithAIOut } from "~/lib/api/user/recipes/recipe";
 import { useRouteQuery } from "~/composables/use-router";
 import { useUserApi } from "~/composables/api";
@@ -372,6 +407,7 @@ const pendingRoute = ref<RouteLocationNormalized | null>(null);
 const parseWithAIDialog = ref(false);
 const parseWithAILoading = ref(false);
 const aiParsedRecipe = ref<ParseWithAIOut | null>(null);
+const aiParsedIngredientsForReview = ref<ParsedIngredient[]>([]);
 
 const aiOrgUrlChanged = computed(() => {
   if (!aiParsedRecipe.value) {
@@ -410,6 +446,22 @@ const aiInstructionPreview = computed(() => {
     .map(step => previewText(step.text))
     .filter(Boolean)
     .slice(0, 4);
+});
+
+const aiLowConfidenceCount = computed(() => {
+  const confidenceThreshold = 0.85;
+  return aiParsedIngredientsForReview.value.filter((ing) => {
+    if (ing.confidence && ing.confidence.average < confidenceThreshold) {
+      return true;
+    }
+    if (ing.ingredient.food && !("id" in ing.ingredient.food && ing.ingredient.food.id)) {
+      return true;
+    }
+    if (ing.ingredient.unit && !("id" in ing.ingredient.unit && ing.ingredient.unit.id)) {
+      return true;
+    }
+    return false;
+  }).length;
 });
 
 invoke(async () => {
@@ -485,10 +537,15 @@ type BooleanString = "true" | "false" | "";
 
 const paramsEdit = useRouteQuery<BooleanString>("edit", "");
 const paramsParse = useRouteQuery<BooleanString>("parse", "");
+const paramsParseAI = useRouteQuery<BooleanString>("parse_ai", "");
 const paramsCookMode = useRouteQuery<BooleanString>("isCookMode", "");
 const paramsServings = useRouteQuery<BooleanString>("servings", "");
+const hasAutoParsedWithAI = ref(false);
+const importParseAIMode = ref(paramsParseAI.value === "true");
+const isImportParseAIMode = computed(() => importParseAIMode.value);
 
 onMounted(() => {
+  console.log("recipe", recipe.value);
   if (paramsEdit.value === "true" && isOwnGroup.value) {
     setMode(PageMode.EDIT);
   }
@@ -499,6 +556,13 @@ onMounted(() => {
 
   if (paramsParse.value === "true" && isOwnGroup.value) {
     toggleIsParsing(true);
+  }
+
+  if (paramsParseAI.value === "true" && isOwnGroup.value && recipe.value.slug && !hasAutoParsedWithAI.value) {
+    setMode(PageMode.EDIT);
+    hasAutoParsedWithAI.value = true;
+    importParseAIMode.value = true;
+    void parseRecipeWithAI();
   }
 
   if (paramsServings.value) {
@@ -517,6 +581,19 @@ watch(isParsing, () => {
     paramsParse.value = undefined;
   }
 });
+
+watch(
+  () => [paramsParseAI.value, isOwnGroup.value, recipe.value.slug] as const,
+  ([parseAI, ownGroup, slug]) => {
+    if (parseAI === "true" && ownGroup && slug && !hasAutoParsedWithAI.value) {
+      setMode(PageMode.EDIT);
+      hasAutoParsedWithAI.value = true;
+      importParseAIMode.value = true;
+      void parseRecipeWithAI();
+    }
+  },
+  { immediate: true },
+);
 
 /** =============================================================
  * Recipe Save Delete
@@ -537,6 +614,15 @@ async function saveRecipe(stayInEditMode: boolean = false) {
 
 async function saveParsedIngredients(ingredients: NoUndefinedField<RecipeIngredient[]>, linkIngredientsAfter: boolean = false) {
   recipe.value.recipeIngredient = ingredients;
+
+  // If these ingredients came from an AI parse, also apply the AI instructions and metadata.
+  if (aiParsedRecipe.value) {
+    recipe.value.recipeInstructions = aiParsedRecipe.value.recipeInstructions;
+    recipe.value.orgURL = aiParsedRecipe.value.orgURL ?? recipe.value.orgURL;
+    aiParsedRecipe.value = null;
+    aiParsedIngredientsForReview.value = [];
+  }
+
   await saveRecipe(true);
   toggleIsParsing(false);
   if (linkIngredientsAfter) {
@@ -544,9 +630,28 @@ async function saveParsedIngredients(ingredients: NoUndefinedField<RecipeIngredi
   }
 }
 
+function onParseDialogClose(open: boolean) {
+  if (!open && aiParsedIngredientsForReview.value.length) {
+    aiParsedRecipe.value = null;
+    aiParsedIngredientsForReview.value = [];
+  }
+  toggleIsParsing(open);
+}
+
+function onAIReviewComplete(ingredients: ParsedIngredient[]) {
+  // The dialog already boosted confidence for resolved items, so just store the result directly.
+  aiParsedIngredientsForReview.value = ingredients;
+  toggleIsParsing(false);
+  parseWithAIDialog.value = true;
+}
+
 async function parseRecipeWithAI() {
   if (!recipe.value.slug || parseWithAILoading.value) {
     return;
+  }
+
+  if (paramsParseAI.value === "true") {
+    paramsParseAI.value = undefined;
   }
 
   parseWithAILoading.value = true;
@@ -573,6 +678,21 @@ async function parseRecipeWithAI() {
   }
 
   aiParsedRecipe.value = data;
+
+  aiParsedIngredientsForReview.value = data.recipeIngredient.map((ing, i) => ({
+    input: ing.display ?? recipe.value.recipeIngredient[i]?.display ?? "",
+    confidence: ing.confidence ?? undefined,
+    ingredient: {
+      referenceId: ing.referenceId ?? undefined,
+      display: ing.display ?? undefined,
+      quantity: ing.quantity ?? undefined,
+      unit: ing.unit ?? undefined,
+      food: ing.food ?? undefined,
+      note: ing.note ?? undefined,
+      title: recipe.value.recipeIngredient[i]?.title ?? "",
+    },
+  }));
+
   parseWithAIDialog.value = true;
 }
 
@@ -581,10 +701,26 @@ function applyAIParsedRecipe() {
     return;
   }
 
-  recipe.value.recipeIngredient = aiParsedRecipe.value.recipeIngredient;
+  // Confirm path keeps existing behavior but strips unresolved food/unit objects to avoid save-time errors.
+  recipe.value.recipeIngredient = aiParsedIngredientsForReview.value.map(ing => ({
+    ...ing.ingredient,
+    unit: ing.ingredient.unit && "id" in ing.ingredient.unit && ing.ingredient.unit.id
+      ? ing.ingredient.unit
+      : undefined,
+    food: ing.ingredient.food && "id" in ing.ingredient.food && ing.ingredient.food.id
+      ? ing.ingredient.food
+      : undefined,
+  })) as NoUndefinedField<RecipeIngredient[]>;
   recipe.value.recipeInstructions = aiParsedRecipe.value.recipeInstructions;
   recipe.value.orgURL = aiParsedRecipe.value.orgURL ?? recipe.value.orgURL;
+  aiParsedRecipe.value = null;
+  aiParsedIngredientsForReview.value = [];
   parseWithAIDialog.value = false;
+}
+
+function reviewAIIngredients() {
+  parseWithAIDialog.value = false;
+  toggleIsParsing(true);
 }
 
 async function deleteRecipe() {

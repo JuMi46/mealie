@@ -106,6 +106,9 @@ class OpenAIParser(ABCIngredientParser):
 
         return self.find_ingredient_match(parsed_ingredient)
 
+    def convert_ingredient(self, original_text: str, openai_ing: OpenAIIngredient) -> ParsedIngredient:
+        return self._convert_ingredient(original_text, openai_ing)
+
     def _get_prompt(self, service: OpenAIService) -> str:
         if service.send_db_data and self.data_matcher.units_by_alias:
             data_injections = [

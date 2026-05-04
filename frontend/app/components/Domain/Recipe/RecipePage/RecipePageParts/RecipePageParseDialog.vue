@@ -16,7 +16,7 @@
             <p>{{ $t("recipe.parser.ingredient-parser-description") }}</p>
             <p>{{ $t("recipe.parser.ingredient-parser-final-review-description") }}</p>
           </div>
-          <div class="d-flex flex-wrap align-center">
+          <div v-if="!preloadedIngredients?.length" class="d-flex flex-wrap align-center">
             <div class="text-body-2 mr-2">
               {{ $t("recipe.parser.select-parser") }}
             </div>
@@ -47,16 +47,13 @@
               </p>
             </div>
             <div class="d-flex align-center pa-0 ma-0">
-              <v-icon
-                :color="(currentIng.confidence?.average || 0) < confidenceThreshold ? 'error' : 'success'"
-              >
-                {{ (currentIng.confidence?.average || 0) < confidenceThreshold ? $globals.icons.alert : $globals.icons.check }}
+              <v-icon :color="(currentIng.confidence?.average || 0) < confidenceThreshold ? 'error' : 'success'">
+                {{ (currentIng.confidence?.average || 0) < confidenceThreshold ? $globals.icons.alert
+                  : $globals.icons.check }}
               </v-icon>
-              <span
-                class="ml-2"
-                :color="currentIngHasError ? 'error-text' : 'success-text'"
-              >
-                {{ $t("recipe.parser.confidence-score") }}: {{ currentIng.confidence ? asPercentage(currentIng.confidence?.average!) : "" }}
+              <span class="ml-2" :color="currentIngHasError ? 'error-text' : 'success-text'">
+                {{ $t("recipe.parser.confidence-score") }}: {{ currentIng.confidence
+                  ? asPercentage(currentIng.confidence?.average!) : "" }}
               </span>
             </div>
             <RecipeIngredientEditor
@@ -179,7 +176,7 @@
       </div>
       <!-- Review -->
       <div v-else>
-        <v-card-actions>
+        <v-card-actions v-if="!preloadedIngredients?.length">
           <BaseButton
             create
             :text="$t('general.save')"
@@ -193,6 +190,14 @@
             :icon="$globals.icons.save"
             :loading="state.loading.save"
             @click="saveIngs(true)"
+          />
+        </v-card-actions>
+        <v-card-actions v-else>
+          <BaseButton
+            color="accent"
+            :text="$t('recipe.return-to-ai-parse-confirmation')"
+            :icon="$globals.icons.arrowLeftBold"
+            @click="returnToAIParseConfirmation"
           />
         </v-card-actions>
       </div>
@@ -215,6 +220,7 @@ import { useParsingPreferences } from "~/composables/use-users/preferences";
 const props = defineProps<{
   modelValue: boolean;
   ingredients: NoUndefinedField<RecipeIngredient[]>;
+  preloadedIngredients?: ParsedIngredient[];
 }>();
 
 const { ingredientToParserString } = useIngredientTextParser();
@@ -222,6 +228,7 @@ const { ingredientToParserString } = useIngredientTextParser();
 const emit = defineEmits<{
   (e: "update:modelValue", value: boolean): void;
   (e: "save", value: NoUndefinedField<RecipeIngredient[]>, linkIngredientsAfter: boolean): void;
+  (e: "review-ai", value: ParsedIngredient[]): void;
 }>();
 
 const { $appInfo } = useNuxtApp();
@@ -521,6 +528,17 @@ watch(() => props.modelValue, () => {
     return;
   }
 
+  if (props.preloadedIngredients && props.preloadedIngredients.length > 0) {
+    parsedIngs.value = props.preloadedIngredients.map(ing => ({ ...ing }));
+    state.currentParsedIndex = -1;
+    state.allReviewed = false;
+    createdUnits.clear();
+    createdFoods.clear();
+    currentIngShouldDelete.value = false;
+    nextIngredient();
+    return;
+  }
+
   parseIngredients();
 });
 
@@ -563,5 +581,20 @@ function insertNewIngredient(index: number) {
 function saveIngs(linkIngredientsAfter: boolean = false) {
   emit("save", parsedIngs.value.map(x => x.ingredient as NoUndefinedField<RecipeIngredient>), linkIngredientsAfter);
   state.loading.save = true;
+}
+
+function returnToAIParseConfirmation() {
+  // Re-emit full ParsedIngredient state so the parent can preserve edits.
+  // Boost confidence to the threshold for ingredients the user resolved (food/unit now have IDs)
+  // so they don't re-appear as needing review when the AI confirm dialog reopens.
+  const reviewed = parsedIngs.value.map((ing) => {
+    const foodOk = !ing.ingredient.food || !!(ing.ingredient.food as any).id;
+    const unitOk = !ing.ingredient.unit || !!(ing.ingredient.unit as any).id;
+    if (foodOk && unitOk && ing.confidence && (ing.confidence.average ?? 0) < confidenceThreshold) {
+      return { ...ing, confidence: { ...ing.confidence, average: confidenceThreshold } };
+    }
+    return ing;
+  });
+  emit("review-ai", reviewed);
 }
 </script>

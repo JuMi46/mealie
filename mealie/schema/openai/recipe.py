@@ -3,6 +3,21 @@ from pydantic import Field
 from ._base import OpenAIBase
 
 
+class OpenAIRecipeTimer(OpenAIBase):
+    duration: int = Field(..., description="Timer duration in seconds.")
+    text: str | None = Field(None, description="Short human-readable timer label.")
+
+
+class OpenAIRecipeIngredientReference(OpenAIBase):
+    reference_id: str | None = Field(
+        None,
+        description=(
+            "Reference ID of an ingredient used in this instruction. "
+            "Must match a referenceId from the ingredients list."
+        ),
+    )
+
+
 class OpenAIRecipeIngredientWithQuantity(OpenAIBase):
     reference_id: str | None = Field(
         None,
@@ -74,9 +89,19 @@ class OpenAIRecipeInstruction(OpenAIBase):
         ),
     )
 
+    ingredient_references: list[OpenAIRecipeIngredientReference] = Field(
+        default_factory=list,
+        description="Ingredient references used in this instruction step.",
+    )
+
     ingredients_with_quantity: list[OpenAIRecipeIngredientWithQuantity] = Field(
         default_factory=list,
         description="Ingredients used in this specific step with their precise quantities.",
+    )
+
+    timers: list[OpenAIRecipeTimer] = Field(
+        default_factory=list,
+        description="Timers mentioned in this instruction step.",
     )
 
 

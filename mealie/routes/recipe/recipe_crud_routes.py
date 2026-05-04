@@ -34,7 +34,10 @@ from mealie.routes._base.routers import MealieCrudRoute, UserAPIRouter
 from mealie.schema.cookbook.cookbook import ReadCookBook
 from mealie.schema.make_dependable import make_dependable
 from mealie.schema.openai import OpenAIRecipe
+from mealie.schema.openai.recipe import OpenAIRecipeIngredient
+from mealie.schema.openai.recipe_ingredient import OpenAIIngredient
 from mealie.schema.recipe import (
+    IngredientConfidence,
     IngredientReferences,
     Recipe,
     ScrapeRecipe,
@@ -71,7 +74,9 @@ from mealie.services.event_bus_service.event_types import (
     EventRecipeData,
     EventTypes,
 )
-from mealie.services.openai import OpenAIService
+from mealie.services.openai import OpenAIDataInjection, OpenAIService
+from mealie.services.parser_services._base import DataMatcher
+from mealie.services.parser_services.openai.parser import OpenAIParser
 from mealie.services.parser_services.parser_utils.duration_parser import DurationParser
 from mealie.services.recipe.recipe_data_service import (
     InvalidDomainError,
@@ -128,6 +133,7 @@ class ParseRecipeWithAIIn(BaseModel):
 
 
 class ParseRecipeWithAINamedItem(BaseModel):
+    id: UUID | None = None
     name: str
 
 
@@ -146,6 +152,7 @@ class ParseRecipeWithAIIngredientItemOut(BaseModel):
 
     reference_id: UUID | None = Field(None, alias="referenceId")
     display: str | None = None
+    confidence: IngredientConfidence | None = None
     quantity: float | None = None
     unit: ParseRecipeWithAINamedItem | None = None
     food: ParseRecipeWithAINamedItem | None = None
@@ -178,6 +185,100 @@ class ParseRecipeWithAIOut(BaseModel):
 
 @controller(router)
 class RecipeController(BaseRecipeController):
+    def _get_parse_recipe_with_ai_prompt(self, openai_service: OpenAIService) -> str:
+        if openai_service.send_db_data:
+            data_matcher = DataMatcher(self.repos)
+            unit_aliases = list(set(data_matcher.units_by_alias))
+            if unit_aliases:
+                return openai_service.get_prompt(
+                    "recipes.parse-recipe-editor",
+                    data_injections=[
+                        OpenAIDataInjection(
+                            description=(
+                                "Below is a list of unit names and abbreviations from the user's database. "
+                                "Use this as the preferred unit vocabulary when parsing ingredients and "
+                                "instruction quantities."
+                            ),
+                            value=unit_aliases,
+                        )
+                    ],
+                )
+
+        return openai_service.get_prompt("recipes.parse-recipe-editor")
+
+    @staticmethod
+    def _parse_uuid(value: str | None) -> UUID | None:
+        if not value:
+            return None
+
+        try:
+            return UUID(value)
+        except ValueError:
+            return None
+
+    def _build_parse_recipe_with_ai_ingredient_out(
+        self,
+        ingredient_parser: OpenAIParser,
+        data: ParseRecipeWithAIIn,
+        index: int,
+        ai_ingredient: OpenAIRecipeIngredient,
+        reference_id: UUID,
+    ) -> ParseRecipeWithAIIngredientItemOut:
+        original_text = (
+            data.recipe_ingredient[index].display if index < len(data.recipe_ingredient) else ai_ingredient.text
+        )
+        parsed_ingredient = ingredient_parser.convert_ingredient(
+            original_text or ai_ingredient.text,
+            OpenAIIngredient(
+                quantity=ai_ingredient.quantity,
+                unit=ai_ingredient.unit_name,
+                food=ai_ingredient.food_name,
+                note=ai_ingredient.note,
+            ),
+        )
+
+        return ParseRecipeWithAIIngredientItemOut(
+            reference_id=reference_id,
+            display=ai_ingredient.text,
+            confidence=parsed_ingredient.confidence,
+            quantity=parsed_ingredient.ingredient.quantity,
+            unit=(
+                ParseRecipeWithAINamedItem(
+                    id=parsed_ingredient.ingredient.unit.id,
+                    name=parsed_ingredient.ingredient.unit.name,
+                )
+                if parsed_ingredient.ingredient.unit and parsed_ingredient.ingredient.unit.name
+                else None
+            ),
+            food=(
+                ParseRecipeWithAINamedItem(
+                    id=parsed_ingredient.ingredient.food.id,
+                    name=parsed_ingredient.ingredient.food.name,
+                )
+                if parsed_ingredient.ingredient.food and parsed_ingredient.ingredient.food.name
+                else None
+            ),
+            note=parsed_ingredient.ingredient.note,
+            quantity_in_ml=ai_ingredient.quantity_in_ml,
+        )
+
+    @staticmethod
+    def _resolve_unique_uuid(preferred: UUID | None, fallback: UUID | None, seen: set[UUID]) -> UUID:
+        if preferred and preferred not in seen:
+            seen.add(preferred)
+            return preferred
+
+        if fallback and fallback not in seen:
+            seen.add(fallback)
+            return fallback
+
+        new_id = uuid4()
+        while new_id in seen:
+            new_id = uuid4()
+
+        seen.add(new_id)
+        return new_id
+
     def handle_exceptions(self, ex: Exception) -> None:
         thrownType = type(ex)
 
@@ -556,7 +657,7 @@ class RecipeController(BaseRecipeController):
             )
 
         openai_service = OpenAIService()
-        prompt = openai_service.get_prompt("recipes.parse-recipe-editor")
+        prompt = self._get_parse_recipe_with_ai_prompt(openai_service)
 
         recipe_payload = {
             "orgURL": data.org_url,
@@ -599,47 +700,72 @@ class RecipeController(BaseRecipeController):
                 detail=ErrorResponse.respond(message="OpenAI returned an empty response"),
             )
 
-        ingredients = [
-            ParseRecipeWithAIIngredientItemOut(
-                reference_id=data.recipe_ingredient[i].reference_id if i < len(data.recipe_ingredient) else uuid4(),
-                display=ai_ingredient.text,
-                quantity=ai_ingredient.quantity,
-                unit=ParseRecipeWithAINamedItem(name=ai_ingredient.unit_name) if ai_ingredient.unit_name else None,
-                food=ParseRecipeWithAINamedItem(name=ai_ingredient.food_name) if ai_ingredient.food_name else None,
-                note=ai_ingredient.note,
-                quantity_in_ml=ai_ingredient.quantity_in_ml,
-            )
-            for i, ai_ingredient in enumerate(response.ingredients)
-            if ai_ingredient.text
-        ]
+        ingredient_parser = OpenAIParser(self.group_id, self.session, self.translator)
 
-        instructions = [
-            ParseRecipeWithAIStepItemOut(
-                id=data.recipe_instructions[i].id if i < len(data.recipe_instructions) else uuid4(),
-                title=ai_instruction.title,
-                text=ai_instruction.text,
-                ingredient_references=(
-                    data.recipe_instructions[i].ingredient_references if i < len(data.recipe_instructions) else []
-                ),
-                preparation_instruction_id=(
-                    UUID(ai_instruction.preparation_instruction_id)
-                    if ai_instruction.preparation_instruction_id
-                    else None
-                ),
-                ingredients_with_quantity=[
-                    ParseRecipeWithAIIngredientWithQuantityOut(
-                        reference_id=UUID(item.reference_id) if item.reference_id else None,
-                        quantity=item.quantity,
-                        quantity_in_ml=item.quantity_in_ml,
-                        unit_name=item.unit_name,
-                        comment=item.comment,
-                    )
-                    for item in (ai_instruction.ingredients_with_quantity or [])
-                ],
+        seen_ingredient_reference_ids: set[UUID] = set()
+        ingredients: list[ParseRecipeWithAIIngredientItemOut] = []
+        for i, ai_ingredient in enumerate(response.ingredients):
+            if not ai_ingredient.text:
+                continue
+
+            fallback_reference_id = data.recipe_ingredient[i].reference_id if i < len(data.recipe_ingredient) else None
+            reference_id = self._resolve_unique_uuid(
+                preferred=self._parse_uuid(ai_ingredient.reference_id),
+                fallback=fallback_reference_id,
+                seen=seen_ingredient_reference_ids,
             )
-            for i, ai_instruction in enumerate(response.instructions)
-            if ai_instruction.text
-        ]
+
+            ingredients.append(
+                self._build_parse_recipe_with_ai_ingredient_out(
+                    ingredient_parser=ingredient_parser,
+                    data=data,
+                    index=i,
+                    ai_ingredient=ai_ingredient,
+                    reference_id=reference_id,
+                )
+            )
+
+        seen_instruction_ids: set[UUID] = set()
+        instructions: list[ParseRecipeWithAIStepItemOut] = []
+        for i, ai_instruction in enumerate(response.instructions):
+            if not ai_instruction.text:
+                continue
+
+            fallback_instruction_id = data.recipe_instructions[i].id if i < len(data.recipe_instructions) else None
+            instruction_id = self._resolve_unique_uuid(
+                preferred=self._parse_uuid(ai_instruction.id),
+                fallback=fallback_instruction_id,
+                seen=seen_instruction_ids,
+            )
+
+            instructions.append(
+                ParseRecipeWithAIStepItemOut(
+                    id=instruction_id,
+                    title=ai_instruction.title,
+                    text=ai_instruction.text,
+                    ingredient_references=[
+                        IngredientReferences(reference_id=self._parse_uuid(reference.reference_id))
+                        for reference in ai_instruction.ingredient_references
+                        if self._parse_uuid(reference.reference_id)
+                    ],
+                    timers=[
+                        RecipeTimer(duration=timer.duration, text=timer.text, timers_active=[])
+                        for timer in ai_instruction.timers
+                        if 0 < timer.duration <= 176400
+                    ],
+                    preparation_instruction_id=self._parse_uuid(ai_instruction.preparation_instruction_id),
+                    ingredients_with_quantity=[
+                        ParseRecipeWithAIIngredientWithQuantityOut(
+                            reference_id=self._parse_uuid(item.reference_id),
+                            quantity=item.quantity,
+                            quantity_in_ml=item.quantity_in_ml,
+                            unit_name=item.unit_name,
+                            comment=item.comment,
+                        )
+                        for item in (ai_instruction.ingredients_with_quantity or [])
+                    ],
+                )
+            )
 
         return ParseRecipeWithAIOut(
             recipe_ingredient=ingredients,
