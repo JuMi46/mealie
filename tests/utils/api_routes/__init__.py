@@ -27,6 +27,8 @@ admin_maintenance_clean_recipe_folders = "/api/admin/maintenance/clean/recipe-fo
 """`/api/admin/maintenance/clean/recipe-folders`"""
 admin_maintenance_clean_temp = "/api/admin/maintenance/clean/temp"
 """`/api/admin/maintenance/clean/temp`"""
+admin_maintenance_parse_instruction_timers = "/api/admin/maintenance/parse/instruction-timers"
+"""`/api/admin/maintenance/parse/instruction-timers`"""
 admin_maintenance_storage = "/api/admin/maintenance/storage"
 """`/api/admin/maintenance/storage`"""
 admin_users = "/api/admin/users"
@@ -171,6 +173,8 @@ recipes_timeline_events = "/api/recipes/timeline/events"
 """`/api/recipes/timeline/events`"""
 shared_recipes = "/api/shared/recipes"
 """`/api/shared/recipes`"""
+timers_active = "/api/timers/active"
+"""`/api/timers/active`"""
 units = "/api/units"
 """`/api/units`"""
 units_merge = "/api/units/merge"
@@ -415,6 +419,11 @@ def households_webhooks_item_id_test(item_id):
     return f"{prefix}/households/webhooks/{item_id}/test"
 
 
+def households_webhooks_item_id_test_timer(item_id):
+    """`/api/households/webhooks/{item_id}/test/timer`"""
+    return f"{prefix}/households/webhooks/{item_id}/test/timer"
+
+
 def media_recipes_recipe_id_assets_file_name(recipe_id, file_name):
     """`/api/media/recipes/{recipe_id}/assets/{file_name}`"""
     return f"{prefix}/media/recipes/{recipe_id}/assets/{file_name}"
@@ -515,6 +524,16 @@ def recipes_slug_last_made(slug):
     return f"{prefix}/recipes/{slug}/last-made"
 
 
+def recipes_slug_parse_instruction_timers(slug):
+    """`/api/recipes/{slug}/parse-instruction-timers`"""
+    return f"{prefix}/recipes/{slug}/parse-instruction-timers"
+
+
+def recipes_slug_parse_with_ai(slug):
+    """`/api/recipes/{slug}/parse-with-ai`"""
+    return f"{prefix}/recipes/{slug}/parse-with-ai"
+
+
 def recipes_timeline_events_item_id(item_id):
     """`/api/recipes/timeline/events/{item_id}`"""
     return f"{prefix}/recipes/timeline/events/{item_id}"
@@ -528,6 +547,26 @@ def recipes_timeline_events_item_id_image(item_id):
 def shared_recipes_item_id(item_id):
     """`/api/shared/recipes/{item_id}`"""
     return f"{prefix}/shared/recipes/{item_id}"
+
+
+def timers_active_timer_active_id(timer_active_id):
+    """`/api/timers/active/{timer_active_id}`"""
+    return f"{prefix}/timers/active/{timer_active_id}"
+
+
+def timers_active_timer_active_id_webhook_stopped(timer_active_id):
+    """`/api/timers/active/{timer_active_id}/webhook/stopped`"""
+    return f"{prefix}/timers/active/{timer_active_id}/webhook/stopped"
+
+
+def timers_recipe_timer_id_active(recipe_timer_id):
+    """`/api/timers/{recipe_timer_id}/active`"""
+    return f"{prefix}/timers/{recipe_timer_id}/active"
+
+
+def timers_recipes_recipe_id_active(recipe_id):
+    """`/api/timers/recipes/{recipe_id}/active`"""
+    return f"{prefix}/timers/recipes/{recipe_id}/active"
 
 
 def units_item_id(item_id):

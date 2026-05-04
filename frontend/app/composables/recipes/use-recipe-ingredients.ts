@@ -119,8 +119,8 @@ export function useIngredientTextParser() {
     // if (quantityInMl) {
     // if (householdPreferences?.primaryVolumeUnits?.find(unit => unit.id === returnUnit.id)) {
 
-    // }
-    // }
+      // }
+      // }
       if (quantityInMl && !returnUnit.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end) && unitsWithRange?.value) {
         for (const unitObject of unitsWithRange.value) {
           if (unitObject.range?.some(range => quantityInMl >= range.start && quantityInMl <= range.end)) {

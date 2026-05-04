@@ -61,6 +61,7 @@ const routes = {
   recipesTimelineEventId: (id: string) => `${prefix}/recipes/timeline/events/${id}`,
   recipesTimelineEventIdImage: (id: string) => `${prefix}/recipes/timeline/events/${id}/image`,
   recipesParseInstructionTimers: (slug: string) => `${prefix}/recipes/${slug}/parse-instruction-timers`,
+  recipesParseWithAI: (slug: string) => `${prefix}/recipes/${slug}/parse-with-ai`,
 };
 
 export interface ParseInstructionTimersStepIn {
@@ -79,6 +80,57 @@ export interface ParseInstructionTimersStepOut {
 
 export interface ParseInstructionTimersOut {
   steps: ParseInstructionTimersStepOut[];
+}
+
+export interface ParseWithAIIngredient {
+  display?: string | null;
+  referenceId?: string | null;
+}
+
+export interface ParseWithAIStep {
+  id?: string | null;
+  text: string;
+  ingredientReferences?: Array<{ referenceId?: string | null }>;
+}
+
+export interface ParseWithAIIngredientOut {
+  display?: string | null;
+  referenceId?: string | null;
+  quantity?: number | null;
+  unit?: { name: string } | null;
+  food?: { name: string } | null;
+  note?: string | null;
+  quantityInMl?: number | null;
+}
+
+export interface ParseWithAIIngredientWithQuantityOut {
+  referenceId?: string | null;
+  quantity?: number | null;
+  quantityInMl?: number | null;
+  unitName?: string | null;
+  comment?: string | null;
+}
+
+export interface ParseWithAIStepOut {
+  id?: string | null;
+  text: string;
+  ingredientReferences?: Array<{ referenceId?: string | null }>;
+  timers?: RecipeTimer[];
+  preparationInstructionId?: string | null;
+  ingredientsWithQuantity?: ParseWithAIIngredientWithQuantityOut[];
+}
+
+export interface ParseWithAIIn {
+  recipeIngredient: ParseWithAIIngredient[];
+  recipeInstructions: ParseWithAIStep[];
+  orgURL?: string | null;
+}
+
+export interface ParseWithAIOut {
+  recipeIngredient: ParseWithAIIngredientOut[];
+  recipeInstructions: ParseWithAIStepOut[];
+  orgURL?: string | null;
+  primaryUnitSystem?: string | null;
 }
 
 export type RecipeSearchQuery = {
@@ -265,6 +317,10 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
 
   async parseInstructionTimers(slug: string, payload: ParseInstructionTimersIn) {
     return await this.requests.post<ParseInstructionTimersOut>(routes.recipesParseInstructionTimers(slug), payload);
+  }
+
+  async parseWithAI(slug: string, payload: ParseWithAIIn) {
+    return await this.requests.post<ParseWithAIOut>(routes.recipesParseWithAI(slug), payload);
   }
 
   async updateMany(payload: Recipe[]) {

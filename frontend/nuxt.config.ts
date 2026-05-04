@@ -120,7 +120,7 @@ export default defineNuxtConfig({
     }, */
     // audio file support
     // https://v2.nuxt.com/docs/features/configuration/#extend-webpack-to-load-audio-files
-    extend(config, ctx) {
+    extend(config) {
       config.module.rules.push({
         test: /\.(ogg|mp3|wav|mpe?g)$/i,
         loader: "file-loader",

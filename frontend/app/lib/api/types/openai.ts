@@ -21,6 +21,7 @@ export interface OpenAIRecipe {
   total_time?: string | null;
   prep_time?: string | null;
   perform_time?: string | null;
+  primary_unit_system?: string | null;
   ingredients?: OpenAIRecipeIngredient[];
   instructions?: OpenAIRecipeInstruction[];
   notes?: OpenAIRecipeNotes[];

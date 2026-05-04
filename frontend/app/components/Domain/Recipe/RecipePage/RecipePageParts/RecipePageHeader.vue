@@ -15,6 +15,7 @@
       :logged-in="isOwnGroup"
       :open="isEditMode"
       :recipe-id="recipe.id"
+      :parse-with-ai-loading="parseWithAILoading"
       class="ml-auto mt-n7 pb-4"
       @close="$emit('close')"
       @json="toggleEditMode()"
@@ -23,6 +24,7 @@
       @delete="$emit('delete')"
       @print="printRecipe"
       @link-ingredients="$emit('link-ingredients')"
+      @parse-with-ai="$emit('parse-with-ai')"
     />
   </div>
 </template>
@@ -42,13 +44,15 @@ interface Props {
   recipe: NoUndefinedField<Recipe>;
   recipeScale?: number;
   landscape?: boolean;
+  parseWithAILoading?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
   landscape: false,
+  parseWithAILoading: false,
 });
 
-defineEmits(["save", "delete", "print", "close", "link-ingredients"]);
+defineEmits(["save", "delete", "print", "close", "link-ingredients", "parse-with-ai"]);
 
 const { recipeImage } = useStaticRoutes();
 const { imageKey, setMode, toggleEditMode, isEditMode } = usePageState(props.recipe.slug);

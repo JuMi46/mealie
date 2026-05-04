@@ -18,6 +18,7 @@ class IngredientReferences(MealieModel):
 
 class RecipeStep(MealieModel):
     id: UUID | None = Field(default_factory=uuid4)
+    preparation_instruction_id: UUID | None = None
     title: str | None = ""
     """The section title"""
     summary: str | None = ""

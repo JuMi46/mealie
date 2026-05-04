@@ -496,6 +496,7 @@ export interface Recipe {
   recipeIngredient?: RecipeIngredient[];
   recipeInstructions?: RecipeStep[] | null;
   nutrition?: Nutrition | null;
+  primaryUnitSystem?: string | null;
   settings?: RecipeSettings | null;
   assets?: RecipeAsset[] | null;
   notes?: RecipeNote[] | null;
@@ -530,6 +531,7 @@ export interface RecipeTool {
 }
 export interface RecipeStep {
   id?: string | null;
+  preparationInstructionId?: string | null;
   title?: string | null;
   summary?: string | null;
   text: string;

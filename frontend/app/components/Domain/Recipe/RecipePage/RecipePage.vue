@@ -13,6 +13,91 @@
         {{ $t("general.discard-changes-description") }}
       </v-card-text>
     </BaseDialog>
+    <BaseDialog
+      v-model="parseWithAIDialog"
+      :title="$t('recipe.parse-with-ai')"
+      :icon="$globals.icons.robot"
+      color="accent"
+      can-confirm
+      @confirm="applyAIParsedRecipe"
+    >
+      <v-card-text>
+        {{ $t("recipe.apply-ai-parsed-recipe-confirmation") }}
+      </v-card-text>
+      <v-card-text v-if="aiParsedRecipe" class="pt-0">
+        <div class="text-body-2 mb-3">
+          {{ $t("recipe.ai-parse-summary", { ingredients: aiParsedRecipe.recipeIngredient.length, steps: aiParsedRecipe.recipeInstructions.length }) }}
+        </div>
+        <v-list density="compact" class="py-0">
+          <v-list-item v-if="recipe.recipeIngredient.length !== aiParsedRecipe.recipeIngredient.length">
+            <template #prepend>
+              <v-icon size="small">
+                {{ $globals.icons.foods }}
+              </v-icon>
+            </template>
+            <v-list-item-title>
+              {{ $t("recipe.ingredients") }}: {{ recipe.recipeIngredient.length }} -> {{ aiParsedRecipe.recipeIngredient.length }}
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item v-if="recipe.recipeInstructions.length !== aiParsedRecipe.recipeInstructions.length">
+            <template #prepend>
+              <v-icon size="small">
+                {{ $globals.icons.text }}
+              </v-icon>
+            </template>
+            <v-list-item-title>
+              {{ $t("recipe.instructions") }}: {{ recipe.recipeInstructions.length }} -> {{ aiParsedRecipe.recipeInstructions.length }}
+            </v-list-item-title>
+          </v-list-item>
+          <v-list-item v-if="aiOrgUrlChanged">
+            <template #prepend>
+              <v-icon size="small">
+                {{ $globals.icons.link }}
+              </v-icon>
+            </template>
+            <v-list-item-title>
+              {{ $t("recipe.original-url") }}: {{ $t("general.yes") }}
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+        <template v-if="aiIngredientPreview.length > 0 || aiInstructionPreview.length > 0">
+          <v-divider class="my-3" />
+          <div class="text-subtitle-2 mb-1">
+            {{ $t("recipe.preview") }}
+          </div>
+          <template v-if="aiIngredientPreview.length > 0">
+            <div class="text-body-2 mb-1">
+              {{ $t("recipe.ingredients") }}
+            </div>
+            <v-chip
+              v-for="(ing, index) in aiIngredientPreview"
+              :key="`ai-ingredient-${index}`"
+              size="small"
+              class="mr-1 mb-1"
+              color="accent"
+              variant="tonal"
+            >
+              {{ ing }}
+            </v-chip>
+          </template>
+          <template v-if="aiInstructionPreview.length > 0">
+            <div class="text-body-2 mt-2 mb-1">
+              {{ $t("recipe.instructions") }}
+            </div>
+            <v-chip
+              v-for="(step, index) in aiInstructionPreview"
+              :key="`ai-step-${index}`"
+              size="small"
+              class="mr-1 mb-1"
+              color="info"
+              variant="tonal"
+            >
+              {{ step }}
+            </v-chip>
+          </template>
+        </template>
+      </v-card-text>
+    </BaseDialog>
     <RecipePageParseDialog
       :model-value="isParsing"
       :ingredients="recipe.recipeIngredient"
@@ -26,10 +111,12 @@
           :recipe="recipe"
           :recipe-scale="scale"
           :landscape="landscape"
+          :parse-with-ai-loading="parseWithAILoading"
           @save="saveRecipe"
           @delete="deleteRecipe"
           @close="closeEditor"
           @link-ingredients="linkIngredients"
+          @parse-with-ai="parseRecipeWithAI"
         />
         <RecipeJsonEditor
           v-if="isEditJSON"
@@ -218,7 +305,7 @@ import {
 } from "~/composables/recipe-page/shared-state";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import type { Recipe, RecipeCategory, RecipeIngredient, RecipeTag, RecipeTool } from "~/lib/api/types/recipe";
-import type { ParseInstructionTimersStepOut } from "~/lib/api/user/recipes/recipe";
+import type { ParseInstructionTimersStepOut, ParseWithAIOut } from "~/lib/api/user/recipes/recipe";
 import { useRouteQuery } from "~/composables/use-router";
 import { useUserApi } from "~/composables/api";
 import { uuid4, deepCopy } from "~/composables/use-utils";
@@ -226,12 +313,14 @@ import RecipeDialogBulkAdd from "~/components/Domain/Recipe/RecipeDialogBulkAdd.
 import RecipeNotes from "~/components/Domain/Recipe/RecipeNotes.vue";
 import { useLoggedInState } from "~/composables/use-logged-in-state";
 import { useNavigationWarning } from "~/composables/use-navigation-warning";
+import { alert } from "~/composables/use-toast";
 
 const recipe = defineModel<NoUndefinedField<Recipe>>({ required: true });
 
 const display = useDisplay();
 const auth = useMealieAuth();
 const route = useRoute();
+const i18n = useI18n();
 const { isOwnGroup } = useLoggedInState();
 
 const groupSlug = computed(() => (route.params.groupSlug as string) || auth.user?.value?.groupSlug || "");
@@ -280,6 +369,48 @@ onUpdated(() => {
 const originalRecipe = ref<Recipe | null>(null);
 const discardDialog = ref(false);
 const pendingRoute = ref<RouteLocationNormalized | null>(null);
+const parseWithAIDialog = ref(false);
+const parseWithAILoading = ref(false);
+const aiParsedRecipe = ref<ParseWithAIOut | null>(null);
+
+const aiOrgUrlChanged = computed(() => {
+  if (!aiParsedRecipe.value) {
+    return false;
+  }
+
+  return (aiParsedRecipe.value.orgURL || "") !== (recipe.value.orgURL || "");
+});
+
+function previewText(text: string | null | undefined, max = 80) {
+  const value = (text || "").trim();
+  if (!value) {
+    return "";
+  }
+
+  return value.length > max ? `${value.slice(0, max)}...` : value;
+}
+
+const aiIngredientPreview = computed(() => {
+  if (!aiParsedRecipe.value) {
+    return [];
+  }
+
+  return aiParsedRecipe.value.recipeIngredient
+    .map(ingredient => previewText(ingredient.note))
+    .filter(Boolean)
+    .slice(0, 4);
+});
+
+const aiInstructionPreview = computed(() => {
+  if (!aiParsedRecipe.value) {
+    return [];
+  }
+
+  return aiParsedRecipe.value.recipeInstructions
+    .map(step => previewText(step.text))
+    .filter(Boolean)
+    .slice(0, 4);
+});
 
 invoke(async () => {
   await until(recipe.value).not.toBeNull();
@@ -411,6 +542,49 @@ async function saveParsedIngredients(ingredients: NoUndefinedField<RecipeIngredi
   if (linkIngredientsAfter) {
     linkIngredients();
   }
+}
+
+async function parseRecipeWithAI() {
+  if (!recipe.value.slug || parseWithAILoading.value) {
+    return;
+  }
+
+  parseWithAILoading.value = true;
+
+  const payload = {
+    recipeIngredient: recipe.value.recipeIngredient.map(ingredient => ({
+      display: ingredient.display || null,
+      referenceId: ingredient.referenceId || null,
+    })),
+    recipeInstructions: recipe.value.recipeInstructions.map(step => ({
+      id: step.id,
+      text: step.text,
+      ingredientReferences: step.ingredientReferences || [],
+    })),
+    orgURL: recipe.value.orgURL || null,
+  };
+
+  const { data, error } = await api.recipes.parseWithAI(recipe.value.slug, payload);
+  parseWithAILoading.value = false;
+
+  if (error || !data) {
+    alert.error(i18n.t("events.something-went-wrong"));
+    return;
+  }
+
+  aiParsedRecipe.value = data;
+  parseWithAIDialog.value = true;
+}
+
+function applyAIParsedRecipe() {
+  if (!aiParsedRecipe.value) {
+    return;
+  }
+
+  recipe.value.recipeIngredient = aiParsedRecipe.value.recipeIngredient;
+  recipe.value.recipeInstructions = aiParsedRecipe.value.recipeInstructions;
+  recipe.value.orgURL = aiParsedRecipe.value.orgURL ?? recipe.value.orgURL;
+  parseWithAIDialog.value = false;
 }
 
 async function deleteRecipe() {

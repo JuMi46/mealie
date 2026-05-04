@@ -20,7 +20,7 @@ from fastapi import (
 )
 from fastapi.datastructures import UploadFile
 from fastapi.sse import EventSourceResponse, ServerSentEvent
-from pydantic import UUID4, BaseModel
+from pydantic import UUID4, BaseModel, Field
 from slugify import slugify
 
 from mealie.core import exceptions
@@ -33,7 +33,13 @@ from mealie.routes._base import controller
 from mealie.routes._base.routers import MealieCrudRoute, UserAPIRouter
 from mealie.schema.cookbook.cookbook import ReadCookBook
 from mealie.schema.make_dependable import make_dependable
-from mealie.schema.recipe import Recipe, ScrapeRecipe, ScrapeRecipeData
+from mealie.schema.openai import OpenAIRecipe
+from mealie.schema.recipe import (
+    IngredientReferences,
+    Recipe,
+    ScrapeRecipe,
+    ScrapeRecipeData,
+)
 from mealie.schema.recipe.recipe import (
     CreateRecipe,
     CreateRecipeByUrlBulk,
@@ -65,6 +71,7 @@ from mealie.services.event_bus_service.event_types import (
     EventRecipeData,
     EventTypes,
 )
+from mealie.services.openai import OpenAIService
 from mealie.services.parser_services.parser_utils.duration_parser import DurationParser
 from mealie.services.recipe.recipe_data_service import (
     InvalidDomainError,
@@ -101,6 +108,72 @@ class ParseInstructionTimersStepOut(BaseModel):
 
 class ParseInstructionTimersOut(BaseModel):
     steps: list[ParseInstructionTimersStepOut]
+
+
+class ParseRecipeWithAIIngredientIn(BaseModel):
+    display: str | None = None
+    reference_id: UUID | None = Field(None, alias="referenceId")
+
+
+class ParseRecipeWithAIStepIn(BaseModel):
+    id: UUID | None = None
+    text: str = ""
+    ingredient_references: list[IngredientReferences] = Field(default_factory=list, alias="ingredientReferences")
+
+
+class ParseRecipeWithAIIn(BaseModel):
+    recipe_ingredient: list[ParseRecipeWithAIIngredientIn] = Field(default_factory=list, alias="recipeIngredient")
+    recipe_instructions: list[ParseRecipeWithAIStepIn] = Field(default_factory=list, alias="recipeInstructions")
+    org_url: str | None = Field(None, alias="orgURL")
+
+
+class ParseRecipeWithAINamedItem(BaseModel):
+    name: str
+
+
+class ParseRecipeWithAIIngredientWithQuantityOut(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    reference_id: UUID | None = Field(None, alias="referenceId")
+    quantity: float | None = None
+    quantity_in_ml: float | None = Field(None, alias="quantityInMl")
+    unit_name: str | None = Field(None, alias="unitName")
+    comment: str | None = None
+
+
+class ParseRecipeWithAIIngredientItemOut(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    reference_id: UUID | None = Field(None, alias="referenceId")
+    display: str | None = None
+    quantity: float | None = None
+    unit: ParseRecipeWithAINamedItem | None = None
+    food: ParseRecipeWithAINamedItem | None = None
+    note: str | None = None
+    quantity_in_ml: float | None = Field(None, alias="quantityInMl")
+
+
+class ParseRecipeWithAIStepItemOut(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    id: UUID | None = None
+    title: str | None = None
+    text: str
+    ingredient_references: list[IngredientReferences] = Field(default_factory=list, alias="ingredientReferences")
+    timers: list[RecipeTimer] = Field(default_factory=list)
+    preparation_instruction_id: UUID | None = Field(None, alias="preparationInstructionId")
+    ingredients_with_quantity: list[ParseRecipeWithAIIngredientWithQuantityOut] = Field(
+        default_factory=list, alias="ingredientsWithQuantity"
+    )
+
+
+class ParseRecipeWithAIOut(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    recipe_ingredient: list[ParseRecipeWithAIIngredientItemOut] = Field(default_factory=list, alias="recipeIngredient")
+    recipe_instructions: list[ParseRecipeWithAIStepItemOut] = Field(default_factory=list, alias="recipeInstructions")
+    org_url: str | None = Field(None, alias="orgURL")
+    primary_unit_system: str | None = Field(None, alias="primaryUnitSystem")
 
 
 @controller(router)
@@ -467,6 +540,113 @@ class RecipeController(BaseRecipeController):
             parsed_steps.append(ParseInstructionTimersStepOut(index=step.index, timers=timers))
 
         return ParseInstructionTimersOut(steps=parsed_steps)
+
+    @router.post("/{slug}/parse-with-ai", response_model=ParseRecipeWithAIOut)
+    async def parse_recipe_with_ai(self, slug: str, data: ParseRecipeWithAIIn) -> ParseRecipeWithAIOut:
+        """
+        Parse recipe editor data with OpenAI. This endpoint does not persist any data.
+        """
+        # Ensure the recipe exists and the user has access to it.
+        self.service.get_one(slug)
+
+        if not self.settings.OPENAI_ENABLED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message="OpenAI is not enabled"),
+            )
+
+        openai_service = OpenAIService()
+        prompt = openai_service.get_prompt("recipes.parse-recipe-editor")
+
+        recipe_payload = {
+            "orgURL": data.org_url,
+            "ingredients": [
+                {
+                    "referenceId": str(ingredient.reference_id) if ingredient.reference_id else None,
+                    "text": ingredient.display,
+                }
+                for ingredient in data.recipe_ingredient
+            ],
+            "instructions": [
+                {
+                    "id": str(step.id) if step.id else None,
+                    "text": step.text,
+                    "ingredientReferences": [
+                        {"referenceId": str(ref.reference_id) if ref.reference_id else None}
+                        for ref in step.ingredient_references
+                    ],
+                }
+                for step in data.recipe_instructions
+            ],
+        }
+
+        try:
+            response = await openai_service.get_response(
+                prompt,
+                orjson.dumps(recipe_payload).decode("utf-8"),
+                response_schema=OpenAIRecipe,
+            )
+        except Exception as ex:
+            self.logger.exception(ex)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=ErrorResponse.respond(message="Failed to parse recipe with AI"),
+            ) from ex
+
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=ErrorResponse.respond(message="OpenAI returned an empty response"),
+            )
+
+        ingredients = [
+            ParseRecipeWithAIIngredientItemOut(
+                reference_id=data.recipe_ingredient[i].reference_id if i < len(data.recipe_ingredient) else uuid4(),
+                display=ai_ingredient.text,
+                quantity=ai_ingredient.quantity,
+                unit=ParseRecipeWithAINamedItem(name=ai_ingredient.unit_name) if ai_ingredient.unit_name else None,
+                food=ParseRecipeWithAINamedItem(name=ai_ingredient.food_name) if ai_ingredient.food_name else None,
+                note=ai_ingredient.note,
+                quantity_in_ml=ai_ingredient.quantity_in_ml,
+            )
+            for i, ai_ingredient in enumerate(response.ingredients)
+            if ai_ingredient.text
+        ]
+
+        instructions = [
+            ParseRecipeWithAIStepItemOut(
+                id=data.recipe_instructions[i].id if i < len(data.recipe_instructions) else uuid4(),
+                title=ai_instruction.title,
+                text=ai_instruction.text,
+                ingredient_references=(
+                    data.recipe_instructions[i].ingredient_references if i < len(data.recipe_instructions) else []
+                ),
+                preparation_instruction_id=(
+                    UUID(ai_instruction.preparation_instruction_id)
+                    if ai_instruction.preparation_instruction_id
+                    else None
+                ),
+                ingredients_with_quantity=[
+                    ParseRecipeWithAIIngredientWithQuantityOut(
+                        reference_id=UUID(item.reference_id) if item.reference_id else None,
+                        quantity=item.quantity,
+                        quantity_in_ml=item.quantity_in_ml,
+                        unit_name=item.unit_name,
+                        comment=item.comment,
+                    )
+                    for item in (ai_instruction.ingredients_with_quantity or [])
+                ],
+            )
+            for i, ai_instruction in enumerate(response.instructions)
+            if ai_instruction.text
+        ]
+
+        return ParseRecipeWithAIOut(
+            recipe_ingredient=ingredients,
+            recipe_instructions=instructions,
+            org_url=data.org_url,
+            primary_unit_system=response.primary_unit_system,
+        )
 
     @router.post("", status_code=201, response_model=str)
     def create_one(self, data: CreateRecipe) -> str | None:

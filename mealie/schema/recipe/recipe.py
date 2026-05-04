@@ -186,6 +186,7 @@ class Recipe(RecipeSummary):
     recipe_ingredient: Annotated[list[RecipeIngredient], Field(validate_default=True)] = []
     recipe_instructions: list[RecipeStep] | None = []
     nutrition: Nutrition | None = None
+    primary_unit_system: str | None = None
 
     # Mealie Specific
     settings: RecipeSettings | None = None

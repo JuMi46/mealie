@@ -31,6 +31,12 @@ class RecipeInstruction(SqlAlchemyBase):
     title: Mapped[str | None] = mapped_column(String)  # This is the section title
     text: Mapped[str | None] = mapped_column(String)
     summary: Mapped[str | None] = mapped_column(String)
+    preparation_instruction_id: Mapped[GUID | None] = mapped_column(
+        "preparation_instruction_id",
+        GUID,
+        ForeignKey("recipe_instructions.id"),
+        index=True,
+    )
     ingredient_references: Mapped[list[RecipeIngredientRefLink]] = orm.relationship(
         RecipeIngredientRefLink, cascade="all, delete-orphan"
     )

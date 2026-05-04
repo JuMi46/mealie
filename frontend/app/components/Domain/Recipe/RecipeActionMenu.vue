@@ -94,6 +94,8 @@
         :color="btn.color"
         variant="elevated"
         :icon="$vuetify.display.xs"
+        :loading="!!btn.loading"
+        :disabled="!!btn.disabled"
         @click="emitHandler(btn.event)"
       >
         <v-icon :left="!$vuetify.display.xs">
@@ -118,6 +120,7 @@ const DELETE_EVENT = "delete";
 const CLOSE_EVENT = "close";
 const JSON_EVENT = "json";
 const PARSE_EVENT = "parse";
+const PARSE_WITH_AI_EVENT = "parse-with-ai";
 const LINK_EVENT = "link-ingredients";
 
 interface Props {
@@ -129,19 +132,21 @@ interface Props {
   loggedIn?: boolean;
   recipeId: string;
   canEdit?: boolean;
+  parseWithAILoading?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
   loggedIn: false,
   canEdit: false,
+  parseWithAILoading: false,
 });
 
-const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "edit", "link-ingredients"]);
+const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "edit", "link-ingredients", "parse-with-ai"]);
 
 const deleteDialog = ref(false);
 
 const i18n = useI18n();
-const { $globals } = useNuxtApp();
+const { $globals, $appInfo } = useNuxtApp();
 const { toggleIsParsing } = usePageState(props.recipe.slug as string);
 
 function hasFoodOrUnit() {
@@ -206,6 +211,17 @@ const editorButtons = computed(() => {
   }
 
   if (!hasFoodOrUnit()) {
+    if ($appInfo.enableOpenai) {
+      buttons.unshift({
+        text: i18n.t("recipe.parse-with-ai"),
+        icon: $globals.icons.robot,
+        event: PARSE_WITH_AI_EVENT,
+        color: "accent",
+        loading: props.parseWithAILoading,
+        disabled: props.parseWithAILoading,
+      });
+    }
+
     buttons.unshift({
       text: i18n.t("recipe.parse"),
       icon: $globals.icons.foods,
@@ -229,6 +245,9 @@ function emitHandler(event: string) {
       if (props.recipe.slug) {
         toggleIsParsing(true);
       }
+      break;
+    case PARSE_WITH_AI_EVENT:
+      emit(PARSE_WITH_AI_EVENT);
       break;
     case LINK_EVENT:
       emit("link-ingredients");
