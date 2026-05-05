@@ -26,6 +26,7 @@ from mealie.schema.recipe.recipe import Recipe, RecipeCategory, RecipeSummary, R
 from mealie.schema.recipe.recipe_category import CategorySave, TagSave
 from mealie.schema.recipe.recipe_ingredient import RecipeIngredient, SaveIngredientFood
 from mealie.schema.recipe.recipe_notes import RecipeNote
+from mealie.schema.recipe.recipe_step import RecipeStep
 from mealie.schema.recipe.recipe_tool import RecipeToolSave
 from mealie.services.recipe.recipe_data_service import RecipeDataService
 from mealie.services.scraper.recipe_scraper import DEFAULT_SCRAPER_STRATEGIES
@@ -1169,6 +1170,58 @@ def test_update_with_non_existent_ingredient_references(api_client: TestClient, 
     step_one_ingr_refs = recipe_data["recipeInstructions"][0]["ingredientReferences"]
     assert len(step_one_ingr_refs) == 1
     assert step_one_ingr_refs[0]["referenceId"] == food_ingredient_ref_id
+
+
+def test_update_existing_instruction_ingredient_references_persist(api_client: TestClient, unique_user: TestUser):
+    """Test that ingredient links on an existing instruction persist after update."""
+
+    database = unique_user.repos
+
+    food = database.ingredient_foods.create(
+        SaveIngredientFood(
+            name=random_string(10),
+            group_id=unique_user.group_id,
+        )
+    )
+
+    recipe: Recipe = database.recipes.create(
+        Recipe(
+            name=random_string(10),
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+            recipe_ingredient=[
+                RecipeIngredient(note="", food=food),
+            ],
+            recipe_instructions=[
+                RecipeStep(title="Step", text="Mix ingredients."),
+            ],
+        )
+    )
+
+    recipe_url = api_routes.recipes_slug(recipe.slug)
+
+    response = api_client.get(recipe_url, headers=unique_user.token)
+    assert response.status_code == 200
+    recipe_data = response.json()
+
+    ingredient_ref_id = recipe_data["recipeIngredient"][0]["referenceId"]
+    recipe_data["recipeInstructions"][0]["ingredientReferences"] = [{"referenceId": ingredient_ref_id}]
+
+    update_response = api_client.put(recipe_url, json=recipe_data, headers=unique_user.token)
+    assert update_response.status_code == 200
+
+    updated_data = update_response.json()
+    updated_refs = updated_data["recipeInstructions"][0]["ingredientReferences"]
+    assert len(updated_refs) == 1
+    assert updated_refs[0]["referenceId"] == ingredient_ref_id
+
+    get_response = api_client.get(recipe_url, headers=unique_user.token)
+    assert get_response.status_code == 200
+    persisted_data = get_response.json()
+    persisted_refs = persisted_data["recipeInstructions"][0]["ingredientReferences"]
+
+    assert len(persisted_refs) == 1
+    assert persisted_refs[0]["referenceId"] == ingredient_ref_id
 
 
 def test_duplicate(api_client: TestClient, unique_user: TestUser):

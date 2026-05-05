@@ -211,68 +211,18 @@
                     <div class="ml-auto">
                       <BaseButtonGroup
                         :large="false"
-                        :buttons="[
-                          {
-                            icon: $globals.icons.delete,
-                            text: $t('general.delete'),
-                            event: 'delete',
-                          },
-                          {
-                            icon: $globals.icons.dotsVertical,
-                            text: '',
-                            event: 'open',
-                            children: [
-                              {
-                                text: $t('recipe.toggle-section'),
-                                event: 'toggle-section',
-                              },
-                              {
-                                text: $t('recipe.link-ingredients'),
-                                event: 'link-ingredients',
-                              },
-                              {
-                                text: $t('recipe.upload-image'),
-                                event: 'upload-image',
-                              },
-                              {
-                                icon: previewStates[index] ? $globals.icons.edit : $globals.icons.eye,
-                                text: previewStates[index] ? $t('recipe.edit-markdown') : $t('markdown-editor.preview-markdown-button-label'),
-                                event: 'preview-step',
-                                divider: true,
-                              },
-                              {
-                                text: $t('recipe.merge-above'),
-                                event: 'merge-above',
-                              },
-                              {
-                                text: $t('recipe.move-to-top'),
-                                event: 'move-to-top',
-                              },
-                              {
-                                text: $t('recipe.move-to-bottom'),
-                                event: 'move-to-bottom',
-                              },
-                              {
-                                text: $t('recipe.insert-above'),
-                                event: 'insert-above',
-                              },
-                              {
-                                text: $t('recipe.insert-below'),
-                                event: 'insert-below',
-                              },
-                            ],
-                          },
-                        ]"
+                        :buttons="instructionButtons(index, step.id)"
                         @merge-above="mergeAbove(index - 1, index)"
                         @move-to-top="moveTo('top', index)"
                         @move-to-bottom="moveTo('bottom', index)"
                         @insert-above="insert(index)"
                         @insert-below="insert(index + 1)"
+                        @split-below="splitBelow(index, step.id)"
                         @toggle-section="toggleShowTitle(step.id!)"
                         @link-ingredients="openDialog(index, step.text, step.ingredientReferences)"
                         @preview-step="togglePreviewState(index)"
                         @upload-image="openImageUpload(index)"
-                        @delete="instructionList.splice(index, 1)"
+                        @delete="deleteInstruction(index, step.id)"
                       />
                     </div>
                   </template>
@@ -310,6 +260,7 @@
                       hint: $t('recipe.attach-images-hint'),
                       persistentHint: true,
                     }"
+                    @selection-change="updateSelection(step.id, $event)"
                   />
                   <div
                     v-if="step.ingredientReferences && step.ingredientReferences.length"
@@ -389,11 +340,12 @@
 <script setup lang="ts">
 import { VueDraggable } from "vue-draggable-plus";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import type { RecipeStep, IngredientReferences, RecipeIngredient, RecipeAsset, Recipe } from "~/lib/api/types/recipe";
+import type { RecipeStep, IngredientReferences, RecipeIngredient, RecipeAsset, Recipe, RecipeTimer } from "~/lib/api/types/recipe";
 import { uuid4, parseTemperaturesInText } from "~/composables/use-utils";
 import { useUserApi, useStaticRoutes } from "~/composables/api";
 import { usePageState } from "~/composables/recipe-page/shared-state";
 import { useExtractIngredientReferences } from "~/composables/recipe-page/use-extract-ingredient-references";
+import { useIngredientTextParser } from "~/composables/recipes/use-recipe-ingredients";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import DropZone from "~/components/global/DropZone.vue";
 import RecipeIngredients from "~/components/Domain/Recipe/RecipeIngredients.vue";
@@ -406,6 +358,12 @@ interface MergerHistory {
   source: number;
   targetText: string;
   sourceText: string;
+}
+
+interface InstructionSelectionState {
+  selectedText: string;
+  selectionStart: number;
+  selectionEnd: number;
 }
 
 const instructionList = defineModel<RecipeStep[]>("modelValue", { required: true, default: () => [] });
@@ -428,9 +386,11 @@ const props = defineProps({
 
 const emit = defineEmits(["click-instruction-field", "update:assets"]);
 const i18n = useI18n();
+const { $globals } = useNuxtApp();
 
 const { isCookMode, toggleCookMode, isEditForm } = usePageState(props.recipe.slug);
 const { extractIngredientReferences } = useExtractIngredientReferences();
+const { ingredientToParserString } = useIngredientTextParser();
 
 const dialog = ref(false);
 const disabledSteps = ref<number[]>([]);
@@ -438,6 +398,7 @@ const unusedIngredients = ref<RecipeIngredient[]>([]);
 const usedIngredients = ref<RecipeIngredient[]>([]);
 
 const showTitleEditor = ref<{ [key: string]: boolean }>({});
+const instructionSelections = ref<Record<string, InstructionSelectionState | null>>({});
 
 // ===============================================================
 // UI State Helpers
@@ -514,6 +475,104 @@ function toggleShowTitle(id?: string) {
 
 function onDragEnd() {
   drag.value = false;
+}
+
+function updateSelection(stepId: string | null | undefined, selection: InstructionSelectionState | null) {
+  if (!stepId) {
+    return;
+  }
+
+  instructionSelections.value = {
+    ...instructionSelections.value,
+    [stepId]: selection,
+  };
+}
+
+function hasSplitSelection(stepId: string | null | undefined) {
+  if (!stepId) {
+    return false;
+  }
+
+  const selection = instructionSelections.value[stepId];
+
+  return !!selection && selection.selectionEnd > selection.selectionStart && selection.selectedText.trim().length > 0;
+}
+
+function instructionButtons(index: number, stepId: string | null | undefined) {
+  return [
+    {
+      icon: $globals.icons.delete,
+      text: i18n.t("general.delete"),
+      event: "delete",
+    },
+    {
+      icon: $globals.icons.dotsVertical,
+      text: "",
+      event: "open",
+      children: [
+        {
+          text: i18n.t("recipe.toggle-section"),
+          event: "toggle-section",
+        },
+        {
+          text: i18n.t("recipe.link-ingredients"),
+          event: "link-ingredients",
+        },
+        {
+          text: i18n.t("recipe.upload-image"),
+          event: "upload-image",
+        },
+        {
+          icon: previewStates.value[index] ? $globals.icons.edit : $globals.icons.eye,
+          text: previewStates.value[index] ? i18n.t("recipe.edit-markdown") : i18n.t("markdown-editor.preview-markdown-button-label"),
+          event: "preview-step",
+          divider: true,
+        },
+        {
+          text: i18n.t("recipe.merge-above"),
+          event: "merge-above",
+        },
+        {
+          text: i18n.t("recipe.move-to-top"),
+          event: "move-to-top",
+        },
+        {
+          text: i18n.t("recipe.move-to-bottom"),
+          event: "move-to-bottom",
+        },
+        {
+          text: i18n.t("recipe.insert-above"),
+          event: "insert-above",
+        },
+        {
+          text: i18n.t("recipe.insert-below"),
+          event: "insert-below",
+        },
+        ...(hasSplitSelection(stepId)
+          ? [{
+              text: i18n.t("recipe.split-below"),
+              event: "split-below",
+            }]
+          : []),
+      ],
+    },
+  ];
+}
+
+function clearSelection(stepId: string | null | undefined) {
+  if (!stepId) {
+    return;
+  }
+
+  instructionSelections.value = {
+    ...instructionSelections.value,
+    [stepId]: null,
+  };
+}
+
+function deleteInstruction(index: number, stepId: string | null | undefined) {
+  instructionList.value.splice(index, 1);
+  clearSelection(stepId);
 }
 
 // ===============================================================
@@ -710,6 +769,147 @@ function moveTo(dest: string, source: number) {
 
 function insert(dest: number) {
   instructionList.value.splice(dest, 0, { id: uuid4(), text: "", title: "", ingredientReferences: [] });
+}
+
+function extractNumberSignals(text: string): Set<number> {
+  const matches = text.match(/\b\d+\b/g) ?? [];
+  return new Set(matches.map(value => Number.parseInt(value, 10)));
+}
+
+function extractNumericRanges(text: string): Array<[number, number]> {
+  const normalized = text
+    .toLowerCase()
+    .replace(/[\u2013\u2014]/g, "-");
+  const rangeRegex = /\b(\d+)\s*(?:-|to)\s*(\d+)\b/g;
+
+  const ranges: Array<[number, number]> = [];
+  let match = rangeRegex.exec(normalized);
+  while (match) {
+    const startValue = match[1];
+    const endValue = match[2];
+
+    if (startValue === undefined || endValue === undefined) {
+      match = rangeRegex.exec(normalized);
+      continue;
+    }
+
+    const start = Number.parseInt(startValue, 10);
+    const end = Number.parseInt(endValue, 10);
+    ranges.push(start <= end ? [start, end] : [end, start]);
+    match = rangeRegex.exec(normalized);
+  }
+
+  return ranges;
+}
+
+function timerDurationCandidates(duration: number): number[] {
+  if (!Number.isFinite(duration) || duration < 0) {
+    return [];
+  }
+
+  const candidates = new Set<number>([Math.round(duration)]);
+
+  if (duration % 60 === 0) {
+    candidates.add(Math.round(duration / 60));
+  }
+
+  return [...candidates];
+}
+
+function timerMatchesMovedText(timer: RecipeTimer, movedText: string): boolean {
+  const numbers = extractNumberSignals(movedText);
+  const ranges = extractNumericRanges(movedText);
+  const candidates = timerDurationCandidates(timer.duration);
+
+  return candidates.some((candidate) => {
+    if (numbers.has(candidate)) {
+      return true;
+    }
+
+    return ranges.some(([start, end]) => candidate >= start && candidate <= end);
+  });
+}
+
+function ingredientMatchTokens(text: string): Set<string> {
+  const blackListedText = new Set(["and", "the", "for", "with", "without"]);
+  const normalized = text
+    .toLowerCase()
+    .replace(/[\u2013\u2014]/g, " ")
+    .replace(/[^\p{L}\p{N}\s'-]/gu, " ");
+
+  return new Set(
+    normalized
+      .split(/\s+/)
+      .map(token => token.replace(/^['-]+|['-]+$/g, ""))
+      .filter(token => token.length > 2)
+      .filter(token => !blackListedText.has(token))
+      .filter(token => !/\d/.test(token)),
+  );
+}
+
+function ingredientMatchesMovedText(ingredient: RecipeIngredient, movedTextTokens: Set<string>): boolean {
+  const matchSourceText = ingredient.food?.name || ingredientToParserString(ingredient);
+  const ingredientTokens = ingredientMatchTokens(matchSourceText);
+
+  return [...ingredientTokens].some(token => movedTextTokens.has(token));
+}
+
+function splitBelow(index: number, stepId: string | null | undefined) {
+  if (!stepId) {
+    return;
+  }
+
+  const selection = instructionSelections.value[stepId];
+  const sourceInstruction = instructionList.value[index];
+
+  if (!selection || !sourceInstruction || selection.selectedText.trim().length === 0) {
+    return;
+  }
+
+  const selectedText = sourceInstruction.text.slice(selection.selectionStart, selection.selectionEnd);
+
+  if (selectedText !== selection.selectedText) {
+    return;
+  }
+
+  sourceInstruction.text = sourceInstruction.text.slice(0, selection.selectionStart) + sourceInstruction.text.slice(selection.selectionEnd);
+  insert(index + 1);
+  const insertedInstruction = instructionList.value[index + 1];
+
+  if (!insertedInstruction) {
+    return;
+  }
+
+  insertedInstruction.text = selectedText;
+
+  const sourceRefs = sourceInstruction.ingredientReferences ?? [];
+  const movedTextTokens = ingredientMatchTokens(selectedText);
+  const movedRefs = sourceRefs.filter((ref) => {
+    if (!ref.referenceId) {
+      return false;
+    }
+
+    const ingredient = ingredientLookup.value[ref.referenceId];
+    if (!ingredient) {
+      return false;
+    }
+
+    return ingredientMatchesMovedText(ingredient, movedTextTokens);
+  });
+  const movedRefIds = new Set(movedRefs.map(ref => ref.referenceId));
+  insertedInstruction.ingredientReferences = movedRefs;
+  sourceInstruction.ingredientReferences = sourceRefs.filter(ref => !ref.referenceId || !movedRefIds.has(ref.referenceId));
+
+  const sourceTimers = sourceInstruction.timers ?? [];
+  const movedTimers = sourceTimers.filter(timer => timerMatchesMovedText(timer, selectedText));
+  const movedTimerSet = new Set(movedTimers);
+  insertedInstruction.timers = movedTimers;
+  sourceInstruction.timers = sourceTimers.filter(timer => !movedTimerSet.has(timer));
+
+  instructionSelections.value = {
+    ...instructionSelections.value,
+    [stepId]: null,
+  };
 }
 
 const previewStates = ref<boolean[]>([]);

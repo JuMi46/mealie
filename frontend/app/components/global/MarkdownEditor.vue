@@ -17,6 +17,7 @@
     </div>
     <v-textarea
       v-if="!previewState"
+      ref="textareaRef"
       v-bind="textarea"
       v-model="modelValue"
       :class="label == '' ? '' : 'mt-5'"
@@ -25,6 +26,10 @@
       density="compact"
       rows="4"
       variant="underlined"
+      @focus="emitSelection"
+      @keyup="emitSelection"
+      @mouseup="emitSelection"
+      @select="emitSelection"
     />
     <SafeMarkdown
       v-else
@@ -34,6 +39,12 @@
 </template>
 
 <script setup lang="ts">
+interface TextSelectionState {
+  selectedText: string;
+  selectionStart: number;
+  selectionEnd: number;
+}
+
 const props = defineProps({
   label: {
     type: String,
@@ -55,9 +66,11 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: "input:preview", value: boolean): void;
+  (e: "selection-change", value: TextSelectionState | null): void;
 }>();
 
 const modelValue = defineModel<string>("modelValue");
+const textareaRef = ref<{ $el?: HTMLElement } | null>(null);
 
 const fallbackPreview = ref(false);
 const previewState = computed({
@@ -71,4 +84,25 @@ const previewState = computed({
     }
   },
 });
+
+function getTextareaElement() {
+  return textareaRef.value?.$el?.querySelector("textarea") ?? null;
+}
+
+function emitSelection(event?: Event) {
+  const textarea = event?.target instanceof HTMLTextAreaElement
+    ? event.target
+    : getTextareaElement();
+
+  if (!textarea) {
+    emit("selection-change", null);
+    return;
+  }
+
+  emit("selection-change", {
+    selectedText: textarea.value.slice(textarea.selectionStart, textarea.selectionEnd),
+    selectionStart: textarea.selectionStart,
+    selectionEnd: textarea.selectionEnd,
+  });
+}
 </script>
