@@ -47,7 +47,6 @@ class RecipeInstruction(SqlAlchemyBase):
     model_config = ConfigDict(
         exclude={
             "id",
-            "ingredient_references",
         }
     )
 
