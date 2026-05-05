@@ -217,6 +217,7 @@
                         @move-to-bottom="moveTo('bottom', index)"
                         @insert-above="insert(index)"
                         @insert-below="insert(index + 1)"
+                        @prep-above="prepAbove(index, step.id)"
                         @split-below="splitBelow(index, step.id)"
                         @toggle-section="toggleShowTitle(step.id!)"
                         @link-ingredients="openDialog(index, step.text, step.ingredientReferences)"
@@ -550,6 +551,12 @@ function instructionButtons(index: number, stepId: string | null | undefined) {
         },
         ...(hasSplitSelection(stepId)
           ? [{
+              text: i18n.t("recipe.prep-above"),
+              event: "prep-above",
+            }]
+          : []),
+        ...(hasSplitSelection(stepId)
+          ? [{
               text: i18n.t("recipe.split-below"),
               event: "split-below",
             }]
@@ -854,6 +861,68 @@ function ingredientMatchesMovedText(ingredient: RecipeIngredient, movedTextToken
   return [...ingredientTokens].some(token => movedTextTokens.has(token));
 }
 
+function matchedIngredientReferences(selectedText: string, sourceInstruction: RecipeStep): IngredientReferences[] {
+  const sourceRefs = sourceInstruction.ingredientReferences ?? [];
+  const movedTextTokens = ingredientMatchTokens(selectedText);
+
+  return sourceRefs.filter((ref) => {
+    if (!ref.referenceId) {
+      return false;
+    }
+
+    const ingredient = ingredientLookup.value[ref.referenceId];
+    if (!ingredient) {
+      return false;
+    }
+
+    return ingredientMatchesMovedText(ingredient, movedTextTokens);
+  });
+}
+
+function matchedTimers(selectedText: string, sourceInstruction: RecipeStep): RecipeTimer[] {
+  const sourceTimers = sourceInstruction.timers ?? [];
+  return sourceTimers.filter(timer => timerMatchesMovedText(timer, selectedText));
+}
+
+function prepAbove(index: number, stepId: string | null | undefined) {
+  if (!stepId) {
+    return;
+  }
+
+  const selection = instructionSelections.value[stepId];
+  const sourceInstruction = instructionList.value[index];
+
+  if (!selection || !sourceInstruction || selection.selectedText.trim().length === 0) {
+    return;
+  }
+
+  const selectedText = sourceInstruction.text.slice(selection.selectionStart, selection.selectionEnd);
+
+  if (selectedText !== selection.selectedText) {
+    return;
+  }
+
+  insert(index);
+  const insertedInstruction = instructionList.value[index];
+
+  if (!insertedInstruction) {
+    return;
+  }
+
+  insertedInstruction.text = selectedText;
+  insertedInstruction.ingredientReferences = matchedIngredientReferences(selectedText, sourceInstruction);
+  insertedInstruction.timers = matchedTimers(selectedText, sourceInstruction);
+
+  if (insertedInstruction.id) {
+    sourceInstruction.preparationInstructionId = insertedInstruction.id;
+  }
+
+  instructionSelections.value = {
+    ...instructionSelections.value,
+    [stepId]: null,
+  };
+}
+
 function splitBelow(index: number, stepId: string | null | undefined) {
   if (!stepId) {
     return;
@@ -883,25 +952,13 @@ function splitBelow(index: number, stepId: string | null | undefined) {
   insertedInstruction.text = selectedText;
 
   const sourceRefs = sourceInstruction.ingredientReferences ?? [];
-  const movedTextTokens = ingredientMatchTokens(selectedText);
-  const movedRefs = sourceRefs.filter((ref) => {
-    if (!ref.referenceId) {
-      return false;
-    }
-
-    const ingredient = ingredientLookup.value[ref.referenceId];
-    if (!ingredient) {
-      return false;
-    }
-
-    return ingredientMatchesMovedText(ingredient, movedTextTokens);
-  });
+  const movedRefs = matchedIngredientReferences(selectedText, sourceInstruction);
   const movedRefIds = new Set(movedRefs.map(ref => ref.referenceId));
   insertedInstruction.ingredientReferences = movedRefs;
   sourceInstruction.ingredientReferences = sourceRefs.filter(ref => !ref.referenceId || !movedRefIds.has(ref.referenceId));
 
   const sourceTimers = sourceInstruction.timers ?? [];
-  const movedTimers = sourceTimers.filter(timer => timerMatchesMovedText(timer, selectedText));
+  const movedTimers = matchedTimers(selectedText, sourceInstruction);
   const movedTimerSet = new Set(movedTimers);
   insertedInstruction.timers = movedTimers;
   sourceInstruction.timers = sourceTimers.filter(timer => !movedTimerSet.has(timer));
