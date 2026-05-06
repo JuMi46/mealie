@@ -525,7 +525,7 @@ function toggleItemSelection(itemId: string) {
     return;
   }
 
-  selectedItemIds.value = [...selectedItemIds.value, itemId];
+  selectedItemIds.value.push(itemId);
 }
 
 function clearMoveState() {
