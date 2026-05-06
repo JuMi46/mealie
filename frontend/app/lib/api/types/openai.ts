@@ -29,10 +29,35 @@ export interface OpenAIRecipe {
 export interface OpenAIRecipeIngredient {
   title?: string | null;
   text: string;
+  reference_id?: string | null;
+  quantity?: number | null;
+  unit_name?: string | null;
+  food_name?: string | null;
+  note?: string | null;
+  quantity_in_ml?: number | null;
 }
 export interface OpenAIRecipeInstruction {
   title?: string | null;
   text: string;
+  id?: string | null;
+  preparation_instruction_id?: string | null;
+  ingredient_references?: OpenAIRecipeIngredientReference[];
+  ingredients_with_quantity?: OpenAIRecipeIngredientWithQuantity[];
+  timers?: OpenAIRecipeTimer[];
+}
+export interface OpenAIRecipeIngredientReference {
+  reference_id?: string | null;
+}
+export interface OpenAIRecipeIngredientWithQuantity {
+  reference_id?: string | null;
+  quantity?: number | null;
+  quantity_in_ml?: number | null;
+  unit_name?: string | null;
+  comment?: string | null;
+}
+export interface OpenAIRecipeTimer {
+  duration: number;
+  text?: string | null;
 }
 export interface OpenAIRecipeNotes {
   title?: string | null;

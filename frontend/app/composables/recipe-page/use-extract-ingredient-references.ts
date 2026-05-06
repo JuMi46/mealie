@@ -30,32 +30,99 @@ function isBlackListedWord(word: string) {
     "with",
     "without",
   ];
-  const blackListedRegexMatch = /\d/gm; // Match Any Number
-  return blackListedText.includes(word) || word.match(blackListedRegexMatch);
+  const blackListedRegexMatch = /\d/; // Match Any Number
+  return blackListedText.includes(word) || blackListedRegexMatch.test(word);
+}
+
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .map(normalize)
+    .filter(word => word.length > 2)
+    .filter(word => !isBlackListedWord(word));
+}
+
+function toMatchKey(token: string): string {
+  if (token.endsWith("ies") && token.length > 3) {
+    return `${token.slice(0, -3)}y`;
+  }
+
+  if (token.endsWith("es") && /(ches|shes|sses|xes|zes)$/.test(token)) {
+    return token.slice(0, -2);
+  }
+
+  if (token.endsWith("s") && !token.endsWith("ss") && token.length > 3) {
+    return token.slice(0, -1);
+  }
+
+  return token;
+}
+
+function toMatchKeys(text: string): string[] {
+  return tokenize(text).map(toMatchKey);
+}
+
+function canUseSingleTokenFallback(ingredientTokens: string[]): boolean {
+  const [lastToken] = ingredientTokens.slice(-1);
+
+  if (lastToken === undefined) {
+    return false;
+  }
+
+  // Some ingredients are commonly referenced by just the final noun in instructions.
+  return ["stock", "broth", "pepper"].includes(lastToken);
 }
 
 export function useExtractIngredientReferences() {
-  const { parseIngredientText } = useIngredientTextParser();
+  const { ingredientToParserString } = useIngredientTextParser();
 
   function extractIngredientReferences(recipeIngredients: RecipeIngredient[], activeRefs: string[], text: string): Set<string> {
-    function ingredientMatchesWord(ingredient: RecipeIngredient, word: string) {
-      const searchText = parseIngredientText(ingredient);
-      return searchText.toLowerCase().includes(word.toLowerCase());
+    function ingredientMatchesText(ingredient: RecipeIngredient, textTokens: string[], textTokenSet: Set<string>) {
+      const searchText = ingredient.food?.name || ingredientToParserString(ingredient);
+      const ingredientTokens = toMatchKeys(searchText);
+
+      if (ingredientTokens.length === 0) {
+        return false;
+      }
+
+      const normalizedText = ` ${textTokens.join(" ")} `;
+      const ingredientPhrase = ingredientTokens.join(" ");
+
+      if (normalizedText.includes(` ${ingredientPhrase} `)) {
+        return true;
+      }
+
+      if (ingredientTokens.length === 1) {
+        const [singleToken] = ingredientTokens;
+        return singleToken !== undefined && textTokenSet.has(singleToken);
+      }
+
+      if (canUseSingleTokenFallback(ingredientTokens)) {
+        const [lastToken] = ingredientTokens.slice(-1);
+        if (lastToken !== undefined && textTokenSet.has(lastToken)) {
+          return true;
+        }
+      }
+
+      const matchedTokenCount = ingredientTokens.filter(token => textTokenSet.has(token)).length;
+      return matchedTokenCount >= 2;
     }
 
     const availableIngredients = recipeIngredients
       .filter(ingredient => ingredient.referenceId !== undefined)
       .filter(ingredient => !activeRefs.includes(ingredient.referenceId as string));
 
-    const allMatchedIngredientIds: string[] = text
-      .toLowerCase()
-      .split(/\s/)
-      .map(normalize)
-      .filter(word => word.length > 2)
-      .filter(word => !isBlackListedWord(word))
-      .flatMap(word => availableIngredients.filter(ingredient => ingredientMatchesWord(ingredient, word)))
+    const textTokens = toMatchKeys(text);
+    const textTokenSet = new Set<string>(textTokens);
+
+    if (textTokenSet.size === 0) {
+      return new Set<string>();
+    }
+
+    const allMatchedIngredientIds: string[] = availableIngredients
+      .filter(ingredient => ingredientMatchesText(ingredient, textTokens, textTokenSet))
       .map(ingredient => ingredient.referenceId as string);
-    //  deduplicate
 
     return new Set<string>(allMatchedIngredientIds);
   }

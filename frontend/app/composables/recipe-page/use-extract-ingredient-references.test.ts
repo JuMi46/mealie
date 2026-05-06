@@ -80,4 +80,30 @@ describe("test use extract ingredient references", () => {
 
     expect(result).toEqual(new Set());
   });
+
+  test("matches only lemon zest and vegetable stock in rosemary oil text", () => {
+    const { extractIngredientReferences } = useExtractIngredientReferences();
+    const text = "Serve hot. Garnish each serving with a swirl of rosemary oil, a few croutons, and a sprinkle of lemon zest. The soup will thicken as it sits; add more stock as necessary when reheating. Leftover rosemary oil will keep in a sealed container at room temperature for up to 1 week.";
+
+    const result = extractIngredientReferences([
+      { food: { name: "lemon zest" } as any, referenceId: "lemon-zest" },
+      { food: { name: "olive oil" } as any, referenceId: "olive-oil" },
+      { food: { name: "fresh rosemary" } as any, referenceId: "fresh-rosemary" },
+      { food: { name: "vegetable stock" } as any, referenceId: "vegetable-stock" },
+      { food: { name: "salt" } as any, referenceId: "salt" },
+      { food: { name: "black pepper" } as any, referenceId: "black-pepper" },
+    ], [], text);
+
+    expect(result).toEqual(new Set(["lemon-zest", "vegetable-stock"]));
+  });
+
+  test("matches black pepper when instruction only contains pepper", () => {
+    const { extractIngredientReferences } = useExtractIngredientReferences();
+
+    const result = extractIngredientReferences([
+      { food: { name: "black pepper" } as any, referenceId: "black-pepper" },
+    ], [], "Season with pepper to taste");
+
+    expect(result).toEqual(new Set(["black-pepper"]));
+  });
 });
