@@ -26,6 +26,7 @@ class HouseholdPreferencesBase(MealieModel):
 
     volume_display_mode: Literal["primary_only", "secondary_only", "both"] = "primary_only"
     mass_display_mode: Literal["primary_only", "secondary_only", "both"] = "primary_only"
+    temperature_display_template: str = "℃ / ℉"
 
 
 class UpdateHouseholdPreferences(HouseholdPreferencesBase):

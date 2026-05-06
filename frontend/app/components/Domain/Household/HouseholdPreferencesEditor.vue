@@ -42,6 +42,14 @@
       variant="underlined"
       flat
     />
+    <v-text-field
+      v-model="local.temperatureDisplayTemplate"
+      :label="$t('household.temperature-display-template')"
+      :hint="$t('household.temperature-display-template-description')"
+      persistent-hint
+      variant="underlined"
+      flat
+    />
 
     <BaseCardSectionTitle class="mt-5" :title="$t('household.household-recipe-preferences')">
       {{ $t("household.default-recipe-preferences-description") }}
@@ -150,6 +158,7 @@ function normalizeUnitPreferenceValues(values: UnitPreferenceValue[] | undefined
 const preferences = defineModel<ReadHouseholdPreferences>({ required: true });
 const local = reactive({
   ...preferences.value,
+  temperatureDisplayTemplate: preferences.value.temperatureDisplayTemplate ?? "℃ / ℉",
   primaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.primaryVolumeUnits as UnitPreferenceValue[] | undefined),
   secondaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),
   primaryMassUnits: normalizeUnitPreferenceValues(preferences.value.primaryMassUnits as UnitPreferenceValue[] | undefined),
@@ -164,7 +173,7 @@ watch(local, (newVal) => {
     secondaryVolumeUnits: normalizeUnitPreferenceValues(newVal.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),
     primaryMassUnits: normalizeUnitPreferenceValues(newVal.primaryMassUnits as UnitPreferenceValue[] | undefined),
     secondaryMassUnits: normalizeUnitPreferenceValues(newVal.secondaryMassUnits as UnitPreferenceValue[] | undefined),
-  };
+  } as unknown as ReadHouseholdPreferences;
 });
 
 const i18n = useI18n();

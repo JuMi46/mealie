@@ -149,20 +149,10 @@ export function convertToFahrenheit(celsius: number | string) {
   return fahrenheit >= 230 ? Math.round(fahrenheit / 5) * 5 : Math.ceil(fahrenheit);
 }
 
-export function parseTemperaturesInText(text: string) {
-  const textMatches = text.match(/\d+(°|)(f|F|c|C)/g);
-  if (textMatches) {
-    for (const textMatch of textMatches) {
-      const tempMatch = textMatch.match(/\d+/);
-      if (tempMatch) {
-        const temp = tempMatch[0];
-        const isCelsius = textMatch.toLowerCase().includes("c");
-        const celsius = isCelsius ? temp : convertToCelsius(temp);
-        const fahrenheit = isCelsius ? convertToFahrenheit(temp) : temp;
-        const newTemp = `${celsius}℃ / ${fahrenheit}℉`; // TODO: Make a household setting about what temperatures to display
-        text = text.replaceAll(textMatch, newTemp);
-      }
-    }
-  }
-  return text;
+export function parseTemperaturesInText(text: string, temperatureDisplayTemplate = "℃ / ℉") {
+  return text.replace(/(-?\d+(?:\.\d+)?)\s*℃\s*\/\s*(-?\d+(?:\.\d+)?)\s*℉/g, (_match, celsius, fahrenheit) => {
+    return temperatureDisplayTemplate
+      .replaceAll("℃", `${String(celsius)}℃`)
+      .replaceAll("℉", `${String(fahrenheit)}℉`);
+  });
 }

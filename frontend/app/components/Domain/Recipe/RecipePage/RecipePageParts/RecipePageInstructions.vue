@@ -312,7 +312,7 @@
                       <v-col>
                         <SafeMarkdown
                           class="markdown"
-                          :source="parseTemperaturesInText(step.text)"
+                          :source="parseInstructionTemperatures(step.text)"
                         />
                       </v-col>
                     </v-row>
@@ -344,6 +344,7 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 import type { RecipeStep, IngredientReferences, RecipeIngredient, RecipeAsset, Recipe, RecipeTimer } from "~/lib/api/types/recipe";
 import { uuid4, parseTemperaturesInText } from "~/composables/use-utils";
 import { useUserApi, useStaticRoutes } from "~/composables/api";
+import { useHouseholdSelf } from "~/composables/use-households";
 import { usePageState } from "~/composables/recipe-page/shared-state";
 import { useExtractIngredientReferences } from "~/composables/recipe-page/use-extract-ingredient-references";
 import { useIngredientTextParser } from "~/composables/recipes/use-recipe-ingredients";
@@ -388,6 +389,7 @@ const props = defineProps({
 const emit = defineEmits(["click-instruction-field", "update:assets"]);
 const i18n = useI18n();
 const { $globals } = useNuxtApp();
+const { household } = useHouseholdSelf();
 
 const { isCookMode, toggleCookMode, isEditForm } = usePageState(props.recipe.slug);
 const { extractIngredientReferences } = useExtractIngredientReferences();
@@ -400,6 +402,11 @@ const usedIngredients = ref<RecipeIngredient[]>([]);
 
 const showTitleEditor = ref<{ [key: string]: boolean }>({});
 const instructionSelections = ref<Record<string, InstructionSelectionState | null>>({});
+
+function parseInstructionTemperatures(text: string) {
+  const temperatureDisplayTemplate = household.value?.preferences?.temperatureDisplayTemplate ?? "℃ / ℉";
+  return parseTemperaturesInText(text, temperatureDisplayTemplate);
+}
 
 // ===============================================================
 // UI State Helpers

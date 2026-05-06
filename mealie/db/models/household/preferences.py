@@ -97,6 +97,7 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
     )
     volume_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
     mass_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
+    temperature_display_template: Mapped[str] = mapped_column(sa.String, nullable=False, default="℃ / ℉")
 
     # Deprecated
     recipe_disable_amount: Mapped[bool | None] = mapped_column(sa.Boolean, default=True)

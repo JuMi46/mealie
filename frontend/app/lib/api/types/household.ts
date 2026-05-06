@@ -26,6 +26,7 @@ export interface CreateHouseholdPreferences {
   recipeDisableComments?: boolean;
   volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
   massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  temperatureDisplayTemplate?: string;
   primaryVolumeUnits?: string[];
   secondaryVolumeUnits?: string[];
   primaryMassUnits?: string[];
@@ -220,6 +221,7 @@ export interface ReadHouseholdPreferences {
   recipeDisableComments?: boolean;
   volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
   massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  temperatureDisplayTemplate?: string;
   primaryVolumeUnits?: IngredientUnit[];
   secondaryVolumeUnits?: IngredientUnit[];
   primaryMassUnits?: IngredientUnit[];
@@ -284,6 +286,7 @@ export interface HouseholdPreferencesBase {
   recipeDisableComments?: boolean;
   volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
   massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  temperatureDisplayTemplate?: string;
 }
 export interface HouseholdRecipeBase {
   lastMade?: string | null;
@@ -349,6 +352,7 @@ export interface SaveHouseholdPreferences {
   recipeDisableComments?: boolean;
   volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
   massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  temperatureDisplayTemplate?: string;
   primaryVolumeUnits?: string[];
   secondaryVolumeUnits?: string[];
   primaryMassUnits?: string[];
@@ -887,6 +891,7 @@ export interface UpdateHouseholdPreferences {
   recipeDisableComments?: boolean;
   volumeDisplayMode?: "primary_only" | "secondary_only" | "both";
   massDisplayMode?: "primary_only" | "secondary_only" | "both";
+  temperatureDisplayTemplate?: string;
   primaryVolumeUnits?: string[];
   secondaryVolumeUnits?: string[];
   primaryMassUnits?: string[];

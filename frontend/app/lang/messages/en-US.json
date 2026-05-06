@@ -304,7 +304,9 @@
     "default-recipe-preferences-description": "These are the default settings when a new recipe is created in your household. These can be changed for individual recipes in the recipe settings menu.",
     "allow-users-outside-of-your-household-to-see-your-recipes": "Allow users outside of your household to see your recipes",
     "allow-users-outside-of-your-household-to-see-your-recipes-description": "When enabled you can use a public share link to share specific recipes without authorizing the user. When disabled, you can only share recipes with users who are in your household or with a pre-generated private link",
-    "household-preferences": "Household Preferences"
+    "household-preferences": "Household Preferences",
+    "temperature-display-template": "Temperature display template",
+    "temperature-display-template-description": "Use ℃ and ℉ in the template, for example: ℃, ℉, ℃ / ℉, ℉ / ℃, ℃ (℉), ℉ (℃)."
   },
   "meal-plan": {
     "create-a-new-meal-plan": "Create a New Meal Plan",
