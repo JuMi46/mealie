@@ -82,7 +82,7 @@ def test_update_preferences_with_default_shopping_list(api_client: TestClient, u
     user.can_manage_household = True
     other_user.repos.users.update(user.id, user)
 
-    shopping_list = other_user.repos.group_shopping_lists.create(
+    shopping_list = unique_user.repos.group_shopping_lists.create(
         ShoppingListSave(
             name=random_string(10),
             group_id=unique_user.group_id,

@@ -167,10 +167,16 @@ function normalizeUnitPreferenceValues(values: UnitPreferenceValue[] | undefined
   });
 }
 
+function getDefaultShoppingListId(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
 const preferences = defineModel<ReadHouseholdPreferences>({ required: true });
 const local = reactive({
   ...preferences.value,
-  defaultShoppingListId: (preferences.value as { defaultShoppingListId?: string | null }).defaultShoppingListId ?? null,
+  defaultShoppingListId: getDefaultShoppingListId(
+    (preferences.value as Record<string, unknown>).defaultShoppingListId,
+  ),
   temperatureDisplayTemplate: preferences.value.temperatureDisplayTemplate ?? "℃ / ℉",
   primaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.primaryVolumeUnits as UnitPreferenceValue[] | undefined),
   secondaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),

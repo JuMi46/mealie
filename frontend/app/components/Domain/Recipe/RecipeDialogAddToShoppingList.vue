@@ -200,8 +200,9 @@ watch([dialog, () => preferences.value.viewAllLists], () => {
       list => preferences.value.viewAllLists || list.userId === auth.user.value?.id,
     );
 
-    const defaultShoppingListId = (household.value?.preferences as { defaultShoppingListId?: string | null } | undefined)
+    const defaultShoppingListIdValue = (household.value?.preferences as Record<string, unknown> | undefined)
       ?.defaultShoppingListId;
+    const defaultShoppingListId = typeof defaultShoppingListIdValue === "string" ? defaultShoppingListIdValue : null;
     const defaultShoppingList = defaultShoppingListId
       ? props.shoppingLists.find(list => list.id === defaultShoppingListId)
       : null;
