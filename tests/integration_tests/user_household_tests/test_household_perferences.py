@@ -1,9 +1,12 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
+from mealie.schema.household.group_shopping_list import ShoppingListSave
 from mealie.schema.household.household_preferences import UpdateHouseholdPreferences
 from tests.utils import api_routes
 from tests.utils.assertion_helpers import assert_ignore_keys
-from tests.utils.factories import random_bool
+from tests.utils.factories import random_bool, random_string
 from tests.utils.fixture_schemas import TestUser
 
 
@@ -40,7 +43,11 @@ def test_update_preferences_no_permission(api_client: TestClient, user_tuple: li
     other_user.repos.users.update(user.id, user)
 
     new_data = UpdateHouseholdPreferences(recipe_public=random_bool(), recipe_show_nutrition=random_bool())
-    response = api_client.put(api_routes.households_preferences, json=new_data.model_dump(), headers=unique_user.token)
+    response = api_client.put(
+        api_routes.households_preferences,
+        json=new_data.model_dump(mode="json"),
+        headers=unique_user.token,
+    )
     assert response.status_code == 403
 
 
@@ -53,7 +60,11 @@ def test_update_preferences(api_client: TestClient, user_tuple: list[TestUser]) 
     other_user.repos.users.update(user.id, user)
 
     new_data = UpdateHouseholdPreferences(recipe_public=random_bool(), recipe_show_nutrition=random_bool())
-    response = api_client.put(api_routes.households_preferences, json=new_data.model_dump(), headers=unique_user.token)
+    response = api_client.put(
+        api_routes.households_preferences,
+        json=new_data.model_dump(mode="json"),
+        headers=unique_user.token,
+    )
     assert response.status_code == 200
 
     preferences = response.json()
@@ -61,3 +72,51 @@ def test_update_preferences(api_client: TestClient, user_tuple: list[TestUser]) 
     assert preferences["recipePublic"] == new_data.recipe_public
     assert preferences["recipeShowNutrition"] == new_data.recipe_show_nutrition
     assert_ignore_keys(new_data.model_dump(by_alias=True), preferences, ["id", "householdId"])
+
+
+def test_update_preferences_with_default_shopping_list(api_client: TestClient, user_tuple: list[TestUser]) -> None:
+    unique_user, other_user = user_tuple
+
+    user = other_user.repos.users.get_one(unique_user.user_id)
+    assert user
+    user.can_manage_household = True
+    other_user.repos.users.update(user.id, user)
+
+    shopping_list = other_user.repos.group_shopping_lists.create(
+        ShoppingListSave(
+            name=random_string(10),
+            group_id=unique_user.group_id,
+            user_id=unique_user.user_id,
+        )
+    )
+
+    new_data = UpdateHouseholdPreferences(default_shopping_list_id=shopping_list.id)
+    response = api_client.put(
+        api_routes.households_preferences,
+        json=new_data.model_dump(mode="json"),
+        headers=unique_user.token,
+    )
+    assert response.status_code == 200
+
+    preferences = response.json()
+    assert preferences is not None
+    assert preferences["defaultShoppingListId"] == str(shopping_list.id)
+
+
+def test_update_preferences_with_invalid_default_shopping_list(
+    api_client: TestClient, user_tuple: list[TestUser]
+) -> None:
+    unique_user, other_user = user_tuple
+
+    user = other_user.repos.users.get_one(unique_user.user_id)
+    assert user
+    user.can_manage_household = True
+    other_user.repos.users.update(user.id, user)
+
+    new_data = UpdateHouseholdPreferences(default_shopping_list_id=uuid4())
+    response = api_client.put(
+        api_routes.households_preferences,
+        json=new_data.model_dump(mode="json"),
+        headers=unique_user.token,
+    )
+    assert response.status_code == 404

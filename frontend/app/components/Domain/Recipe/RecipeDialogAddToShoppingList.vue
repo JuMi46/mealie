@@ -118,6 +118,7 @@
 import { toRefs } from "@vueuse/core";
 import RecipeIngredientListItem from "./RecipeIngredientListItem.vue";
 import { useUserApi } from "~/composables/api";
+import { useHouseholdSelf } from "~/composables/use-households";
 import { alert } from "~/composables/use-toast";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
 import { convertToGram, convertToMilliliter } from "~/composables/recipes/use-recipe-ingredients";
@@ -173,6 +174,7 @@ const dialog = defineModel<boolean>({ default: false });
 const i18n = useI18n();
 const auth = useMealieAuth();
 const api = useUserApi();
+const { household } = useHouseholdSelf();
 const preferences = useShoppingListPreferences();
 const ready = ref(false);
 
@@ -198,7 +200,17 @@ watch([dialog, () => preferences.value.viewAllLists], () => {
       list => preferences.value.viewAllLists || list.userId === auth.user.value?.id,
     );
 
-    if (filteredShoppingLists.value.length === 1 && !state.shoppingListShowAllToggled) {
+    const defaultShoppingListId = (household.value?.preferences as { defaultShoppingListId?: string | null } | undefined)
+      ?.defaultShoppingListId;
+    const defaultShoppingList = defaultShoppingListId
+      ? props.shoppingLists.find(list => list.id === defaultShoppingListId)
+      : null;
+
+    if (defaultShoppingList && !state.shoppingListShowAllToggled) {
+      selectedShoppingList.value = defaultShoppingList;
+      openShoppingListIngredientDialog(selectedShoppingList.value);
+    }
+    else if (filteredShoppingLists.value.length === 1 && !state.shoppingListShowAllToggled) {
       selectedShoppingList.value = filteredShoppingLists.value[0];
       openShoppingListIngredientDialog(selectedShoppingList.value);
     }

@@ -53,6 +53,9 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
     recipe_show_assets: Mapped[bool | None] = mapped_column(sa.Boolean, default=False)
     recipe_landscape_view: Mapped[bool | None] = mapped_column(sa.Boolean, default=False)
     recipe_disable_comments: Mapped[bool | None] = mapped_column(sa.Boolean, default=False)
+    default_shopping_list_id: Mapped[GUID | None] = mapped_column(
+        GUID, sa.ForeignKey("shopping_lists.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     # Household unit display preferences
     primary_volume_units: Mapped[list["IngredientUnitModel"]] = orm.relationship(

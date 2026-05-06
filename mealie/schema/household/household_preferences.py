@@ -16,6 +16,7 @@ class HouseholdPreferencesBase(MealieModel):
 
     lock_recipe_edits_from_other_households: bool = True
     first_day_of_week: int = 0
+    default_shopping_list_id: UUID4 | None = None
 
     # Recipe Defaults
     recipe_public: bool = True
