@@ -167,16 +167,10 @@ function normalizeUnitPreferenceValues(values: UnitPreferenceValue[] | undefined
   });
 }
 
-function getDefaultShoppingListId(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
 const preferences = defineModel<ReadHouseholdPreferences>({ required: true });
 const local = reactive({
   ...preferences.value,
-  defaultShoppingListId: getDefaultShoppingListId(
-    (preferences.value as Record<string, unknown>).defaultShoppingListId,
-  ),
+  defaultShoppingListId: preferences.value.defaultShoppingListId ?? null,
   temperatureDisplayTemplate: preferences.value.temperatureDisplayTemplate ?? "℃ / ℉",
   primaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.primaryVolumeUnits as UnitPreferenceValue[] | undefined),
   secondaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),

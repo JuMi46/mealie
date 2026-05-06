@@ -1,5 +1,5 @@
 /* tslint:disable */
-
+/* eslint-disable */
 /**
 /* This file was automatically generated from pydantic models by running pydantic2ts.
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
@@ -19,6 +19,7 @@ export interface CreateHouseholdPreferences {
   showAnnouncements?: boolean;
   lockRecipeEditsFromOtherHouseholds?: boolean;
   firstDayOfWeek?: number;
+  defaultShoppingListId?: string | null;
   recipePublic?: boolean;
   recipeShowNutrition?: boolean;
   recipeShowAssets?: boolean;
@@ -214,6 +215,7 @@ export interface ReadHouseholdPreferences {
   showAnnouncements?: boolean;
   lockRecipeEditsFromOtherHouseholds?: boolean;
   firstDayOfWeek?: number;
+  defaultShoppingListId?: string | null;
   recipePublic?: boolean;
   recipeShowNutrition?: boolean;
   recipeShowAssets?: boolean;
@@ -279,6 +281,7 @@ export interface HouseholdPreferencesBase {
   showAnnouncements?: boolean;
   lockRecipeEditsFromOtherHouseholds?: boolean;
   firstDayOfWeek?: number;
+  defaultShoppingListId?: string | null;
   recipePublic?: boolean;
   recipeShowNutrition?: boolean;
   recipeShowAssets?: boolean;
@@ -345,6 +348,7 @@ export interface SaveHouseholdPreferences {
   showAnnouncements?: boolean;
   lockRecipeEditsFromOtherHouseholds?: boolean;
   firstDayOfWeek?: number;
+  defaultShoppingListId?: string | null;
   recipePublic?: boolean;
   recipeShowNutrition?: boolean;
   recipeShowAssets?: boolean;
@@ -884,6 +888,7 @@ export interface UpdateHouseholdPreferences {
   showAnnouncements?: boolean;
   lockRecipeEditsFromOtherHouseholds?: boolean;
   firstDayOfWeek?: number;
+  defaultShoppingListId?: string | null;
   recipePublic?: boolean;
   recipeShowNutrition?: boolean;
   recipeShowAssets?: boolean;
