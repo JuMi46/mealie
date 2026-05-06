@@ -319,7 +319,7 @@
       </div>
 
       <TransitionGroup name="scroll-x-transition">
-        <BaseExpansionPanels v-for="(value, key) in itemsByLabel" :key="`editable-${key}`" :v-model="0" start-open>
+        <BaseExpansionPanels v-for="(value, key) in itemsByLabel" :key="`editable-${key}`" start-open>
           <v-expansion-panel class="shopping-list-section">
             <v-expansion-panel-title
               :color="getLabelColor(key)"
