@@ -66,11 +66,10 @@ class RepositoryFood(GroupRepositoryGeneric[IngredientFood, IngredientFoodModel]
         if not preferences:
             return
 
-        normalized_name = name.strip() if name else None
         overrides = dict(preferences.ingredient_food_name_overrides or {})
         food_key = str(food_id)
-        if normalized_name:
-            overrides[food_key] = normalized_name
+        if name:
+            overrides[food_key] = name
         else:
             overrides.pop(food_key, None)
 
@@ -78,6 +77,13 @@ class RepositoryFood(GroupRepositoryGeneric[IngredientFood, IngredientFoodModel]
         self.session.commit()
 
     def hydrate_household_name_overrides(self, foods: list[IngredientFood], household_id: UUID4, replace: bool) -> None:
+        """Populate household override metadata and optionally replace display names.
+
+        Set `replace=True` for responses that should show overridden ingredient names
+        (e.g. recipe and shopping list payloads). Set `replace=False` when the original
+        group-level food names must stay visible while still exposing the household
+        override value (e.g. food data-management UI).
+        """
         if not foods:
             return
 

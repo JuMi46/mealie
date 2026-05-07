@@ -95,11 +95,15 @@ def publish_list_item_events(publisher: Callable, items_collection: ShoppingList
             )
 
 
+def apply_food_overrides_to_items(controller: BaseCrudController, items: list[ShoppingListItemOut]) -> None:
+    foods = [item.food for item in items if item.food]
+    controller.repos.ingredient_foods.hydrate_household_name_overrides(foods, controller.household_id, replace=True)
+
+
 @controller(item_router)
 class ShoppingListItemController(BaseCrudController):
     def _apply_food_overrides(self, items: list[ShoppingListItemOut]) -> None:
-        foods = [item.food for item in items if item.food]
-        self.repos.ingredient_foods.hydrate_household_name_overrides(foods, self.household_id, replace=True)
+        apply_food_overrides_to_items(self, items)
 
     def _apply_food_overrides_collection(self, collection: ShoppingListItemsCollectionOut) -> None:
         self._apply_food_overrides(collection.created_items)
@@ -173,17 +177,14 @@ router = APIRouter(prefix="/households/shopping/lists", tags=["Households: Shopp
 @controller(router)
 class ShoppingListController(BaseCrudController):
     def _apply_food_overrides(self, shopping_list: ShoppingListOut) -> ShoppingListOut:
-        foods = [item.food for item in shopping_list.list_items if item.food]
-        self.repos.ingredient_foods.hydrate_household_name_overrides(foods, self.household_id, replace=True)
+        apply_food_overrides_to_items(self, shopping_list.list_items)
         return shopping_list
 
     def _apply_food_overrides_collection(self, collection: ShoppingListItemsCollectionOut) -> None:
-        foods = [
-            item.food
-            for item in collection.created_items + collection.updated_items + collection.deleted_items
-            if item.food
-        ]
-        self.repos.ingredient_foods.hydrate_household_name_overrides(foods, self.household_id, replace=True)
+        apply_food_overrides_to_items(
+            self,
+            collection.created_items + collection.updated_items + collection.deleted_items,
+        )
 
     @cached_property
     def service(self):

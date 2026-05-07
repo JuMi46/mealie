@@ -23,7 +23,7 @@ from mealie.repos.repository_generic import RepositoryGeneric
 from mealie.schema.household.household import HouseholdInDB, HouseholdRecipeUpdate
 from mealie.schema.openai.recipe import OpenAIRecipe
 from mealie.schema.recipe.recipe import CreateRecipe, Recipe, create_recipe_slug
-from mealie.schema.recipe.recipe_ingredient import RecipeIngredient
+from mealie.schema.recipe.recipe_ingredient import IngredientFood, RecipeIngredient
 from mealie.schema.recipe.recipe_notes import RecipeNote
 from mealie.schema.recipe.recipe_settings import RecipeSettings
 from mealie.schema.recipe.recipe_step import RecipeStep
@@ -64,11 +64,11 @@ class RecipeService(RecipeServiceBase):
         if not ingredients:
             return
 
-        foods_by_id: dict[UUID, Any] = {}
+        foods_by_id: dict[UUID, IngredientFood] = {}
 
         def gather(items: list[RecipeIngredient]) -> None:
             for ingredient in items:
-                if ingredient.food and getattr(ingredient.food, "id", None):
+                if ingredient.food and ingredient.food.id:
                     foods_by_id[ingredient.food.id] = ingredient.food
                 if ingredient.referenced_recipe and ingredient.referenced_recipe.recipe_ingredient:
                     gather(ingredient.referenced_recipe.recipe_ingredient)
