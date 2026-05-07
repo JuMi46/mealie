@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import UUID4
 
+from mealie.db.models.household.ingredient_food_label import HouseholdIngredientFoodLabel
 from mealie.schema.household.group_shopping_list import ShoppingListItemOut, ShoppingListOut
 from mealie.schema.recipe.recipe_ingredient import IngredientUnit, SaveIngredientFood
 from tests import utils
@@ -139,6 +140,37 @@ def test_shopping_list_items_auto_assign_label_with_food_with_label(
     assert item_out.label_id == label.id
     assert item_out.label
     assert item_out.label.id == label.id
+
+
+def test_shopping_list_items_use_household_food_label_override(
+    api_client: TestClient, unique_user: TestUser, shopping_list: ShoppingListOut
+):
+    database = unique_user.repos
+    base_label = database.group_multi_purpose_labels.create({"name": random_string(10), "group_id": unique_user.group_id})
+    override_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
+    food = database.ingredient_foods.create(
+        SaveIngredientFood(name=random_string(10), group_id=unique_user.group_id, label_id=base_label.id)
+    )
+    database.session.add(
+        HouseholdIngredientFoodLabel(
+            household_id=unique_user.household_id,
+            food_id=food.id,
+            label_id=override_label.id,
+        )
+    )
+    database.session.commit()
+
+    item = create_item(shopping_list.id, food_id=str(food.id))
+    response = api_client.post(api_routes.households_shopping_items, json=item, headers=unique_user.token)
+    as_json = utils.assert_deserialize(response, 201)
+    assert len(as_json["createdItems"]) == 1
+
+    item_out = ShoppingListItemOut.model_validate(as_json["createdItems"][0])
+    assert item_out.label_id == override_label.id
+    assert item_out.label
+    assert item_out.label.id == override_label.id
 
 
 @pytest.mark.parametrize("use_fuzzy_name", [True, False])

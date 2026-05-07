@@ -115,6 +115,7 @@ class ShoppingListItemController(BaseCrudController):
     @item_router.get("", response_model=ShoppingListItemPagination)
     def get_all(self, q: PaginationQuery = Depends()):
         response = self.repo.page_all(pagination=q, override=ShoppingListItemOut)
+        response.items = self.service._apply_food_label_overrides_to_items(response.items)
         response.set_pagination_guides(router.url_path_for("get_all"), q.model_dump())
         return response
 
@@ -130,7 +131,8 @@ class ShoppingListItemController(BaseCrudController):
 
     @item_router.get("/{item_id}", response_model=ShoppingListItemOut)
     def get_one(self, item_id: UUID4):
-        return self.mixins.get_one(item_id)
+        item = self.mixins.get_one(item_id)
+        return self.service._apply_food_label_overrides_to_items([item])[0]
 
     @item_router.put("", response_model=ShoppingListItemsCollectionOut)
     def update_many(self, data: list[ShoppingListItemUpdateBulk]):
@@ -199,7 +201,8 @@ class ShoppingListController(BaseCrudController):
 
     @router.get("/{item_id}", response_model=ShoppingListOut)
     def get_one(self, item_id: UUID4):
-        return self.mixins.get_one(item_id)
+        shopping_list = self.mixins.get_one(item_id)
+        return self.service._apply_food_label_overrides_to_list(shopping_list)
 
     @router.put("/{item_id}", response_model=ShoppingListOut)
     def update_one(self, item_id: UUID4, data: ShoppingListUpdate):

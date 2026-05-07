@@ -218,6 +218,7 @@ interface CreateIngredientFoodWithOnHand extends CreateIngredientFood {
 
 interface IngredientFoodWithOnHand extends IngredientFood {
   onHand: boolean;
+  householdLabelId?: string | null;
 }
 const userApi = useUserApi();
 const i18n = useI18n();
@@ -295,7 +296,7 @@ const labelOptions = computed(() => allLabels.value.map(label => ({ text: parseL
 
 // ============================================================
 // Form items (shared)
-const formItems = computed<AutoFormItems>(() => [
+const baseFormItems = computed<AutoFormItems>(() => [
   {
     label: i18n.t("general.name"),
     varName: "name",
@@ -343,12 +344,20 @@ const formItems = computed<AutoFormItems>(() => [
   },
 ]);
 
+const householdOverrideFormItem = computed<AutoFormItems[number]>(() => ({
+  label: i18n.t("data-pages.foods.household-food-label-override"),
+  varName: "householdLabelId",
+  type: fieldTypes.SELECT,
+  options: labelOptions.value,
+  selectReturnValue: "value",
+}));
+
 // ===============================================================
 // Create
 
 const createForm = reactive({
   get items() {
-    return formItems.value;
+    return baseFormItems.value;
   },
   data: { name: "", onHand: false, householdsWithIngredientFood: [] } as CreateIngredientFoodWithOnHand,
 });
@@ -376,7 +385,7 @@ async function handleCreate() {
 
 const editForm = reactive({
   get items() {
-    return formItems.value;
+    return [...baseFormItems.value, householdOverrideFormItem.value];
   },
   data: {} as IngredientFoodWithOnHand,
 });
