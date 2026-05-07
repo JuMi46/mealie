@@ -39,6 +39,30 @@
       </v-card-text>
     </BaseDialog>
 
+    <BaseDialog
+      v-model="moveItemsDialog"
+      :title="$t('shopping-list.move-items')"
+      :icon="$globals.icons.tagArrowRight"
+      :submit-text="$t('general.transfer')"
+      :submit-disabled="!destinationListId || selectedItemsCount === 0 || isOffline"
+      can-submit
+      @submit="moveSelectedItems"
+    >
+      <v-card-text class="d-flex flex-column ga-4">
+        <div>
+          {{ $t('shopping-list.select-items-to-move') }}
+        </div>
+        <v-select
+          v-model="destinationListId"
+          :items="destinationShoppingLists"
+          item-title="name"
+          item-value="id"
+          :label="$t('shopping-list.destination-list')"
+          :prepend-icon="$globals.icons.formatListCheck"
+        />
+      </v-card-text>
+    </BaseDialog>
+
     <!-- Reorder Labels -->
     <BaseDialog
       v-model="reorderLabelsDialog"
@@ -98,7 +122,7 @@
                   {
                     icon: $globals.icons.contentCopy,
                     text: '',
-                    event: 'edit',
+                    event: 'copy',
                     children: [
                       {
                         icon: $globals.icons.contentCopy,
@@ -111,6 +135,12 @@
                         event: 'copy-markdown',
                       },
                     ],
+                  },
+                  {
+                    icon: edit ? $globals.icons.check : $globals.icons.edit,
+                    text: edit ? $t('general.done') : $t('general.edit'),
+                    event: 'toggle-edit',
+                    disabled: isOffline,
                   },
                   {
                     icon: $globals.icons.checkboxOutline,
@@ -140,7 +170,7 @@
                     ],
                   },
                 ]"
-                @edit="edit = true"
+                @toggle-edit="toggleEditMode"
                 @three-dot="threeDot = true"
                 @check="openCheckAll"
                 @print="print"
@@ -274,6 +304,81 @@
         </v-expansion-panel>
       </v-expansion-panels>
     </section>
+    <section v-else class="py-2 d-flex flex-column ga-4">
+      <div class="d-flex justify-space-between align-center">
+        <span>{{ $t('general.selected-count', { count: selectedItemsCount }) }}</span>
+        <BaseButton
+          :disabled="selectedItemsCount === 0 || isOffline"
+          @click="openMoveDialog"
+        >
+          {{ $t('shopping-list.move-selected-items') }}
+          <template #icon>
+            {{ $globals.icons.tagArrowRight }}
+          </template>
+        </BaseButton>
+      </div>
+
+      <TransitionGroup name="scroll-x-transition">
+        <BaseExpansionPanels v-for="(value, key) in itemsByLabel" :key="`editable-${key}`" start-open>
+          <v-expansion-panel class="shopping-list-section">
+            <v-expansion-panel-title
+              :color="getLabelColor(key)"
+              class="body-1 font-weight-bold section-title"
+            >
+              {{ key }}
+            </v-expansion-panel-title>
+            <v-expansion-panel-text eager>
+              <TransitionGroup name="scroll-x-transition">
+                <div
+                  v-for="item in value"
+                  :key="item.id"
+                  class="d-flex align-center py-1 px-2"
+                >
+                  <v-checkbox
+                    :model-value="isItemSelected(item.id)"
+                    hide-details
+                    density="compact"
+                    class="mt-0 mr-2 flex-shrink-0"
+                    @update:model-value="toggleItemSelection(item.id)"
+                  />
+                  <div class="text-truncate">
+                    <RecipeIngredientListItem :ingredient="item" />
+                  </div>
+                </div>
+              </TransitionGroup>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </BaseExpansionPanels>
+      </TransitionGroup>
+
+      <v-expansion-panels flat>
+        <v-expansion-panel v-if="listItems.checked && listItems.checked.length > 0">
+          <v-expansion-panel-title class="border-solid border-thin py-1">
+            {{ $t('shopping-list.items-checked-count', listItems.checked.length) }}
+          </v-expansion-panel-title>
+          <v-expansion-panel-text eager>
+            <TransitionGroup name="scroll-x-transition">
+              <div
+                v-for="item in listItems.checked"
+                :key="`checked-edit-${item.id}`"
+                class="d-flex align-center py-1 px-2"
+              >
+                <v-checkbox
+                  :model-value="isItemSelected(item.id)"
+                  hide-details
+                  density="compact"
+                  class="mt-0 mr-2 flex-shrink-0"
+                  @update:model-value="toggleItemSelection(item.id)"
+                />
+                <div class="text-truncate strike-through">
+                  <RecipeIngredientListItem :ingredient="item" />
+                </div>
+              </div>
+            </TransitionGroup>
+          </v-expansion-panel-text>
+        </v-expansion-panel>
+      </v-expansion-panels>
+    </section>
 
     <!-- Recipe References -->
     <v-lazy
@@ -342,10 +447,12 @@
 
 <script setup lang="ts">
 import { VueDraggable } from "vue-draggable-plus";
+import RecipeIngredientListItem from "~/components/Domain/Recipe/RecipeIngredientListItem.vue";
 import RecipeList from "~/components/Domain/Recipe/RecipeList.vue";
 import MultiPurposeLabelSection from "~/components/Domain/ShoppingList/MultiPurposeLabelSection.vue";
 import ShoppingListItem from "~/components/Domain/ShoppingList/ShoppingListItem.vue";
 import ShoppingListItemEditor from "~/components/Domain/ShoppingList/ShoppingListItemEditor.vue";
+import { useUserApi } from "~/composables/api";
 import { useShoppingListPage } from "~/composables/shopping-list-page/use-shopping-list-page";
 import { useFoodStore, useLabelStore, useUnitStore } from "~/composables/store";
 
@@ -358,6 +465,7 @@ useSeoMeta({
 
 const route = useRoute();
 const id = route.params.id as string;
+const userApi = useUserApi();
 
 const { store: allLabels } = useLabelStore();
 const { store: allUnits } = useUnitStore();
@@ -397,12 +505,93 @@ const {
   recipeList,
   removeRecipeReferenceToList,
   addRecipeReferenceToList,
+  refresh,
 } = shoppingListPage;
+
+const selectedItemIds = ref<string[]>([]);
+const destinationListId = ref<string | null>(null);
+const moveItemsDialog = ref(false);
+const destinationShoppingLists = ref<{ id: string; name: string }[]>([]);
+
+const selectedItemsCount = computed(() => selectedItemIds.value.length);
+
+function isItemSelected(itemId: string) {
+  return selectedItemIds.value.includes(itemId);
+}
+
+function toggleItemSelection(itemId: string) {
+  if (isItemSelected(itemId)) {
+    selectedItemIds.value = selectedItemIds.value.filter(id => id !== itemId);
+    return;
+  }
+
+  selectedItemIds.value.push(itemId);
+}
+
+function clearMoveState() {
+  selectedItemIds.value = [];
+  destinationListId.value = null;
+  moveItemsDialog.value = false;
+}
+
+function toggleEditMode() {
+  edit.value = !edit.value;
+  if (!edit.value) {
+    clearMoveState();
+  }
+}
+
+async function fetchDestinationShoppingLists() {
+  const { data } = await userApi.shopping.lists.getAll(1, -1, { orderBy: "name", orderDirection: "asc" });
+  destinationShoppingLists.value = (data?.items ?? [])
+    .filter(list => list.id !== shoppingList.value?.id)
+    .map(list => ({ id: list.id, name: list.name ?? "" }));
+}
+
+async function openMoveDialog() {
+  if (selectedItemsCount.value === 0 || isOffline.value) {
+    return;
+  }
+
+  await fetchDestinationShoppingLists();
+  moveItemsDialog.value = true;
+}
+
+async function moveSelectedItems() {
+  if (!shoppingList.value || !destinationListId.value || selectedItemsCount.value === 0) {
+    return;
+  }
+
+  const selectedIds = new Set(selectedItemIds.value);
+  const itemsToMove = (shoppingList.value.listItems ?? [])
+    .filter(item => selectedIds.has(item.id))
+    .map(item => ({
+      ...item,
+      shoppingListId: destinationListId.value as string,
+    }));
+
+  if (itemsToMove.length === 0) {
+    return;
+  }
+
+  const { data } = await userApi.shopping.items.updateMany(itemsToMove);
+  if (!data) {
+    return;
+  }
+
+  clearMoveState();
+  edit.value = false;
+  await refresh();
+}
 </script>
 
 <style>
 .number-input-container {
   max-width: 50px;
+}
+
+.strike-through {
+  text-decoration: line-through !important;
 }
 
 .shopping-list-section {
