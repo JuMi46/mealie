@@ -1165,6 +1165,7 @@
       "target-food": "Target Food",
       "create-food": "Create Food",
       "food-label": "Food Label",
+      "household-food-label-override": "Household Label Override",
       "edit-food": "Edit Food",
       "food-data": "Food Data",
       "example-food-singular": "ex: Onion",

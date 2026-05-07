@@ -91,6 +91,7 @@ class IngredientFoodAlias(CreateIngredientFoodAlias):
 
 class CreateIngredientFood(UnitFoodBase):
     label_id: UUID4 | None = None
+    household_label_id: UUID4 | None = None
     aliases: list[CreateIngredientFoodAlias] = []
     households_with_ingredient_food: list[str] = []
     density: float | None = None

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
         GroupEventNotifierModel,
         GroupInviteToken,
         GroupRecipeAction,
+        HouseholdIngredientFoodLabel,
         GroupWebhooksModel,
         HouseholdPreferencesModel,
     )
@@ -73,6 +74,11 @@ class Household(SqlAlchemyBase, BaseMixins):
         "IngredientFoodModel",
         secondary=households_to_ingredient_foods,
         back_populates="households_with_ingredient_food",
+    )
+    ingredient_food_label_overrides: Mapped[list["HouseholdIngredientFoodLabel"]] = orm.relationship(
+        "HouseholdIngredientFoodLabel",
+        back_populates="household",
+        cascade="all, delete-orphan",
     )
     tools_on_hand: Mapped[list["Tool"]] = orm.relationship(
         "Tool", secondary=households_to_tools, back_populates="households_with_tool"

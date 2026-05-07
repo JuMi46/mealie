@@ -16,6 +16,7 @@ from .._model_utils.guid import GUID
 if TYPE_CHECKING:
     from ..group import Group
     from ..household import Household
+    from ..household.ingredient_food_label import HouseholdIngredientFoodLabel
     from .recipe import RecipeModel
 
 households_to_ingredient_foods = sa.Table(
@@ -161,6 +162,11 @@ class IngredientFoodModel(SqlAlchemyBase, BaseMixins):
     group: Mapped["Group"] = orm.relationship("Group", back_populates="ingredient_foods", foreign_keys=[group_id])
     households_with_ingredient_food: Mapped[list["Household"]] = orm.relationship(
         "Household", secondary=households_to_ingredient_foods, back_populates="ingredient_foods_on_hand"
+    )
+    household_label_overrides: Mapped[list["HouseholdIngredientFoodLabel"]] = orm.relationship(
+        "HouseholdIngredientFoodLabel",
+        back_populates="food",
+        cascade="all, delete-orphan",
     )
 
     name: Mapped[str | None] = mapped_column(String)

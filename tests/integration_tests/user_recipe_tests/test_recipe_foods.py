@@ -3,7 +3,9 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 
-from mealie.schema.recipe.recipe_ingredient import CreateIngredientFood
+from mealie.db.models.household.ingredient_food_label import HouseholdIngredientFoodLabel
+from mealie.schema.recipe.recipe import Recipe
+from mealie.schema.recipe.recipe_ingredient import CreateIngredientFood, RecipeIngredient
 from tests import utils
 from tests.utils import api_routes
 from tests.utils.factories import random_string
@@ -115,3 +117,62 @@ def test_food_extras(
     assert key_str_2 in extras
     assert extras[key_str_1] == val_str_1
     assert extras[key_str_2] == val_str_2
+
+
+def test_update_food_household_label_override(api_client: TestClient, unique_user: TestUser):
+    database = unique_user.repos
+    base_label = database.group_multi_purpose_labels.create({"name": random_string(10), "group_id": unique_user.group_id})
+    override_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
+    food = database.ingredient_foods.create(
+        {"name": random_string(10), "group_id": unique_user.group_id, "label_id": base_label.id}
+    )
+
+    response = api_client.put(
+        api_routes.foods_item_id(food.id),
+        json={"name": food.name, "householdLabelId": str(override_label.id)},
+        headers=unique_user.token,
+    )
+    as_json = utils.assert_deserialize(response, 200)
+    assert as_json["householdLabelId"] == str(override_label.id)
+    assert as_json["labelId"] == str(base_label.id)
+
+    response = api_client.get(api_routes.foods_item_id(food.id), headers=unique_user.token)
+    as_json = utils.assert_deserialize(response, 200)
+    assert as_json["householdLabelId"] == str(override_label.id)
+
+
+def test_recipe_get_one_uses_household_food_label_override(api_client: TestClient, unique_user: TestUser):
+    database = unique_user.repos
+    base_label = database.group_multi_purpose_labels.create({"name": random_string(10), "group_id": unique_user.group_id})
+    override_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
+    food = database.ingredient_foods.create(
+        {"name": random_string(10), "group_id": unique_user.group_id, "label_id": base_label.id}
+    )
+    recipe = database.recipes.create(
+        Recipe(
+            user_id=unique_user.user_id,
+            household_id=unique_user.household_id,
+            group_id=unique_user.group_id,
+            name=random_string(10),
+            recipe_ingredient=[RecipeIngredient(quantity=1, food=food)],
+        )
+    )
+
+    database.session.add(
+        HouseholdIngredientFoodLabel(
+            household_id=unique_user.household_id,
+            food_id=food.id,
+            label_id=override_label.id,
+        )
+    )
+    database.session.commit()
+
+    response = api_client.get(api_routes.recipes_slug(recipe.slug), headers=unique_user.token)
+    as_json = utils.assert_deserialize(response, 200)
+    ingredient_food = as_json["recipeIngredient"][0]["food"]
+    assert ingredient_food["labelId"] == str(override_label.id)
+    assert ingredient_food["householdLabelId"] == str(override_label.id)

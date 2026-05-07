@@ -29,6 +29,7 @@ from mealie.schema.recipe.recipe_ingredient import (
     RecipeIngredient,
 )
 from mealie.schema.response.pagination import OrderDirection, PaginationQuery
+from mealie.services.household_services.ingredient_food_labels import get_household_food_label_map
 from mealie.services.parser_services._base import DataMatcher
 from mealie.services.parser_services.parser_utils import UnitConverter, merge_quantity_and_unit
 
@@ -101,6 +102,35 @@ class ShoppingListService:
                 substituted_ingredient.referenced_recipe = substitute_recipe.model_copy(deep=True)
 
         return substituted_ingredient
+
+    def _apply_food_label_overrides_to_items(self, items: list[ShoppingListItemOut]) -> list[ShoppingListItemOut]:
+        food_ids = [item.food_id for item in items if item.food_id]
+        label_map = get_household_food_label_map(self.repos.session, self.repos.household_id, food_ids)
+        if not label_map:
+            return items
+
+        for item in items:
+            if item.food is None or item.food.id is None:
+                continue
+
+            old_food_label_id = item.food.label_id
+            override_label = label_map.get(item.food.id)
+            if override_label is None:
+                continue
+
+            item.food.household_label_id = override_label.id
+            item.food.label_id = override_label.id
+            item.food.label = override_label
+
+            if item.label_id is None or item.label_id == old_food_label_id:
+                item.label_id = override_label.id
+                item.label = override_label
+
+        return items
+
+    def _apply_food_label_overrides_to_list(self, shopping_list: ShoppingListOut) -> ShoppingListOut:
+        shopping_list.list_items = self._apply_food_label_overrides_to_items(shopping_list.list_items)
+        return shopping_list
 
     def can_merge(self, item1: ShoppingListItemBase, item2: ShoppingListItemBase) -> bool:
         """Check to see if this item can be merged with another item"""
@@ -279,7 +309,9 @@ class ShoppingListService:
             self.remove_unused_recipe_references(list_id)
 
         return ShoppingListItemsCollectionOut(
-            created_items=created_items, updated_items=updated_items, deleted_items=[]
+            created_items=self._apply_food_label_overrides_to_items(created_items),
+            updated_items=self._apply_food_label_overrides_to_items(updated_items),
+            deleted_items=[],
         )
 
     def bulk_update_items(self, update_items: list[ShoppingListItemUpdateBulk]) -> ShoppingListItemsCollectionOut:
@@ -366,7 +398,9 @@ class ShoppingListService:
             self.remove_unused_recipe_references(list_id)
 
         return ShoppingListItemsCollectionOut(
-            created_items=[], updated_items=updated_items, deleted_items=deleted_items
+            created_items=[],
+            updated_items=self._apply_food_label_overrides_to_items(updated_items),
+            deleted_items=self._apply_food_label_overrides_to_items(deleted_items),
         )
 
     def bulk_delete_items(self, delete_items: list[UUID4]) -> ShoppingListItemsCollectionOut:
@@ -378,7 +412,11 @@ class ShoppingListService:
         for list_id in {item.shopping_list_id for item in deleted_items}:
             self.remove_unused_recipe_references(list_id)
 
-        return ShoppingListItemsCollectionOut(created_items=[], updated_items=[], deleted_items=deleted_items)
+        return ShoppingListItemsCollectionOut(
+            created_items=[],
+            updated_items=[],
+            deleted_items=self._apply_food_label_overrides_to_items(deleted_items),
+        )
 
     def get_shopping_list_items_from_recipe(
         self,
@@ -399,6 +437,11 @@ class ShoppingListService:
 
             recipe_ingredients = recipe.recipe_ingredient
 
+        food_label_map = get_household_food_label_map(
+            self.repos.session,
+            self.repos.household_id,
+            [ingredient.food.id for ingredient in recipe_ingredients if ingredient.food and ingredient.food.id],
+        )
         list_items: list[ShoppingListItemCreate] = []
         for ingredient in recipe_ingredients:
             ingredient = self._apply_household_substitution(ingredient)
@@ -417,8 +460,10 @@ class ShoppingListService:
                 continue
 
             if isinstance(ingredient.food, IngredientFood):
-                food_id = ingredient.food.id
-                label_id = ingredient.food.label_id
+                food = ingredient.food
+                food_id = food.id
+                override_label = food_label_map.get(food_id)
+                label_id = override_label.id if override_label else food.label_id
             else:
                 food_id = None
                 label_id = None
@@ -493,7 +538,9 @@ class ShoppingListService:
             )
         ]
         item_changes = self.bulk_create_items(items_to_create)
-        updated_list = cast(ShoppingListOut, self.shopping_lists.get_one(list_id))
+        updated_list = self._apply_food_label_overrides_to_list(
+            cast(ShoppingListOut, self.shopping_lists.get_one(list_id))
+        )
 
         # update list-level recipe references
         for recipe in recipe_items:
@@ -514,7 +561,7 @@ class ShoppingListService:
                 )
 
         updated_list = self.shopping_lists.update(updated_list.id, updated_list)
-        return updated_list, item_changes
+        return self._apply_food_label_overrides_to_list(updated_list), item_changes
 
     def remove_recipe_ingredients_from_list(
         self, list_id: UUID4, recipe_id: UUID4, recipe_decrement: float = 1
@@ -598,7 +645,8 @@ class ShoppingListService:
 
             break
 
-        return self.shopping_lists.get_one(shopping_list.id), items  # type: ignore
+        refreshed_list = cast(ShoppingListOut, self.shopping_lists.get_one(shopping_list.id))
+        return self._apply_food_label_overrides_to_list(refreshed_list), items
 
     def create_one_list(self, data: ShoppingListCreate, owner_id: UUID4):
         create_data = data.cast(ShoppingListSave, group_id=self.repos.group_id, user_id=owner_id)
@@ -613,4 +661,4 @@ class ShoppingListService:
         ]
 
         self.repos.shopping_list_multi_purpose_labels.create_many(label_settings)
-        return self.shopping_lists.get_one(new_list.id)
+        return self._apply_food_label_overrides_to_list(cast(ShoppingListOut, self.shopping_lists.get_one(new_list.id)))

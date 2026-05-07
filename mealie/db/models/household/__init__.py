@@ -2,6 +2,7 @@ from .cookbook import CookBook
 from .events import GroupEventNotifierModel, GroupEventNotifierOptionsModel
 from .household import Household
 from .household_to_recipe import HouseholdToRecipe
+from .ingredient_food_label import HouseholdIngredientFoodLabel
 from .invite_tokens import GroupInviteToken
 from .mealplan import GroupMealPlan, GroupMealPlanRules
 from .preferences import HouseholdFoodSubstitutionModel, HouseholdPreferencesModel
@@ -24,6 +25,7 @@ __all__ = [
     "GroupMealPlan",
     "GroupMealPlanRules",
     "Household",
+    "HouseholdIngredientFoodLabel",
     "HouseholdFoodSubstitutionModel",
     "HouseholdPreferencesModel",
     "HouseholdToRecipe",
