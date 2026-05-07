@@ -97,6 +97,15 @@ def publish_list_item_events(publisher: Callable, items_collection: ShoppingList
 
 @controller(item_router)
 class ShoppingListItemController(BaseCrudController):
+    def _apply_food_overrides(self, items: list[ShoppingListItemOut]) -> None:
+        foods = [item.food for item in items if item.food]
+        self.repos.ingredient_foods.hydrate_household_name_overrides(foods, self.household_id, replace=True)
+
+    def _apply_food_overrides_collection(self, collection: ShoppingListItemsCollectionOut) -> None:
+        self._apply_food_overrides(collection.created_items)
+        self._apply_food_overrides(collection.updated_items)
+        self._apply_food_overrides(collection.deleted_items)
+
     @cached_property
     def service(self):
         return ShoppingListService(self.repos)
@@ -115,12 +124,14 @@ class ShoppingListItemController(BaseCrudController):
     @item_router.get("", response_model=ShoppingListItemPagination)
     def get_all(self, q: PaginationQuery = Depends()):
         response = self.repo.page_all(pagination=q, override=ShoppingListItemOut)
+        self._apply_food_overrides(response.items)
         response.set_pagination_guides(router.url_path_for("get_all"), q.model_dump())
         return response
 
     @item_router.post("/create-bulk", response_model=ShoppingListItemsCollectionOut, status_code=201)
     def create_many(self, data: list[ShoppingListItemCreate]):
         items = self.service.bulk_create_items(data)
+        self._apply_food_overrides_collection(items)
         publish_list_item_events(self.publish_event, items)
         return items
 
@@ -130,11 +141,14 @@ class ShoppingListItemController(BaseCrudController):
 
     @item_router.get("/{item_id}", response_model=ShoppingListItemOut)
     def get_one(self, item_id: UUID4):
-        return self.mixins.get_one(item_id)
+        item = self.mixins.get_one(item_id)
+        self._apply_food_overrides([item])
+        return item
 
     @item_router.put("", response_model=ShoppingListItemsCollectionOut)
     def update_many(self, data: list[ShoppingListItemUpdateBulk]):
         items = self.service.bulk_update_items(data)
+        self._apply_food_overrides_collection(items)
         publish_list_item_events(self.publish_event, items)
         return items
 
@@ -158,6 +172,19 @@ router = APIRouter(prefix="/households/shopping/lists", tags=["Households: Shopp
 
 @controller(router)
 class ShoppingListController(BaseCrudController):
+    def _apply_food_overrides(self, shopping_list: ShoppingListOut) -> ShoppingListOut:
+        foods = [item.food for item in shopping_list.list_items if item.food]
+        self.repos.ingredient_foods.hydrate_household_name_overrides(foods, self.household_id, replace=True)
+        return shopping_list
+
+    def _apply_food_overrides_collection(self, collection: ShoppingListItemsCollectionOut) -> None:
+        foods = [
+            item.food
+            for item in collection.created_items + collection.updated_items + collection.deleted_items
+            if item.food
+        ]
+        self.repos.ingredient_foods.hydrate_household_name_overrides(foods, self.household_id, replace=True)
+
     @cached_property
     def service(self):
         return ShoppingListService(self.repos)
@@ -195,11 +222,12 @@ class ShoppingListController(BaseCrudController):
                 message=self.t("notifications.generic-created", name=shopping_list.name),
             )
 
-        return shopping_list
+        return self._apply_food_overrides(shopping_list)
 
     @router.get("/{item_id}", response_model=ShoppingListOut)
     def get_one(self, item_id: UUID4):
-        return self.mixins.get_one(item_id)
+        shopping_list = self.mixins.get_one(item_id)
+        return self._apply_food_overrides(shopping_list)
 
     @router.put("/{item_id}", response_model=ShoppingListOut)
     def update_one(self, item_id: UUID4, data: ShoppingListUpdate):
@@ -212,7 +240,7 @@ class ShoppingListController(BaseCrudController):
             message=self.t("notifications.generic-updated", name=shopping_list.name),
         )
 
-        return shopping_list
+        return self._apply_food_overrides(shopping_list)
 
     @router.delete("/{item_id}", response_model=ShoppingListOut)
     def delete_one(self, item_id: UUID4):
@@ -226,7 +254,7 @@ class ShoppingListController(BaseCrudController):
                 message=self.t("notifications.generic-deleted", name=shopping_list.name),
             )
 
-        return shopping_list
+        return self._apply_food_overrides(shopping_list)
 
     # =======================================================================
     # Other Operations
@@ -251,14 +279,15 @@ class ShoppingListController(BaseCrudController):
             message=self.t("notifications.generic-updated", name=updated_list.name),
         )
 
-        return updated_list
+        return self._apply_food_overrides(updated_list)
 
     @router.post("/{item_id}/recipe", response_model=ShoppingListOut)
     def add_recipe_ingredients_to_list(self, item_id: UUID4, data: list[ShoppingListAddRecipeParamsBulk]):
         shopping_list, items = self.service.add_recipe_ingredients_to_list(item_id, data)
 
+        self._apply_food_overrides_collection(items)
         publish_list_item_events(self.publish_event, items)
-        return shopping_list
+        return self._apply_food_overrides(shopping_list)
 
     @router.post("/{item_id}/recipe/{recipe_id}", response_model=ShoppingListOut, deprecated=True)
     def add_single_recipe_ingredients_to_list(
@@ -279,5 +308,6 @@ class ShoppingListController(BaseCrudController):
             item_id, recipe_id, data.recipe_decrement_quantity if data else 1
         )
 
+        self._apply_food_overrides_collection(items)
         publish_list_item_events(self.publish_event, items)
-        return shopping_list
+        return self._apply_food_overrides(shopping_list)

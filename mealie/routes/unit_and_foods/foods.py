@@ -42,6 +42,7 @@ class IngredientFoodsController(BaseUserController):
             override=IngredientFood,
             search=search,
         )
+        self.repo.hydrate_household_name_overrides(response.items, self.household_id, replace=False)
 
         response.set_pagination_guides(router.url_path_for("get_all"), q.model_dump())
         return response
@@ -49,7 +50,10 @@ class IngredientFoodsController(BaseUserController):
     @router.post("", response_model=IngredientFood, status_code=201)
     def create_one(self, data: CreateIngredientFood):
         save_data = mapper.cast(data, SaveIngredientFood, group_id=self.group_id)
-        return self.mixins.create_one(save_data)
+        food = self.mixins.create_one(save_data)
+        self.repo.set_household_name_override(food.id, self.household_id, data.household_override_name)
+        self.repo.hydrate_household_name_overrides([food], self.household_id, replace=False)
+        return food
 
     @router.put("/merge", response_model=SuccessResponse)
     def merge_one(self, data: MergeFood):
@@ -62,12 +66,17 @@ class IngredientFoodsController(BaseUserController):
 
     @router.get("/{item_id}", response_model=IngredientFood)
     def get_one(self, item_id: UUID4):
-        return self.mixins.get_one(item_id)
+        food = self.mixins.get_one(item_id)
+        self.repo.hydrate_household_name_overrides([food], self.household_id, replace=False)
+        return food
 
     @router.put("/{item_id}", response_model=IngredientFood)
     def update_one(self, item_id: UUID4, data: CreateIngredientFood):
         data = mapper.cast(data, SaveIngredientFood, group_id=self.group_id)
-        return self.mixins.update_one(data, item_id)
+        food = self.mixins.update_one(data, item_id)
+        self.repo.set_household_name_override(item_id, self.household_id, data.household_override_name)
+        self.repo.hydrate_household_name_overrides([food], self.household_id, replace=False)
+        return food
 
     @router.delete("/{item_id}", response_model=IngredientFood)
     def delete_one(self, item_id: UUID4):

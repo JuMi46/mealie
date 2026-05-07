@@ -214,10 +214,12 @@ import { compareLabel } from "~/composables/use-extend-object";
 interface CreateIngredientFoodWithOnHand extends CreateIngredientFood {
   onHand: boolean;
   householdsWithIngredientFood: string[];
+  householdOverrideName?: string | null;
 }
 
 interface IngredientFoodWithOnHand extends IngredientFood {
   onHand: boolean;
+  householdOverrideName?: string | null;
 }
 const userApi = useUserApi();
 const i18n = useI18n();
@@ -336,6 +338,12 @@ const formItems = computed<AutoFormItems>(() => [
     selectReturnValue: "value",
   },
   {
+    label: i18n.t("data-pages.foods.household-override-name"),
+    varName: "householdOverrideName",
+    type: fieldTypes.TEXT,
+    hint: i18n.t("data-pages.foods.household-override-name-hint"),
+  },
+  {
     label: i18n.t("tool.on-hand"),
     varName: "onHand",
     type: fieldTypes.BOOLEAN,
@@ -368,6 +376,7 @@ async function handleCreate() {
     name: "",
     onHand: false,
     householdsWithIngredientFood: [],
+    householdOverrideName: null,
   };
 }
 

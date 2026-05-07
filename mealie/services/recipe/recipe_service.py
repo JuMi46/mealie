@@ -60,6 +60,24 @@ class RecipeServiceBase(BaseService):
 
 
 class RecipeService(RecipeServiceBase):
+    def _apply_household_food_overrides(self, ingredients: list[RecipeIngredient] | None) -> None:
+        if not ingredients:
+            return
+
+        foods_by_id: dict[UUID, Any] = {}
+
+        def gather(items: list[RecipeIngredient]) -> None:
+            for ingredient in items:
+                if ingredient.food and getattr(ingredient.food, "id", None):
+                    foods_by_id[ingredient.food.id] = ingredient.food
+                if ingredient.referenced_recipe and ingredient.referenced_recipe.recipe_ingredient:
+                    gather(ingredient.referenced_recipe.recipe_ingredient)
+
+        gather(ingredients)
+        self.repos.ingredient_foods.hydrate_household_name_overrides(
+            list(foods_by_id.values()), self.household.id, replace=True
+        )
+
     def _get_recipe(self, data: str | UUID, key: str | None = None) -> Recipe:
         recipe = self.group_recipes.get_one(data, key)
         if recipe is None:
@@ -182,10 +200,12 @@ class RecipeService(RecipeServiceBase):
                 pass
 
         if isinstance(slug_or_id, UUID):
-            return self._get_recipe(slug_or_id, "id")
-
+            recipe = self._get_recipe(slug_or_id, "id")
         else:
-            return self._get_recipe(slug_or_id, "slug")
+            recipe = self._get_recipe(slug_or_id, "slug")
+
+        self._apply_household_food_overrides(recipe.recipe_ingredient)
+        return recipe
 
     def create_one(self, create_data: Recipe | CreateRecipe) -> Recipe:
         if create_data.name is None:

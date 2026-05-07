@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .._model_base import BaseMixins, SqlAlchemyBase
@@ -98,6 +99,9 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
     volume_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
     mass_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
     temperature_display_template: Mapped[str] = mapped_column(sa.String, nullable=False, default="℃ / ℉")
+    ingredient_food_name_overrides: Mapped[dict[str, str]] = mapped_column(
+        MutableDict.as_mutable(sa.JSON), nullable=False, default=dict
+    )
 
     # Deprecated
     recipe_disable_amount: Mapped[bool | None] = mapped_column(sa.Boolean, default=True)

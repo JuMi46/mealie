@@ -174,6 +174,50 @@ def test_shopping_lists_add_recipe(
     assert refs[0]["recipeQuantity"] == 2
 
 
+def test_shopping_lists_use_household_food_override_name(
+    api_client: TestClient,
+    unique_user: TestUser,
+    shopping_lists: list[ShoppingListOut],
+):
+    shopping_list = random.choice(shopping_lists)
+    food_name = random_string(10)
+    override_name = random_string(10)
+
+    response = api_client.post(
+        api_routes.foods,
+        json={"name": food_name, "householdOverrideName": override_name},
+        headers=unique_user.token,
+    )
+    food = utils.assert_deserialize(response, 201)
+
+    recipe = unique_user.repos.recipes.create(
+        Recipe(
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+            name=random_string(10),
+            recipe_ingredient=[{"food": {"id": food["id"], "name": food_name}, "quantity": 1}],
+        )
+    )
+
+    response = api_client.post(
+        api_routes.households_shopping_lists_item_id_recipe_recipe_id(shopping_list.id, recipe.id),
+        headers=unique_user.token,
+    )
+    shopping_list_json = utils.assert_deserialize(response, 200)
+    matching_items = [item for item in shopping_list_json["listItems"] if item.get("foodId") == food["id"]]
+    assert matching_items
+    assert matching_items[0]["food"]["name"] == override_name
+
+    response = api_client.get(
+        api_routes.households_shopping_lists_item_id(shopping_list.id),
+        headers=unique_user.token,
+    )
+    shopping_list_json = utils.assert_deserialize(response, 200)
+    matching_items = [item for item in shopping_list_json["listItems"] if item.get("foodId") == food["id"]]
+    assert matching_items
+    assert matching_items[0]["food"]["name"] == override_name
+
+
 def test_shopping_lists_add_recipes(
     api_client: TestClient,
     unique_user: TestUser,

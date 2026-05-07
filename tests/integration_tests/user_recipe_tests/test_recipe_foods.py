@@ -3,6 +3,7 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 
+from mealie.schema.recipe.recipe import Recipe
 from mealie.schema.recipe.recipe_ingredient import CreateIngredientFood
 from tests import utils
 from tests.utils import api_routes
@@ -115,3 +116,47 @@ def test_food_extras(
     assert key_str_2 in extras
     assert extras[key_str_1] == val_str_1
     assert extras[key_str_2] == val_str_2
+
+
+def test_food_household_override_name(api_client: TestClient, unique_user: TestUser):
+    food_name = random_string(10)
+    override_name = random_string(10)
+    response = api_client.post(
+        api_routes.foods,
+        json={"name": food_name, "householdOverrideName": override_name},
+        headers=unique_user.token,
+    )
+    food = utils.assert_deserialize(response, 201)
+
+    assert food["name"] == food_name
+    assert food["householdOverrideName"] == override_name
+
+    response = api_client.get(api_routes.foods_item_id(food["id"]), headers=unique_user.token)
+    food = utils.assert_deserialize(response, 200)
+    assert food["householdOverrideName"] == override_name
+
+
+def test_recipe_uses_household_food_override_name(api_client: TestClient, unique_user: TestUser):
+    food_name = random_string(10)
+    override_name = random_string(10)
+    response = api_client.post(
+        api_routes.foods,
+        json={"name": food_name, "householdOverrideName": override_name},
+        headers=unique_user.token,
+    )
+    food = utils.assert_deserialize(response, 201)
+
+    recipe = unique_user.repos.recipes.create(
+        Recipe(
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+            name=random_string(10),
+            recipe_ingredient=[{"food": {"id": food["id"], "name": food_name}, "quantity": 1}],
+        )
+    )
+    response = api_client.get(api_routes.recipes_slug(recipe.slug), headers=unique_user.token)
+    recipe_json = utils.assert_deserialize(response, 200)
+    ingredient_food = recipe_json["recipeIngredient"][0]["food"]
+
+    assert ingredient_food["name"] == override_name
+    assert ingredient_food["householdOverrideName"] == override_name

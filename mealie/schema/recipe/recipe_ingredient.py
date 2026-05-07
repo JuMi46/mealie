@@ -91,10 +91,19 @@ class IngredientFoodAlias(CreateIngredientFoodAlias):
 
 class CreateIngredientFood(UnitFoodBase):
     label_id: UUID4 | None = None
+    household_override_name: str | None = None
     aliases: list[CreateIngredientFoodAlias] = []
     households_with_ingredient_food: list[str] = []
     density: float | None = None
     tip: str | None = None
+
+    @field_validator("household_override_name", mode="before")
+    @classmethod
+    def normalize_household_override_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
 
 
 class SaveIngredientFood(CreateIngredientFood):
