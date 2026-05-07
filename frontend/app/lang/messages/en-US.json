@@ -306,7 +306,9 @@
     "allow-users-outside-of-your-household-to-see-your-recipes-description": "When enabled you can use a public share link to share specific recipes without authorizing the user. When disabled, you can only share recipes with users who are in your household or with a pre-generated private link",
     "household-preferences": "Household Preferences",
     "temperature-display-template": "Temperature display template",
-    "temperature-display-template-description": "Use ℃ and ℉ in the template, for example: ℃, ℉, ℃ / ℉, ℉ / ℃, ℃ (℉), ℉ (℃)."
+    "temperature-display-template-description": "Use ℃ and ℉ in the template, for example: ℃, ℉, ℃ / ℉, ℉ / ℃, ℃ (℉), ℉ (℃).",
+    "default-shopping-list-when-adding-from-recipes": "Default shopping list when adding from recipes",
+    "default-shopping-list-when-adding-from-recipes-description": "Automatically selects this list when using \"Add to list\" from recipes and meal plans."
   },
   "meal-plan": {
     "create-a-new-meal-plan": "Create a New Meal Plan",

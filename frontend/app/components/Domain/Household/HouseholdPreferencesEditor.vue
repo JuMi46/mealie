@@ -50,6 +50,18 @@
       variant="underlined"
       flat
     />
+    <v-select
+      v-model="local.defaultShoppingListId"
+      :prepend-icon="$globals.icons.cartCheck"
+      :items="shoppingListItems"
+      item-title="title"
+      item-value="value"
+      :label="$t('household.default-shopping-list-when-adding-from-recipes')"
+      :hint="$t('household.default-shopping-list-when-adding-from-recipes-description')"
+      persistent-hint
+      variant="underlined"
+      flat
+    />
 
     <BaseCardSectionTitle class="mt-5" :title="$t('household.household-recipe-preferences')">
       {{ $t("household.default-recipe-preferences-description") }}
@@ -135,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import type { ReadHouseholdPreferences } from "~/lib/api/types/household";
+import type { ReadHouseholdPreferences, ShoppingListSummary } from "~/lib/api/types/household";
 import type { IngredientUnit } from "~/lib/api/types/recipe";
 import { useUserApi } from "~/composables/api";
 
@@ -158,6 +170,7 @@ function normalizeUnitPreferenceValues(values: UnitPreferenceValue[] | undefined
 const preferences = defineModel<ReadHouseholdPreferences>({ required: true });
 const local = reactive({
   ...preferences.value,
+  defaultShoppingListId: preferences.value.defaultShoppingListId ?? null,
   temperatureDisplayTemplate: preferences.value.temperatureDisplayTemplate ?? "℃ / ℉",
   primaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.primaryVolumeUnits as UnitPreferenceValue[] | undefined),
   secondaryVolumeUnits: normalizeUnitPreferenceValues(preferences.value.secondaryVolumeUnits as UnitPreferenceValue[] | undefined),
@@ -204,6 +217,11 @@ function unitKindByStandardUnit(standardUnit: IngredientUnit["standardUnit"]): U
 const unitItems = ref<UnitItem[]>([]);
 const volumeUnitItems = computed(() => unitItems.value.filter(unit => unit.kind === "volume"));
 const massUnitItems = computed(() => unitItems.value.filter(unit => unit.kind === "mass"));
+const shoppingLists = ref<ShoppingListSummary[]>([]);
+const shoppingListItems = computed(() => [
+  { title: i18n.t("general.none"), value: null },
+  ...shoppingLists.value.map(list => ({ title: list.name, value: list.id })),
+]);
 const displayModeItems = [
   { title: "Primary only", value: "primary_only" },
   { title: "Secondary only", value: "secondary_only" },
@@ -211,8 +229,14 @@ const displayModeItems = [
 ];
 
 onMounted(async () => {
-  const { data } = await api.units.getAll(1, -1, { orderBy: "name", orderDirection: "asc" });
-  unitItems.value = (data?.items ?? []).flatMap((unit) => {
+  const [{ data: unitData }, { data: shoppingListData }] = await Promise.all([
+    api.units.getAll(1, -1, { orderBy: "name", orderDirection: "asc" }),
+    api.shopping.lists.getAll(1, -1, { orderBy: "name", orderDirection: "asc" }),
+  ]);
+
+  shoppingLists.value = (shoppingListData?.items ?? []) as ShoppingListSummary[];
+
+  unitItems.value = (unitData?.items ?? []).flatMap((unit) => {
     const kind = unitKindByStandardUnit(unit.standardUnit);
 
     if (!kind) {

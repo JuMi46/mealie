@@ -59,6 +59,11 @@ class HouseholdSelfServiceController(BaseUserController):
     def update_household_preferences(self, new_pref: UpdateHouseholdPreferences):
         self.checks.can_manage_household()
 
+        if new_pref.default_shopping_list_id:
+            shopping_list = self.repos.group_shopping_lists.get_one(new_pref.default_shopping_list_id)
+            if not shopping_list:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Shopping list not found")
+
         return self.repos.household_preferences.update(self.household_id, new_pref)
 
     @router.put("/permissions", response_model=UserOut)
