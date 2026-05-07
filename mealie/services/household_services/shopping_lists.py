@@ -20,6 +20,8 @@ from mealie.schema.household.group_shopping_list import (
     ShoppingListOut,
     ShoppingListSave,
 )
+from mealie.schema.household.household import HouseholdInDB
+from mealie.schema.household.household_preferences import ReadHouseholdFoodSubstitution
 from mealie.schema.recipe.recipe import Recipe
 from mealie.schema.recipe.recipe_ingredient import (
     IngredientFood,
@@ -41,6 +43,64 @@ class ShoppingListService:
         self.list_item_refs = repos.group_shopping_list_item_references
         self.list_refs = repos.group_shopping_list_recipe_refs
         self.data_matcher = DataMatcher(self.repos, food_fuzzy_match_threshold=self.DEFAULT_FOOD_FUZZY_MATCH_THRESHOLD)
+        self._food_substitutions_by_source_food: dict[UUID4, ReadHouseholdFoodSubstitution] | None = None
+        self._recipe_cache: dict[UUID4, Recipe] = {}
+
+    def _get_household_food_substitutions(self) -> dict[UUID4, ReadHouseholdFoodSubstitution]:
+        if self._food_substitutions_by_source_food is not None:
+            return self._food_substitutions_by_source_food
+
+        if self.repos.household_id is None:
+            self._food_substitutions_by_source_food = {}
+            return self._food_substitutions_by_source_food
+
+        household = cast(HouseholdInDB | None, self.repos.households.get_one(self.repos.household_id))
+        substitutions = household.preferences.food_substitutions if household and household.preferences else []
+        self._food_substitutions_by_source_food = {
+            substitution.source_food_id: substitution for substitution in substitutions if substitution.source_food_id
+        }
+        return self._food_substitutions_by_source_food
+
+    def _get_group_recipe(self, recipe_id: UUID4) -> Recipe | None:
+        if recipe_id in self._recipe_cache:
+            return self._recipe_cache[recipe_id]
+
+        group_recipes_repo = get_repositories(
+            self.repos.session, group_id=self.repos.group_id, household_id=None
+        ).recipes
+        recipe = cast(Recipe | None, group_recipes_repo.get_one(recipe_id, "id"))
+        if recipe:
+            self._recipe_cache[recipe_id] = recipe
+
+        return recipe
+
+    def _apply_household_substitution(self, ingredient: RecipeIngredient) -> RecipeIngredient:
+        if not isinstance(ingredient.food, IngredientFood) or not ingredient.food.id:
+            return ingredient
+
+        substitution = self._get_household_food_substitutions().get(ingredient.food.id)
+        if not substitution:
+            return ingredient
+
+        substituted_ingredient = ingredient.model_copy(deep=True)
+        if substituted_ingredient.quantity is None:
+            if substitution.substitute_recipe_id:
+                substituted_ingredient.quantity = substitution.ratio
+        else:
+            substituted_ingredient.quantity *= substitution.ratio
+
+        if substitution.substitute_food:
+            substituted_ingredient.food = substitution.substitute_food.model_copy(deep=True)
+            substituted_ingredient.referenced_recipe = None
+            return substituted_ingredient
+
+        if substitution.substitute_recipe_id:
+            substitute_recipe = self._get_group_recipe(substitution.substitute_recipe_id)
+            if substitute_recipe:
+                substituted_ingredient.food = None
+                substituted_ingredient.referenced_recipe = substitute_recipe.model_copy(deep=True)
+
+        return substituted_ingredient
 
     def can_merge(self, item1: ShoppingListItemBase, item2: ShoppingListItemBase) -> bool:
         """Check to see if this item can be merged with another item"""
@@ -341,6 +401,8 @@ class ShoppingListService:
 
         list_items: list[ShoppingListItemCreate] = []
         for ingredient in recipe_ingredients:
+            ingredient = self._apply_household_substitution(ingredient)
+
             if isinstance(ingredient.referenced_recipe, Recipe):
                 # Recursively process sub-recipe ingredients
                 sub_recipe = ingredient.referenced_recipe

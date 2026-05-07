@@ -121,6 +121,7 @@ import { useUserApi } from "~/composables/api";
 import { alert } from "~/composables/use-toast";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
 import { convertToGram, convertToMilliliter } from "~/composables/recipes/use-recipe-ingredients";
+import { applyHouseholdFoodSubstitution, getHouseholdFoodSubstitutions } from "~/composables/recipes/use-household-food-substitutions";
 import { useUnitStore } from "~/composables/store";
 import type { IngredientUnit, RecipeIngredient, ShoppingListAddRecipeParamsBulk, ShoppingListSummary } from "~/lib/api/types/household";
 import type { IngredientFood, Recipe } from "~/lib/api/types/recipe";
@@ -172,9 +173,11 @@ const dialog = defineModel<boolean>({ default: false });
 
 const i18n = useI18n();
 const auth = useMealieAuth();
+const { household } = useHouseholdSelf();
 const api = useUserApi();
 const preferences = useShoppingListPreferences();
 const ready = ref(false);
+const substitutions = computed(() => getHouseholdFoodSubstitutions(household.value));
 
 // Capture values at initialization to avoid reactive updates
 const currentHouseholdSlug = ref("");
@@ -266,7 +269,10 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
 
     recipeData.recipeIngredient = reduceIngredients(recipeData.recipeIngredient);
 
-    recipeData.recipeIngredient.forEach(ing => addToGroups(ing, recipeItem));
+    recipeData.recipeIngredient.forEach((ing) => {
+      ing = applyHouseholdFoodSubstitution(ing, substitutions.value, unitStore.store.value) as RecipeIngredient;
+      addToGroups(ing, recipeItem);
+    });
   }
 
   function addToGroups(ing: RecipeIngredient, recipeItem: ShoppingListRecipe) {
@@ -417,6 +423,7 @@ async function openShoppingListIngredientDialog(list: ShoppingListSummary) {
     return;
   }
   selectedShoppingList.value = list;
+  console.log("shop", props.recipes);
   await consolidateRecipesIntoGroups(props.recipes);
   state.shoppingListDialog = false;
   state.shoppingListIngredientDialog = true;

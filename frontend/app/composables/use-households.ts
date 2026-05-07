@@ -1,8 +1,59 @@
 import { useAdminApi, useUserApi } from "~/composables/api";
-import type { HouseholdCreate, HouseholdInDB } from "~/lib/api/types/household";
+import type {
+  HouseholdCreate,
+  HouseholdInDB,
+  ReadHouseholdPreferences,
+  UpdateHouseholdFoodSubstitution,
+  UpdateHouseholdPreferences,
+} from "~/lib/api/types/household";
 
 const householdSelfRef = ref<HouseholdInDB | null>(null);
 const loading = ref(false);
+
+function serializeUnitIds(units?: { id: string }[] | null): string[] | undefined {
+  if (!Array.isArray(units)) {
+    return undefined;
+  }
+
+  return units.map(unit => unit.id);
+}
+
+function serializeFoodSubstitutions(
+  substitutions?: ReadHouseholdPreferences["foodSubstitutions"],
+): UpdateHouseholdFoodSubstitution[] | undefined {
+  if (!Array.isArray(substitutions)) {
+    return undefined;
+  }
+
+  return substitutions.map(substitution => ({
+    sourceFoodId: substitution.sourceFoodId,
+    substituteFoodId: substitution.substituteFoodId,
+    substituteRecipeId: substitution.substituteRecipeId,
+    ratio: substitution.ratio,
+  }));
+}
+
+function serializeHouseholdPreferences(preferences: ReadHouseholdPreferences): UpdateHouseholdPreferences {
+  return {
+    privateHousehold: preferences.privateHousehold,
+    showAnnouncements: preferences.showAnnouncements,
+    lockRecipeEditsFromOtherHouseholds: preferences.lockRecipeEditsFromOtherHouseholds,
+    firstDayOfWeek: preferences.firstDayOfWeek,
+    recipePublic: preferences.recipePublic,
+    recipeShowNutrition: preferences.recipeShowNutrition,
+    recipeShowAssets: preferences.recipeShowAssets,
+    recipeLandscapeView: preferences.recipeLandscapeView,
+    recipeDisableComments: preferences.recipeDisableComments,
+    volumeDisplayMode: preferences.volumeDisplayMode,
+    massDisplayMode: preferences.massDisplayMode,
+    temperatureDisplayTemplate: preferences.temperatureDisplayTemplate,
+    primaryVolumeUnits: serializeUnitIds(preferences.primaryVolumeUnits),
+    secondaryVolumeUnits: serializeUnitIds(preferences.secondaryVolumeUnits),
+    primaryMassUnits: serializeUnitIds(preferences.primaryMassUnits),
+    secondaryMassUnits: serializeUnitIds(preferences.secondaryMassUnits),
+    foodSubstitutions: serializeFoodSubstitutions(preferences.foodSubstitutions),
+  };
+}
 
 export const useHouseholdSelf = function () {
   const api = useUserApi();
@@ -22,7 +73,7 @@ export const useHouseholdSelf = function () {
 
       return householdSelfRef;
     },
-    async updatePreferences() {
+    async updatePreferences(overrides?: Partial<UpdateHouseholdPreferences>) {
       if (!householdSelfRef.value) {
         await refreshHouseholdSelf();
       }
@@ -30,7 +81,11 @@ export const useHouseholdSelf = function () {
         return;
       }
 
-      const { data } = await api.households.setPreferences(householdSelfRef.value.preferences);
+      const payload = {
+        ...serializeHouseholdPreferences(householdSelfRef.value.preferences),
+        ...overrides,
+      };
+      const { data } = await api.households.setPreferences(payload);
 
       if (data) {
         householdSelfRef.value.preferences = data;

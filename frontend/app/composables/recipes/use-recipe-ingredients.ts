@@ -91,7 +91,7 @@ export function useIngredientTextParser() {
   function useParsedIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true, groupSlug?: string): ParsedIngredientText {
     const allUnits = unitStore.store.value;
     const filteredLocales = locales.filter(lc => lc.value === locale.value);
-    const pluralFoodHandling = filteredLocales.length ? filteredLocales[0].pluralFoodHandling : "without-unit";
+    const pluralFoodHandling = filteredLocales[0]?.pluralFoodHandling || "without-unit";
     // const householdPreferences = household.value?.preferences;
 
     // console.log("primary", householdPreferences?.primaryVolumeUnits);
@@ -103,8 +103,19 @@ export function useIngredientTextParser() {
     // const secondaryUnitQuantity: number | undefined = undefined;
     // If ingredient references a recipe with a recipe yield, attempt to use the yield unit for conversion and scaling
     if (ingredient.referencedRecipe?.recipeYield) {
-      const refUnit = allUnits?.find(unitObj => unitObj.name == ingredient.referencedRecipe?.recipeYield
-        || unitObj.abbreviation == ingredient.referencedRecipe?.recipeYield);
+      const recipeYield = ingredient.referencedRecipe.recipeYield.toLowerCase().trim();
+      const refUnit = allUnits?.find((unitObj) => {
+        const names = [
+          unitObj.name,
+          unitObj.pluralName,
+          unitObj.abbreviation,
+          unitObj.pluralAbbreviation,
+        ]
+          .filter((name): name is string => Boolean(name))
+          .map(name => name.toLowerCase().trim());
+
+        return names.includes(recipeYield);
+      });
       if (refUnit) {
         returnUnit = refUnit;
         if (ingredient.referencedRecipe.recipeYieldQuantity && scaledQuantity > 0) {

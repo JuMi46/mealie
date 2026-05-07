@@ -10,7 +10,8 @@ from .._model_utils.auto_init import auto_init
 from .._model_utils.guid import GUID
 
 if TYPE_CHECKING:
-    from ..recipe.ingredient import IngredientUnitModel
+    from ..recipe.ingredient import IngredientFoodModel, IngredientUnitModel
+    from ..recipe.recipe import RecipeModel
     from .household import Household
 
 
@@ -95,6 +96,11 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
         viewonly=True,
         overlaps="primary_volume_units,secondary_volume_units,primary_mass_units",
     )
+    food_substitutions: Mapped[list["HouseholdFoodSubstitutionModel"]] = orm.relationship(
+        "HouseholdFoodSubstitutionModel",
+        back_populates="household_preferences",
+        cascade="all, delete, delete-orphan",
+    )
     volume_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
     mass_display_mode: Mapped[str] = mapped_column(sa.String, nullable=False, default="primary_only")
     temperature_display_template: Mapped[str] = mapped_column(sa.String, nullable=False, default="℃ / ℉")
@@ -109,7 +115,6 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
     def _sync_unit_preferences(
         self,
         session: orm.Session,
-        field_name: str,
         pref_type: str,
         raw_list: list,
     ) -> None:
@@ -146,6 +151,92 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
                 ],
             )
 
+    def _sync_food_substitutions(self, session: orm.Session, raw_list: list) -> None:
+        from ..recipe.ingredient import IngredientFoodModel
+        from ..recipe.recipe import RecipeModel
+
+        rows: list[dict[str, object]] = []
+        seen_source_food_ids: set[str] = set()
+
+        for item in raw_list:
+            if isinstance(item, dict):
+                source_food_id = item.get("source_food_id")
+                substitute_food_id = item.get("substitute_food_id")
+                substitute_recipe_id = item.get("substitute_recipe_id")
+                ratio = item.get("ratio", 1)
+            else:
+                source_food_id = getattr(item, "source_food_id", None)
+                substitute_food_id = getattr(item, "substitute_food_id", None)
+                substitute_recipe_id = getattr(item, "substitute_recipe_id", None)
+                ratio = getattr(item, "ratio", 1)
+
+            source_food_id = str(source_food_id) if source_food_id else None
+            substitute_food_id = str(substitute_food_id) if substitute_food_id else None
+            substitute_recipe_id = str(substitute_recipe_id) if substitute_recipe_id else None
+
+            if not source_food_id or source_food_id in seen_source_food_ids:
+                continue
+
+            target_count = int(bool(substitute_food_id)) + int(bool(substitute_recipe_id))
+            if target_count != 1:
+                continue
+
+            ratio = float(ratio) if ratio is not None else 1
+            if ratio <= 0:
+                continue
+
+            seen_source_food_ids.add(source_food_id)
+            rows.append(
+                {
+                    "household_preferences_id": str(self.id),
+                    "source_food_id": source_food_id,
+                    "substitute_food_id": substitute_food_id,
+                    "substitute_recipe_id": substitute_recipe_id,
+                    "ratio": ratio,
+                }
+            )
+
+        if rows:
+            source_food_ids = {row["source_food_id"] for row in rows}
+            substitute_food_ids = {row["substitute_food_id"] for row in rows if row["substitute_food_id"]}
+            all_food_ids = source_food_ids | substitute_food_ids
+            valid_food_ids = {
+                str(food_id)
+                for food_id in session.execute(
+                    sa.select(IngredientFoodModel.id).where(
+                        IngredientFoodModel.group_id == self.group_id,
+                        IngredientFoodModel.id.in_(all_food_ids),
+                    )
+                ).scalars()
+            }
+
+            if all_food_ids - valid_food_ids:
+                raise ValueError("One or more food substitutions reference an invalid food")
+
+            substitute_recipe_ids = {row["substitute_recipe_id"] for row in rows if row["substitute_recipe_id"]}
+            if substitute_recipe_ids:
+                valid_recipe_ids = {
+                    str(recipe_id)
+                    for recipe_id in session.execute(
+                        sa.select(RecipeModel.id).where(
+                            RecipeModel.group_id == self.group_id,
+                            RecipeModel.id.in_(substitute_recipe_ids),
+                        )
+                    ).scalars()
+                }
+
+                if substitute_recipe_ids - valid_recipe_ids:
+                    raise ValueError("One or more food substitutions reference an invalid recipe")
+
+        session.execute(
+            HouseholdFoodSubstitutionModel.__table__.delete().where(
+                HouseholdFoodSubstitutionModel.household_preferences_id == self.id
+            )
+        )
+
+        if rows:
+            session.execute(HouseholdFoodSubstitutionModel.__table__.insert(), rows)
+
     def update(self, session: orm.Session, **kwargs) -> None:
         """Override to manually manage unit preference associations (viewonly relationships)."""
         _UNIT_PREF_MAP = {
@@ -155,12 +246,17 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
             "secondary_mass_units": SECONDARY_MASS_UNITS,
         }
 
-        # Separate unit preference fields from the rest
+        # Separate managed relationship fields from the rest
         unit_prefs: dict[str, list] = {}
+        food_substitutions: list = []
+        has_food_substitutions = False
         other_kwargs: dict = {}
         for key, val in kwargs.items():
             if key in _UNIT_PREF_MAP:
                 unit_prefs[key] = val if val is not None else []
+            elif key == "food_substitutions":
+                has_food_substitutions = True
+                food_substitutions = val if val is not None else []
             else:
                 other_kwargs[key] = val
 
@@ -175,4 +271,68 @@ class HouseholdPreferencesModel(SqlAlchemyBase, BaseMixins):
         # Manually sync unit preference join rows
         for field_name, pref_type in _UNIT_PREF_MAP.items():
             if field_name in unit_prefs:
-                self._sync_unit_preferences(session, field_name, pref_type, unit_prefs[field_name])
+                self._sync_unit_preferences(session, pref_type, unit_prefs[field_name])
+
+        if has_food_substitutions:
+            self._sync_food_substitutions(session, food_substitutions)
+
+
+class HouseholdFoodSubstitutionModel(SqlAlchemyBase, BaseMixins):
+    __tablename__ = "household_food_substitutions"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "household_preferences_id",
+            "source_food_id",
+            name="uq_household_food_substitutions_pref_source",
+        ),
+        sa.CheckConstraint(
+            "((substitute_food_id IS NOT NULL) AND (substitute_recipe_id IS NULL)) OR "
+            "((substitute_food_id IS NULL) AND (substitute_recipe_id IS NOT NULL))",
+            name="ck_household_food_substitutions_single_target",
+        ),
+        sa.CheckConstraint("ratio > 0", name="ck_household_food_substitutions_ratio_positive"),
+    )
+
+    id: Mapped[GUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
+    household_preferences_id: Mapped[GUID] = mapped_column(
+        GUID,
+        sa.ForeignKey("household_preferences.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    source_food_id: Mapped[GUID] = mapped_column(GUID, sa.ForeignKey("ingredient_foods.id"), nullable=False, index=True)
+    substitute_food_id: Mapped[GUID | None] = mapped_column(
+        GUID,
+        sa.ForeignKey("ingredient_foods.id"),
+        nullable=True,
+        index=True,
+    )
+    substitute_recipe_id: Mapped[GUID | None] = mapped_column(
+        GUID,
+        sa.ForeignKey("recipes.id"),
+        nullable=True,
+        index=True,
+    )
+    ratio: Mapped[float] = mapped_column(sa.Float, nullable=False, default=1)
+
+    household_preferences: Mapped["HouseholdPreferencesModel"] = orm.relationship(
+        "HouseholdPreferencesModel",
+        back_populates="food_substitutions",
+    )
+    source_food: Mapped["IngredientFoodModel"] = orm.relationship(
+        "IngredientFoodModel",
+        foreign_keys=[source_food_id],
+    )
+    substitute_food: Mapped[Optional["IngredientFoodModel"]] = orm.relationship(
+        "IngredientFoodModel",
+        foreign_keys=[substitute_food_id],
+    )
+    substitute_recipe: Mapped[Optional["RecipeModel"]] = orm.relationship(
+        "RecipeModel",
+        foreign_keys=[substitute_recipe_id],
+    )
+
+    @auto_init()
+    def __init__(self, **_) -> None:
+        pass

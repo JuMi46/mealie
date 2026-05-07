@@ -1,13 +1,43 @@
 from typing import Literal
 
-from pydantic import UUID4, ConfigDict, Field
+from pydantic import UUID4, ConfigDict, Field, model_validator
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.interfaces import LoaderOption
 
 from mealie.db.models.household.household import Household
-from mealie.db.models.household.preferences import HouseholdPreferencesModel
+from mealie.db.models.household.preferences import HouseholdFoodSubstitutionModel, HouseholdPreferencesModel
+from mealie.db.models.recipe.recipe import RecipeModel
 from mealie.schema._mealie import MealieModel
-from mealie.schema.recipe.recipe_ingredient import IngredientUnit
+from mealie.schema.recipe.recipe import Recipe
+from mealie.schema.recipe.recipe_ingredient import IngredientFood, IngredientUnit
+
+
+class HouseholdFoodSubstitutionBase(MealieModel):
+    source_food_id: UUID4
+    substitute_food_id: UUID4 | None = None
+    substitute_recipe_id: UUID4 | None = None
+    ratio: float = Field(default=1, gt=0)
+
+    @model_validator(mode="after")
+    def validate_target(self):
+        target_count = int(bool(self.substitute_food_id)) + int(bool(self.substitute_recipe_id))
+        if target_count != 1:
+            raise ValueError("Exactly one substitute target must be set")
+
+        return self
+
+
+class UpdateHouseholdFoodSubstitution(HouseholdFoodSubstitutionBase):
+    id: UUID4 | None = None
+
+
+class ReadHouseholdFoodSubstitution(HouseholdFoodSubstitutionBase):
+    id: UUID4
+    source_food: IngredientFood
+    substitute_food: IngredientFood | None = None
+    substitute_recipe: Recipe | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HouseholdPreferencesBase(MealieModel):
@@ -34,6 +64,7 @@ class UpdateHouseholdPreferences(HouseholdPreferencesBase):
     secondary_volume_units: list[str] = Field(default_factory=list)
     primary_mass_units: list[str] = Field(default_factory=list)
     secondary_mass_units: list[str] = Field(default_factory=list)
+    food_substitutions: list[UpdateHouseholdFoodSubstitution] = Field(default_factory=list)
 
 
 class CreateHouseholdPreferences(UpdateHouseholdPreferences): ...
@@ -48,6 +79,7 @@ class ReadHouseholdPreferences(HouseholdPreferencesBase):
     secondary_volume_units: list[IngredientUnit] = Field(default_factory=list)
     primary_mass_units: list[IngredientUnit] = Field(default_factory=list)
     secondary_mass_units: list[IngredientUnit] = Field(default_factory=list)
+    food_substitutions: list[ReadHouseholdFoodSubstitution] = Field(default_factory=list)
 
     id: UUID4
     model_config = ConfigDict(from_attributes=True)
@@ -60,4 +92,13 @@ class ReadHouseholdPreferences(HouseholdPreferencesBase):
             joinedload(HouseholdPreferencesModel.secondary_volume_units),
             joinedload(HouseholdPreferencesModel.primary_mass_units),
             joinedload(HouseholdPreferencesModel.secondary_mass_units),
+            joinedload(HouseholdPreferencesModel.food_substitutions).joinedload(
+                HouseholdFoodSubstitutionModel.source_food
+            ),
+            joinedload(HouseholdPreferencesModel.food_substitutions).joinedload(
+                HouseholdFoodSubstitutionModel.substitute_food
+            ),
+            joinedload(HouseholdPreferencesModel.food_substitutions)
+            .joinedload(HouseholdFoodSubstitutionModel.substitute_recipe)
+            .load_only(RecipeModel.id, RecipeModel.slug, RecipeModel.name),
         ]

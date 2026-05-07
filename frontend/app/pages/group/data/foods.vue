@@ -63,7 +63,7 @@
           <template #item="{ item, props }">
             <v-list-item v-bind="props">
               <v-list-item-subtitle>
-                {{ item.raw.progress }}% {{ $t("language-dialog.translated") }}
+                {{ item.progress }}% {{ $t("language-dialog.translated") }}
               </v-list-item-subtitle>
             </v-list-item>
           </template>
@@ -170,6 +170,14 @@
         </v-icon>
       </template>
 
+      <template #[`item.substitutionDisplay`]="{ item }">
+        {{ item.substitutionDisplay || "" }}
+      </template>
+
+      <template #[`item.substitutionRatio`]="{ item }">
+        {{ item.substitutionRatio ?? "" }}
+      </template>
+
       <template #[`item.createdAt`]="{ item }">
         {{ item.createdAt ? $d(new Date(item.createdAt)) : '' }}
       </template>
@@ -191,6 +199,31 @@
           {{ $t('data-pages.manage-aliases') }}
         </BaseButton>
       </template>
+
+      <template #edit-dialog-top>
+        <v-autocomplete
+          v-model="editForm.data.substituteTarget"
+          clearable
+          :items="substituteOptions"
+          :custom-filter="normalizeFilter"
+          item-title="title"
+          item-value="value"
+          :label="$t('data-pages.foods.substitute-target')"
+          :hint="$t('data-pages.foods.substitute-target-hint')"
+          persistent-hint
+        />
+
+        <v-text-field
+          v-model.number="editForm.data.substitutionRatio"
+          type="number"
+          :min="0.0001"
+          :step="0.1"
+          variant="solo-filled"
+          :label="$t('data-pages.foods.substitution-ratio')"
+          :hint="$t('data-pages.foods.substitution-ratio-hint')"
+          persistent-hint
+        />
+      </template>
     </GroupDataPage>
   </div>
 </template>
@@ -200,7 +233,8 @@ import type { LocaleObject } from "@nuxtjs/i18n";
 import RecipeDataAliasManagerDialog from "~/components/Domain/Recipe/RecipeDataAliasManagerDialog.vue";
 import { validators } from "~/composables/use-validators";
 import { useUserApi } from "~/composables/api";
-import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias } from "~/lib/api/types/recipe";
+import type { UpdateHouseholdFoodSubstitution } from "~/lib/api/types/household";
+import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias, RecipeSummary } from "~/lib/api/types/recipe";
 import MultiPurposeLabel from "~/components/Domain/ShoppingList/MultiPurposeLabel.vue";
 import { useLocales } from "~/composables/use-locales";
 import { normalizeFilter } from "~/composables/use-utils";
@@ -218,10 +252,24 @@ interface CreateIngredientFoodWithOnHand extends CreateIngredientFood {
 
 interface IngredientFoodWithOnHand extends IngredientFood {
   onHand: boolean;
+  substituteTarget?: string | null;
+  substitutionRatio?: number;
+  substitutionDisplay?: string | null;
 }
+
+type SubstituteOptionType = "food" | "recipe";
+
+interface SubstituteOption {
+  title: string;
+  value: string;
+  type: SubstituteOptionType;
+  id: string;
+}
+
 const userApi = useUserApi();
 const i18n = useI18n();
 const auth = useMealieAuth();
+const { household, actions: householdActions } = useHouseholdSelf();
 const tableConfig: TableConfig = {
   hideColumns: true,
   canExport: true,
@@ -274,6 +322,18 @@ const tableHeaders: TableHeaders[] = [
     sortable: true,
   },
   {
+    text: i18n.t("data-pages.foods.substitute-target"),
+    value: "substitutionDisplay",
+    show: true,
+    sortable: true,
+  },
+  {
+    text: i18n.t("data-pages.foods.substitution-ratio"),
+    value: "substitutionRatio",
+    show: false,
+    sortable: true,
+  },
+  {
     text: i18n.t("general.date-added"),
     value: "createdAt",
     show: false,
@@ -283,10 +343,72 @@ const tableHeaders: TableHeaders[] = [
 
 const userHousehold = computed(() => auth.user.value?.householdSlug || "");
 const foodStore = useFoodStore();
+const recipeOptions = ref<RecipeSummary[]>([]);
+const substitutionsBySourceFoodId = computed(() => {
+  const substitutions = household.value?.preferences?.foodSubstitutions ?? [];
+  return new Map(substitutions.map(substitution => [substitution.sourceFoodId, substitution]));
+});
+const foodsById = computed(() => {
+  return new Map(foodStore.store.value.map(food => [food.id, food]));
+});
+const recipesById = computed(() => {
+  return new Map(
+    recipeOptions.value
+      .filter((recipe): recipe is RecipeSummary & { id: string } => Boolean(recipe.id))
+      .map(recipe => [recipe.id, recipe]),
+  );
+});
 const foods = computed(() => foodStore.store.value.map((food) => {
   const onHand = food.householdsWithIngredientFood?.includes(userHousehold.value) || false;
-  return { ...food, onHand } as IngredientFoodWithOnHand;
+  const substitution = substitutionsBySourceFoodId.value.get(food.id);
+
+  let substituteTarget: string | null = null;
+  let substitutionDisplay: string | null = null;
+  let substitutionRatio: number | undefined;
+
+  if (substitution?.substituteFoodId) {
+    const substituteFood = foodsById.value.get(substitution.substituteFoodId);
+    substituteTarget = `food:${substitution.substituteFoodId}`;
+    substitutionDisplay = `${i18n.t("data-pages.foods.substitute-type-food")} ${substituteFood?.name ?? substitution.substituteFoodId}`;
+    substitutionRatio = substitution.ratio && substitution.ratio > 0 ? substitution.ratio : 1;
+  }
+  else if (substitution?.substituteRecipeId) {
+    const substituteRecipe = recipesById.value.get(substitution.substituteRecipeId);
+    substituteTarget = `recipe:${substitution.substituteRecipeId}`;
+    substitutionDisplay = `${i18n.t("data-pages.foods.substitute-type-recipe")} ${substituteRecipe?.name ?? substitution.substituteRecipeId}`;
+    substitutionRatio = substitution.ratio && substitution.ratio > 0 ? substitution.ratio : 1;
+  }
+
+  return {
+    ...food,
+    onHand,
+    substituteTarget,
+    substitutionDisplay,
+    substitutionRatio,
+  } as IngredientFoodWithOnHand;
 }));
+const substituteOptions = computed<SubstituteOption[]>(() => {
+  const foodItems = foods.value.map(food => ({
+    title: `${i18n.t("data-pages.foods.substitute-type-food")} ${food.name}`,
+    value: `food:${food.id}`,
+    type: "food" as const,
+    id: food.id,
+  }));
+  const recipeItems = recipeOptions.value.flatMap((recipe) => {
+    if (!recipe.id) {
+      return [];
+    }
+
+    return [{
+      title: `${i18n.t("data-pages.foods.substitute-type-recipe")} ${recipe.name}`,
+      value: `recipe:${recipe.id}`,
+      type: "recipe" as const,
+      id: recipe.id,
+    }];
+  });
+
+  return [...foodItems, ...recipeItems];
+});
 
 // ============================================================
 // Labels
@@ -319,7 +441,7 @@ const formItems = computed<AutoFormItems>(() => [
     numberInputConfig: {
       min: 0,
       max: undefined,
-      precision: null,
+      precision: undefined,
       controlVariant: "hidden",
     },
   },
@@ -398,7 +520,76 @@ async function handleEdit() {
   }
 
   await foodStore.actions.updateOne(editForm.data);
+  await saveFoodSubstitution(editForm.data);
   editForm.data = {} as IngredientFoodWithOnHand;
+}
+
+async function saveFoodSubstitution(food: IngredientFoodWithOnHand) {
+  if (!(household.value?.preferences && food.id)) {
+    return;
+  }
+
+  const currentSubstitutions: UpdateHouseholdFoodSubstitution[] = (household.value.preferences.foodSubstitutions ?? [])
+    .map(substitution => ({
+      sourceFoodId: substitution.sourceFoodId,
+      substituteFoodId: substitution.substituteFoodId,
+      substituteRecipeId: substitution.substituteRecipeId,
+      ratio: substitution.ratio,
+    }));
+  const nextSubstitutions = currentSubstitutions.filter(sub => sub.sourceFoodId !== food.id);
+
+  const ratio = typeof food.substitutionRatio === "number" && food.substitutionRatio > 0 ? food.substitutionRatio : 1;
+  const target = parseSubstituteTarget(food.substituteTarget || null);
+  if (target) {
+    nextSubstitutions.push({
+      sourceFoodId: food.id,
+      substituteFoodId: target.type === "food" ? target.id : null,
+      substituteRecipeId: target.type === "recipe" ? target.id : null,
+      ratio,
+    });
+  }
+
+  await householdActions.updatePreferences({ foodSubstitutions: nextSubstitutions });
+}
+
+function parseSubstituteTarget(target: string | null): { type: SubstituteOptionType; id: string } | null {
+  if (!target) {
+    return null;
+  }
+
+  const [type, id] = target.split(":", 2);
+  if (!id || (type !== "food" && type !== "recipe")) {
+    return null;
+  }
+
+  return { type, id };
+}
+
+function hydrateSubstitutionFields(foodId?: string) {
+  if (!foodId || !editForm.data) {
+    return;
+  }
+
+  const substitutions = household.value?.preferences?.foodSubstitutions ?? [];
+  const substitution = substitutions.find(sub => sub.sourceFoodId === foodId);
+
+  if (!substitution) {
+    editForm.data.substituteTarget = null;
+    editForm.data.substitutionRatio = 1;
+    return;
+  }
+
+  if (substitution.substituteFoodId) {
+    editForm.data.substituteTarget = `food:${substitution.substituteFoodId}`;
+  }
+  else if (substitution.substituteRecipeId) {
+    editForm.data.substituteTarget = `recipe:${substitution.substituteRecipeId}`;
+  }
+  else {
+    editForm.data.substituteTarget = null;
+  }
+
+  editForm.data.substitutionRatio = substitution.ratio && substitution.ratio > 0 ? substitution.ratio : 1;
 }
 
 // ============================================================
@@ -458,7 +649,18 @@ const { locales: LOCALES, locale: currentLocale } = useLocales();
 
 onMounted(() => {
   locale.value = currentLocale.value;
+
+  userApi.recipes.getAll(1, -1).then(({ data }) => {
+    recipeOptions.value = data?.items || [];
+  });
 });
+
+watch(
+  () => editForm.data?.id,
+  (foodId) => {
+    hydrateSubstitutionFields(foodId);
+  },
+);
 
 const locales = LOCALES.filter(locale =>
   (i18n.locales.value as LocaleObject[]).map(i18nLocale => i18nLocale.code).includes(locale.value as any),

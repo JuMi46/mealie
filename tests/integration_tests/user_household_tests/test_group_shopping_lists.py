@@ -1350,3 +1350,137 @@ def test_bulk_modify_shopping_list_items_updates_shopping_list(
     )
     assert updated_list and updated_list.updated_at
     assert updated_list.updated_at > last_update_at
+
+
+def test_shopping_list_applies_household_food_substitution(
+    api_client: TestClient,
+    unique_user: TestUser,
+    shopping_lists: list[ShoppingListOut],
+):
+    """Household food substitution replaces a food ingredient when adding a recipe to a shopping list."""
+    shopping_list = random.choice(shopping_lists)
+    database = unique_user.repos
+
+    # Grant household management permission
+    user = database.users.get_one(unique_user.user_id)
+    assert user
+    user.can_manage_household = True
+    database.users.update(user.id, user)
+
+    # Create source food and substitute food
+    source_food = database.ingredient_foods.create(
+        SaveIngredientFood(name=random_string(10), group_id=unique_user.group_id)
+    )
+    substitute_food = database.ingredient_foods.create(
+        SaveIngredientFood(name=random_string(10), group_id=unique_user.group_id)
+    )
+
+    # Create a recipe with the source food as an ingredient (qty=4)
+    recipe: Recipe = database.recipes.create(
+        Recipe(
+            name=random_string(10),
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+            recipe_ingredient=[
+                RecipeIngredient(
+                    note=f"ingredient with {source_food.name}",
+                    food=source_food,
+                    quantity=4.0,
+                ),
+            ],
+        )
+    )
+
+    # Set household substitution: source_food -> substitute_food at ratio 0.5
+    prefs_response = api_client.get(api_routes.households_preferences, headers=unique_user.token)
+    assert prefs_response.status_code == 200
+    current_prefs = prefs_response.json()
+    current_prefs["foodSubstitutions"] = [
+        {
+            "sourceFoodId": str(source_food.id),
+            "substituteFoodId": str(substitute_food.id),
+            "substituteRecipeId": None,
+            "ratio": 0.5,
+        }
+    ]
+    response = api_client.put(api_routes.households_preferences, json=current_prefs, headers=unique_user.token)
+    assert response.status_code == 200
+
+    # Add recipe to shopping list
+    response = api_client.post(
+        api_routes.households_shopping_lists_item_id_recipe_recipe_id(shopping_list.id, recipe.id),
+        headers=unique_user.token,
+    )
+    assert response.status_code == 200
+
+    # Verify list items use the substitute food with scaled quantity
+    response = api_client.get(
+        api_routes.households_shopping_lists_item_id(shopping_list.id),
+        headers=unique_user.token,
+    )
+    as_json = utils.assert_deserialize(response, 200)
+
+    assert len(as_json["listItems"]) == 1
+    item = as_json["listItems"][0]
+    # Quantity should be 4.0 * 0.5 = 2.0
+    assert item["quantity"] == 2.0
+    # The item should reference the substitute food, not the source food
+    assert item["foodId"] == str(substitute_food.id)
+
+    # Clean up: clear substitutions so they don't affect other tests
+    current_prefs["foodSubstitutions"] = []
+    api_client.put(api_routes.households_preferences, json=current_prefs, headers=unique_user.token)
+
+
+def test_shopping_list_no_substitution_without_preference(
+    api_client: TestClient,
+    unique_user: TestUser,
+    shopping_lists: list[ShoppingListOut],
+):
+    """Without a food substitution preference, recipe ingredients are added unchanged."""
+    shopping_list = random.choice(shopping_lists)
+    database = unique_user.repos
+
+    source_food = database.ingredient_foods.create(
+        SaveIngredientFood(name=random_string(10), group_id=unique_user.group_id)
+    )
+
+    recipe: Recipe = database.recipes.create(
+        Recipe(
+            name=random_string(10),
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+            recipe_ingredient=[
+                RecipeIngredient(
+                    note=f"ingredient with {source_food.name}",
+                    food=source_food,
+                    quantity=3.0,
+                ),
+            ],
+        )
+    )
+
+    # Ensure no substitution for this food is set
+    prefs_response = api_client.get(api_routes.households_preferences, headers=unique_user.token)
+    assert prefs_response.status_code == 200
+    current_prefs = prefs_response.json()
+    subs = [s for s in current_prefs.get("foodSubstitutions", []) if s["sourceFoodId"] != str(source_food.id)]
+    current_prefs["foodSubstitutions"] = subs
+    api_client.put(api_routes.households_preferences, json=current_prefs, headers=unique_user.token)
+
+    response = api_client.post(
+        api_routes.households_shopping_lists_item_id_recipe_recipe_id(shopping_list.id, recipe.id),
+        headers=unique_user.token,
+    )
+    assert response.status_code == 200
+
+    response = api_client.get(
+        api_routes.households_shopping_lists_item_id(shopping_list.id),
+        headers=unique_user.token,
+    )
+    as_json = utils.assert_deserialize(response, 200)
+
+    # Find the item for our food
+    matching = [item for item in as_json["listItems"] if item.get("foodId") == str(source_food.id)]
+    assert len(matching) == 1
+    assert matching[0]["quantity"] == 3.0
