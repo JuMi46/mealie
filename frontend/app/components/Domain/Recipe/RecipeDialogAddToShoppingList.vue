@@ -174,7 +174,6 @@ const dialog = defineModel<boolean>({ default: false });
 
 const i18n = useI18n();
 const auth = useMealieAuth();
-const { household } = useHouseholdSelf();
 const api = useUserApi();
 const { household } = useHouseholdSelf();
 const preferences = useShoppingListPreferences();
