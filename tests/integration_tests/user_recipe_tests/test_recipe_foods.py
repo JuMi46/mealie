@@ -5,8 +5,7 @@ from fastapi.testclient import TestClient
 
 from mealie.db.models.household.ingredient_food_label import HouseholdIngredientFoodLabel
 from mealie.schema.recipe.recipe import Recipe
-from mealie.schema.recipe.recipe_ingredient import RecipeIngredient
-from mealie.schema.recipe.recipe_ingredient import CreateIngredientFood
+from mealie.schema.recipe.recipe_ingredient import CreateIngredientFood, RecipeIngredient
 from tests import utils
 from tests.utils import api_routes
 from tests.utils.factories import random_string

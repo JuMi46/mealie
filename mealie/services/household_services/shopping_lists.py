@@ -398,9 +398,10 @@ class ShoppingListService:
                 continue
 
             if isinstance(ingredient.food, IngredientFood):
-                food_id = ingredient.food.id
+                food = ingredient.food
+                food_id = food.id
                 override_label = food_label_map.get(food_id)
-                label_id = override_label.id if override_label else ingredient.food.label_id
+                label_id = override_label.id if override_label else food.label_id
             else:
                 food_id = None
                 label_id = None

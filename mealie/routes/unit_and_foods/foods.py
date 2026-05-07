@@ -76,6 +76,14 @@ class IngredientFoodsController(BaseUserController):
             )
         self.session.commit()
 
+    def _validate_household_label_override(self, household_label_id: UUID4 | None) -> None:
+        if household_label_id is None:
+            return
+
+        label = self.repos.group_multi_purpose_labels.get_one(household_label_id)
+        if label is None:
+            raise HTTPException(status_code=400, detail="invalid household label override")
+
     @router.get("", response_model=IngredientFoodPagination)
     def get_all(self, q: PaginationQuery = Depends(PaginationQuery), search: str | None = None):
         response = self.repo.page_all(
@@ -91,10 +99,8 @@ class IngredientFoodsController(BaseUserController):
     @router.post("", response_model=IngredientFood, status_code=201)
     def create_one(self, data: CreateIngredientFood):
         should_set_override = "household_label_id" in data.model_fields_set
-        if should_set_override and data.household_label_id is not None:
-            label = self.repos.group_multi_purpose_labels.get_one(data.household_label_id)
-            if label is None:
-                raise HTTPException(status_code=400, detail="invalid household label override")
+        if should_set_override:
+            self._validate_household_label_override(data.household_label_id)
         save_data = mapper.cast(data, SaveIngredientFood, group_id=self.group_id)
         food = self.mixins.create_one(save_data)
         if should_set_override:
@@ -118,10 +124,8 @@ class IngredientFoodsController(BaseUserController):
     @router.put("/{item_id}", response_model=IngredientFood)
     def update_one(self, item_id: UUID4, data: CreateIngredientFood):
         should_set_override = "household_label_id" in data.model_fields_set
-        if should_set_override and data.household_label_id is not None:
-            label = self.repos.group_multi_purpose_labels.get_one(data.household_label_id)
-            if label is None:
-                raise HTTPException(status_code=400, detail="invalid household label override")
+        if should_set_override:
+            self._validate_household_label_override(data.household_label_id)
         data = mapper.cast(data, SaveIngredientFood, group_id=self.group_id)
         food = self.mixins.update_one(data, item_id)
         if should_set_override:
