@@ -10,12 +10,15 @@ import type {
 const householdSelfRef = ref<HouseholdInDB | null>(null);
 const loading = ref(false);
 
-function serializeUnitIds(units?: { id: string }[] | null): string[] | undefined {
+function serializeUnitIds(units?: ({ id: string } | string)[] | null): string[] {
   if (!Array.isArray(units)) {
-    return undefined;
+    return [];
   }
 
-  return units.map(unit => unit.id);
+  return units.flatMap(unit => {
+    if (typeof unit === "string") return [unit];
+    return unit.id ? [unit.id] : [];
+  });
 }
 
 function serializeFoodSubstitutions(
@@ -39,6 +42,7 @@ function serializeHouseholdPreferences(preferences: ReadHouseholdPreferences): U
     showAnnouncements: preferences.showAnnouncements,
     lockRecipeEditsFromOtherHouseholds: preferences.lockRecipeEditsFromOtherHouseholds,
     firstDayOfWeek: preferences.firstDayOfWeek,
+    defaultShoppingListId: preferences.defaultShoppingListId ?? null,
     recipePublic: preferences.recipePublic,
     recipeShowNutrition: preferences.recipeShowNutrition,
     recipeShowAssets: preferences.recipeShowAssets,

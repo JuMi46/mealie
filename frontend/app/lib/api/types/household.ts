@@ -293,6 +293,7 @@ export interface IngredientFood {
     [k: string]: unknown;
   } | null;
   labelId?: string | null;
+  householdLabelId?: string | null;
   aliases?: IngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
   density?: number | null;
@@ -314,6 +315,45 @@ export interface MultiPurposeLabelSummary {
   groupId: string;
   id: string;
 }
+export interface Recipe {
+  id?: string | null;
+  userId?: string;
+  householdId?: string;
+  groupId?: string;
+  name?: string | null;
+  slug?: string;
+  image?: unknown;
+  recipeServings?: number;
+  recipeYieldQuantity?: number;
+  recipeYield?: string | null;
+  totalTime?: string | null;
+  prepTime?: string | null;
+  cookTime?: string | null;
+  performTime?: string | null;
+  description?: string | null;
+  recipeCategory?: RecipeCategory[] | null;
+  tags?: RecipeTag[] | null;
+  tools?: RecipeTool[];
+  rating?: number | null;
+  orgURL?: string | null;
+  dateAdded?: string | null;
+  dateUpdated?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  lastMade?: string | null;
+  recipeIngredient?: RecipeIngredient[];
+  recipeInstructions?: RecipeStep[] | null;
+  nutrition?: Nutrition | null;
+  primaryUnitSystem?: string | null;
+  settings?: RecipeSettings | null;
+  assets?: RecipeAsset[] | null;
+  notes?: RecipeNote[] | null;
+  extras?: {
+    [k: string]: unknown;
+  } | null;
+  comments?: RecipeCommentOut[] | null;
+  timersActive?: RecipeTimerActive[] | null;
+}
 export interface RecipeCategory {
   id?: string | null;
   groupId?: string | null;
@@ -334,6 +374,143 @@ export interface RecipeTool {
   name: string;
   slug: string;
   householdsWithTool?: string[];
+  [k: string]: unknown;
+}
+export interface RecipeIngredient {
+  quantity?: number | null;
+  unit?: IngredientUnit | CreateIngredientUnit | null;
+  food?: IngredientFood | CreateIngredientFood | null;
+  referencedRecipe?: Recipe | null;
+  note?: string | null;
+  display?: string;
+  title?: string | null;
+  originalText?: string | null;
+  referenceId?: string;
+}
+export interface CreateIngredientUnit {
+  id?: string | null;
+  name: string;
+  pluralName?: string | null;
+  description?: string;
+  extras?: {
+    [k: string]: unknown;
+  } | null;
+  fraction?: boolean;
+  abbreviation?: string;
+  pluralAbbreviation?: string | null;
+  useAbbreviation?: boolean;
+  aliases?: CreateIngredientUnitAlias[];
+  standardQuantity?: number | null;
+  standardUnit?: string | null;
+  position?: number | null;
+  range?: IngredientUnitRange[] | null;
+  [k: string]: unknown;
+}
+export interface CreateIngredientUnitAlias {
+  name: string;
+  [k: string]: unknown;
+}
+export interface CreateIngredientFood {
+  id?: string | null;
+  name: string;
+  pluralName?: string | null;
+  description?: string;
+  extras?: {
+    [k: string]: unknown;
+  } | null;
+  labelId?: string | null;
+  householdLabelId?: string | null;
+  aliases?: CreateIngredientFoodAlias[];
+  householdsWithIngredientFood?: string[];
+  density?: number | null;
+  tip?: string | null;
+  [k: string]: unknown;
+}
+export interface CreateIngredientFoodAlias {
+  name: string;
+  [k: string]: unknown;
+}
+export interface RecipeStep {
+  id?: string | null;
+  preparationInstructionId?: string | null;
+  title?: string | null;
+  summary?: string | null;
+  text: string;
+  timers?: RecipeTimer[];
+  ingredientReferences?: IngredientReferences[];
+  [k: string]: unknown;
+}
+export interface RecipeTimer {
+  id?: string;
+  duration: number;
+  text?: string | null;
+  timersActive?: RecipeTimerActive[] | null;
+  [k: string]: unknown;
+}
+export interface RecipeTimerActive {
+  completeTime: string;
+  text?: string | null;
+  groupId: string;
+  householdId: string;
+  userId: string;
+  recipeId?: string | null;
+  recipeTimerId?: string | null;
+  id: string;
+  [k: string]: unknown;
+}
+export interface IngredientReferences {
+  referenceId?: string | null;
+  [k: string]: unknown;
+}
+export interface Nutrition {
+  calories?: string | null;
+  carbohydrateContent?: string | null;
+  cholesterolContent?: string | null;
+  fatContent?: string | null;
+  fiberContent?: string | null;
+  proteinContent?: string | null;
+  saturatedFatContent?: string | null;
+  sodiumContent?: string | null;
+  sugarContent?: string | null;
+  transFatContent?: string | null;
+  unsaturatedFatContent?: string | null;
+  [k: string]: unknown;
+}
+export interface RecipeSettings {
+  public?: boolean;
+  showNutrition?: boolean;
+  showAssets?: boolean;
+  landscapeView?: boolean;
+  disableComments?: boolean;
+  locked?: boolean;
+  [k: string]: unknown;
+}
+export interface RecipeAsset {
+  name: string;
+  icon: string;
+  fileName?: string | null;
+  [k: string]: unknown;
+}
+export interface RecipeNote {
+  title: string;
+  text: string;
+  [k: string]: unknown;
+}
+export interface RecipeCommentOut {
+  recipeId: string;
+  text: string;
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  user: UserBase;
+  [k: string]: unknown;
+}
+export interface UserBase {
+  id: string;
+  username?: string | null;
+  admin: boolean;
+  fullName?: string | null;
   [k: string]: unknown;
 }
 export interface HouseholdUserSummary {
@@ -469,182 +646,6 @@ export interface SetPermissions {
 export interface ShoppingListAddRecipeParams {
   recipeIncrementQuantity?: number;
   recipeIngredients?: RecipeIngredient[] | null;
-}
-export interface RecipeIngredient {
-  quantity?: number | null;
-  unit?: IngredientUnit | CreateIngredientUnit | null;
-  food?: IngredientFood | CreateIngredientFood | null;
-  referencedRecipe?: Recipe | null;
-  note?: string | null;
-  display?: string;
-  title?: string | null;
-  originalText?: string | null;
-  referenceId?: string;
-}
-export interface CreateIngredientUnit {
-  id?: string | null;
-  name: string;
-  pluralName?: string | null;
-  description?: string;
-  extras?: {
-    [k: string]: unknown;
-  } | null;
-  fraction?: boolean;
-  abbreviation?: string;
-  pluralAbbreviation?: string | null;
-  useAbbreviation?: boolean;
-  aliases?: CreateIngredientUnitAlias[];
-  standardQuantity?: number | null;
-  standardUnit?: string | null;
-  position?: number | null;
-  range?: IngredientUnitRange[] | null;
-  [k: string]: unknown;
-}
-export interface CreateIngredientUnitAlias {
-  name: string;
-  [k: string]: unknown;
-}
-export interface CreateIngredientFood {
-  id?: string | null;
-  name: string;
-  pluralName?: string | null;
-  description?: string;
-  extras?: {
-    [k: string]: unknown;
-  } | null;
-  labelId?: string | null;
-  aliases?: CreateIngredientFoodAlias[];
-  householdsWithIngredientFood?: string[];
-  density?: number | null;
-  tip?: string | null;
-  [k: string]: unknown;
-}
-export interface CreateIngredientFoodAlias {
-  name: string;
-  [k: string]: unknown;
-}
-export interface Recipe {
-  id?: string | null;
-  userId?: string;
-  householdId?: string;
-  groupId?: string;
-  name?: string | null;
-  slug?: string;
-  image?: unknown;
-  recipeServings?: number;
-  recipeYieldQuantity?: number;
-  recipeYield?: string | null;
-  totalTime?: string | null;
-  prepTime?: string | null;
-  cookTime?: string | null;
-  performTime?: string | null;
-  description?: string | null;
-  recipeCategory?: RecipeCategory[] | null;
-  tags?: RecipeTag[] | null;
-  tools?: RecipeTool[];
-  rating?: number | null;
-  orgURL?: string | null;
-  dateAdded?: string | null;
-  dateUpdated?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  lastMade?: string | null;
-  recipeIngredient?: RecipeIngredient[];
-  recipeInstructions?: RecipeStep[] | null;
-  nutrition?: Nutrition | null;
-  primaryUnitSystem?: string | null;
-  settings?: RecipeSettings | null;
-  assets?: RecipeAsset[] | null;
-  notes?: RecipeNote[] | null;
-  extras?: {
-    [k: string]: unknown;
-  } | null;
-  comments?: RecipeCommentOut[] | null;
-  timersActive?: RecipeTimerActive[] | null;
-  [k: string]: unknown;
-}
-export interface RecipeStep {
-  id?: string | null;
-  preparationInstructionId?: string | null;
-  title?: string | null;
-  summary?: string | null;
-  text: string;
-  timers?: RecipeTimer[];
-  ingredientReferences?: IngredientReferences[];
-  [k: string]: unknown;
-}
-export interface RecipeTimer {
-  id?: string;
-  duration: number;
-  text?: string | null;
-  timersActive?: RecipeTimerActive[] | null;
-  [k: string]: unknown;
-}
-export interface RecipeTimerActive {
-  completeTime: string;
-  text?: string | null;
-  groupId: string;
-  householdId: string;
-  userId: string;
-  recipeId?: string | null;
-  recipeTimerId?: string | null;
-  id: string;
-  [k: string]: unknown;
-}
-export interface IngredientReferences {
-  referenceId?: string | null;
-  [k: string]: unknown;
-}
-export interface Nutrition {
-  calories?: string | null;
-  carbohydrateContent?: string | null;
-  cholesterolContent?: string | null;
-  fatContent?: string | null;
-  fiberContent?: string | null;
-  proteinContent?: string | null;
-  saturatedFatContent?: string | null;
-  sodiumContent?: string | null;
-  sugarContent?: string | null;
-  transFatContent?: string | null;
-  unsaturatedFatContent?: string | null;
-  [k: string]: unknown;
-}
-export interface RecipeSettings {
-  public?: boolean;
-  showNutrition?: boolean;
-  showAssets?: boolean;
-  landscapeView?: boolean;
-  disableComments?: boolean;
-  locked?: boolean;
-  [k: string]: unknown;
-}
-export interface RecipeAsset {
-  name: string;
-  icon: string;
-  fileName?: string | null;
-  [k: string]: unknown;
-}
-export interface RecipeNote {
-  title: string;
-  text: string;
-  [k: string]: unknown;
-}
-export interface RecipeCommentOut {
-  recipeId: string;
-  text: string;
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-  user: UserBase;
-  [k: string]: unknown;
-}
-export interface UserBase {
-  id: string;
-  username?: string | null;
-  admin: boolean;
-  fullName?: string | null;
-  [k: string]: unknown;
 }
 export interface ShoppingListAddRecipeParamsBulk {
   recipeIncrementQuantity?: number;

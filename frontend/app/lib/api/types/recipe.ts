@@ -66,6 +66,7 @@ export interface CreateIngredientFood {
     [k: string]: unknown;
   } | null;
   labelId?: string | null;
+  householdLabelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
   density?: number | null;
@@ -149,6 +150,7 @@ export interface IngredientFood {
     [k: string]: unknown;
   } | null;
   labelId?: string | null;
+  householdLabelId?: string | null;
   aliases?: IngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
   density?: number | null;
@@ -557,6 +559,7 @@ export interface SaveIngredientFood {
     [k: string]: unknown;
   } | null;
   labelId?: string | null;
+  householdLabelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];
   householdsWithIngredientFood?: string[];
   density?: number | null;

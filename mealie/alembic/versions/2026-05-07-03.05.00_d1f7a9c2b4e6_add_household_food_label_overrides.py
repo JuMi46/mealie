@@ -1,7 +1,7 @@
 """add household food label overrides
 
 Revision ID: d1f7a9c2b4e6
-Revises: f2a1c4e9b7d0
+Revises: 3a7f5d2c9e11
 Create Date: 2026-05-07 03:05:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d1f7a9c2b4e6"
-down_revision: str | None = "f2a1c4e9b7d0"
+down_revision: str | None = "3a7f5d2c9e11"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
 

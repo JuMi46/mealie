@@ -1,7 +1,7 @@
 """Add default shopping list preference to household preferences
 
 Revision ID: 3a7f5d2c9e11
-Revises: f2a1c4e9b7d0
+Revises: 4b8d9e2f6c11
 Create Date: 2026-05-06 23:40:00.000000
 
 """
@@ -13,7 +13,7 @@ import mealie.db.migration_types
 
 # revision identifiers, used by Alembic.
 revision = "3a7f5d2c9e11"
-down_revision: str | None = "f2a1c4e9b7d0"
+down_revision: str | None = "4b8d9e2f6c11"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
 
