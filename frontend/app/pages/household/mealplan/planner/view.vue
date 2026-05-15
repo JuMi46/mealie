@@ -17,7 +17,7 @@
             <v-row no-gutters style="width: 100%;">
               <v-col cols="10" class="d-flex align-center">
                 <p class="pl-2 my-1" :class="{ 'text-primary': isToday(day.date) }">
-                  {{ isSameDay(day.date, todaysDate) ? $t("meal-plan.today") : $d(day.date, "short") }}
+                  {{ isSameDay(day.date, todaysDate) ? $t("general.today") : $d(day.date, "short") }}
                 </p>
               </v-col>
               <v-col class="d-flex align-center" cols="2">

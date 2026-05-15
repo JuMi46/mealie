@@ -156,3 +156,32 @@ export function parseTemperaturesInText(text: string, temperatureDisplayTemplate
       .replaceAll("℉", `${String(fahrenheit)}℉`);
   });
 }
+
+export function parseRelativeDate(value?: string | null, todayLabel = "Today") {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+  const isToday = date.getFullYear() === now.getFullYear()
+    && date.getMonth() === now.getMonth()
+    && date.getDate() === now.getDate();
+
+  if (isToday) {
+    return todayLabel;
+  }
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "short",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+
+  return formatter.format(date);
+}

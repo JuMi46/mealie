@@ -79,7 +79,7 @@
       >
         <v-card class="mb-2 border-left-primary rounded-sm pa-2" :color="isSameDay(plan.date, todaysDate) ? 'info' : undefined">
           <p class="pl-2 mb-1">
-            {{ isSameDay(plan.date, todaysDate) ? $t("meal-plan.today") : $d(plan.date, "short") }}
+            {{ isSameDay(plan.date, todaysDate) ? $t("general.today") : $d(plan.date, "short") }}
           </p>
         </v-card>
         <VueDraggable

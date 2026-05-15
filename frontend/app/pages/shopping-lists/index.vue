@@ -99,7 +99,10 @@
             {{ $globals.icons.cartCheck }}
           </v-icon>
           <span class="flex-grow-1">
-            {{ list.name }}
+            {{ `${list.name ?? ""} (${list.uncheckedItemsCount ?? 0})` }}
+          </span>
+          <span>
+            {{ parseRelativeDate(list.updatedAt, i18n.t("general.today")) }}
           </span>
           <v-btn
             icon
@@ -126,9 +129,9 @@
 </template>
 
 <script setup lang="ts">
-import type { ShoppingListOut } from "~/lib/api/types/household";
+import type { ShoppingListSummary } from "~/lib/api/types/household";
 import { useUserApi } from "~/composables/api";
-import { useAsyncKey } from "~/composables/use-utils";
+import { parseRelativeDate, useAsyncKey } from "~/composables/use-utils";
 import { useShoppingListPreferences } from "~/composables/use-users/preferences";
 import type { UserOut } from "~/lib/api/types/user";
 
@@ -152,10 +155,10 @@ const state = reactive({
   deleteDialog: false,
   deleteTarget: "",
   ownerDialog: false,
-  ownerTarget: ref<ShoppingListOut | null>(null),
+  ownerTarget: ref<ShoppingListSummary | null>(null),
 });
 
-const { data: shoppingLists } = useAsyncData(useAsyncKey(), async () => {
+const { data: shoppingLists } = useAsyncData<ShoppingListSummary[]>(useAsyncKey(), async () => {
   return await fetchShoppingLists();
 });
 
@@ -179,7 +182,10 @@ watch(
   () => shoppingListChoices,
   () => {
     if (!disableRedirect.value && shoppingListChoices.value.length === 1) {
-      navigateTo(`/shopping-lists/${shoppingListChoices.value[0].id}`);
+      const firstChoice = shoppingListChoices.value[0];
+      if (firstChoice) {
+        navigateTo(`/shopping-lists/${firstChoice.id}`);
+      }
     }
     else {
       ready.value = true;
@@ -197,7 +203,7 @@ async function fetchShoppingLists() {
     return [];
   }
 
-  return data.items;
+  return data.items as ShoppingListSummary[];
 }
 
 async function refresh() {
@@ -213,7 +219,7 @@ async function createOne() {
   }
 }
 
-async function toggleOwnerDialog(list: ShoppingListOut) {
+async function toggleOwnerDialog(list: ShoppingListSummary) {
   if (!state.ownerDialog) {
     state.ownerTarget = list;
     await fetchAllUsers();

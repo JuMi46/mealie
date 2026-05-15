@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import UUID4, ConfigDict, field_validator, model_validator
+from pydantic import UUID4, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.orm.interfaces import LoaderOption
 
@@ -218,7 +218,14 @@ class ShoppingListSummary(ShoppingListSave):
     household_id: UUID4
     recipe_references: list[ShoppingListRecipeRefOut]
     label_settings: list[ShoppingListMultiPurposeLabelOut]
+    list_items: list[ShoppingListItemOut] = Field(default_factory=list, exclude=True)
+    unchecked_items_count: int = 0
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def populate_unchecked_items_count(self):
+        self.unchecked_items_count = len([item for item in self.list_items if not item.checked])
+        return self
 
     @classmethod
     def loader_options(cls) -> list[LoaderOption]:
@@ -233,6 +240,7 @@ class ShoppingListSummary(ShoppingListSave):
             selectinload(ShoppingList.recipe_references)
             .joinedload(ShoppingListRecipeReference.recipe)
             .joinedload(RecipeModel.tools),
+            selectinload(ShoppingList.list_items).load_only(ShoppingListItem.checked),
             selectinload(ShoppingList.label_settings).joinedload(ShoppingListMultiPurposeLabel.label),
             joinedload(ShoppingList.user).load_only(User.household_id, User.group_id),
         ]
