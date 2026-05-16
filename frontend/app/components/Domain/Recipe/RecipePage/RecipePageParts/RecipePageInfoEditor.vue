@@ -10,7 +10,7 @@
     />
     <v-container class="ma-0 pa-0">
       <v-row>
-        <v-col cols="3">
+        <v-col cols="2">
           <v-number-input
             :model-value="recipe.recipeServings"
             :min="0"
@@ -22,7 +22,7 @@
             @update:model-value="recipe.recipeServings = $event"
           />
         </v-col>
-        <v-col cols="3">
+        <v-col cols="2">
           <v-number-input
             :model-value="recipe.recipeYieldQuantity"
             :min="0"
@@ -34,7 +34,20 @@
             @update:model-value="recipe.recipeYieldQuantity = $event"
           />
         </v-col>
-        <v-col cols="6">
+        <v-col cols="3">
+          <v-autocomplete
+            v-model="recipe.recipeYieldUnit"
+            return-object
+            density="compact"
+            :label="$t('recipe.yield-unit')"
+            variant="underlined"
+            clearable
+            :items="yieldUnitItems"
+            item-title="name"
+            item-value="id"
+          />
+        </v-col>
+        <v-col cols="5">
           <v-text-field
             v-model="recipe.recipeYield"
             density="compact"
@@ -80,9 +93,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import { useUnitStore } from "~/composables/store";
 import { validators } from "~/composables/use-validators";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import type { Recipe } from "~/lib/api/types/recipe";
 
 const recipe = defineModel<NoUndefinedField<Recipe>>({ required: true });
+const unitStore = useUnitStore();
+
+const yieldUnitItems = computed(() => unitStore.store.value);
 </script>

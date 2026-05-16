@@ -146,7 +146,9 @@ def test_shopping_list_items_use_household_food_label_override(
     api_client: TestClient, unique_user: TestUser, shopping_list: ShoppingListOut
 ):
     database = unique_user.repos
-    base_label = database.group_multi_purpose_labels.create({"name": random_string(10), "group_id": unique_user.group_id})
+    base_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
     override_label = database.group_multi_purpose_labels.create(
         {"name": random_string(10), "group_id": unique_user.group_id}
     )

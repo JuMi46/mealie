@@ -231,10 +231,11 @@ function sanitizeHTML(rawHtml: string) {
 }
 const servingsDisplay = computed(() => {
   const { scaledAmountDisplay } = useScaledAmount(props.recipe.recipeYieldQuantity, props.scale);
-  return scaledAmountDisplay || props.recipe.recipeYield
+  const yieldText = [props.recipe.recipeYieldUnit?.name, props.recipe.recipeYield].filter(Boolean).join(" ");
+  return scaledAmountDisplay || yieldText
     ? i18n.t("recipe.yields-amount-with-text", {
       amount: scaledAmountDisplay,
-      text: props.recipe.recipeYield,
+      text: yieldText,
     }) as string
     : "";
 });

@@ -119,17 +119,8 @@ describe("use-household-food-substitutions", () => {
         recipeYield: "cup",
       },
     });
-    const units = [
-      {
-        id: "cup-id",
-        name: "cup",
-        pluralName: "cups",
-        standardQuantity: 236.6,
-        standardUnit: "milliliter",
-      },
-    ];
 
-    const result = applyHouseholdFoodSubstitution(ingredient, [substitution], units as any);
+    const result = applyHouseholdFoodSubstitution(ingredient, [substitution]);
 
     expect(result.referencedRecipe?.id).toBe("recipe-id");
     expect(result.unit?.id).toBe("cup-id");

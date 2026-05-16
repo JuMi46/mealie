@@ -198,6 +198,9 @@
     "transfer": "Transfer",
     "copy": "Copy",
     "color": "Color",
+    "position": "Position",
+    "place": "Place",
+    "range": "Range",
     "timestamp": "Timestamp",
     "last-made": "Last Made",
     "learn-more": "Learn More",
@@ -577,6 +580,7 @@
     "failed-to-add-to-list": "Failed to add to list",
     "yield": "Yield",
     "yields-amount-with-text": "Yields {amount} {text}",
+    "yield-unit": "Yield Unit",
     "yield-text": "Yield Text",
     "quantity": "Quantity",
     "choose-unit": "Choose Unit",
@@ -1177,7 +1181,9 @@
       "substitution-ratio": "Substitution Ratio",
       "substitution-ratio-hint": "Scale the original quantity by this ratio when substituted.",
       "substitute-type-food": "Food:",
-      "substitute-type-recipe": "Recipe:"
+      "substitute-type-recipe": "Recipe:",
+      "density": "Density",
+      "tip": "Tip"
     },
     "units": {
       "seed-dialog-text": "Seed the database with common units based on your local language.",
@@ -1221,7 +1227,8 @@
       "edit-label": "Edit Label",
       "new-label": "New Label",
       "labels": "Labels",
-      "assign-label": "Assign Label"
+      "assign-label": "Assign Label",
+      "label-text": "Label Text"
     },
     "recipes": {
       "purge-exports": "Purge Exports",
@@ -1277,7 +1284,9 @@
     "tools": {
       "new-tool": "New Tool",
       "edit-tool": "Edit Tool",
-      "tool-data": "Tool Data"
+      "tool-data": "Tool Data",
+      "weight": "Weight",
+      "serving-category": "Serving Category"
     }
   },
   "user-registration": {

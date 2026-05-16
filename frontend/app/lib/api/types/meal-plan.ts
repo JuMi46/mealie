@@ -84,6 +84,7 @@ export interface RecipeSummary {
   image?: unknown;
   recipeServings?: number;
   recipeYieldQuantity?: number;
+  recipeYieldUnit?: IngredientUnit | null;
   recipeYield?: string | null;
   totalTime?: string | null;
   prepTime?: string | null;
@@ -100,6 +101,33 @@ export interface RecipeSummary {
   createdAt?: string | null;
   updatedAt?: string | null;
   lastMade?: string | null;
+}
+export interface IngredientUnit {
+  id: string;
+  name: string;
+  pluralName?: string | null;
+  description?: string;
+  extras?: {
+    [k: string]: unknown;
+  } | null;
+  fraction?: boolean;
+  abbreviation?: string;
+  pluralAbbreviation?: string | null;
+  useAbbreviation?: boolean;
+  aliases?: IngredientUnitAlias[];
+  standardQuantity?: number | null;
+  standardUnit?: string | null;
+  position?: number | null;
+  range?: IngredientUnitRange[] | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+export interface IngredientUnitAlias {
+  name: string;
+}
+export interface IngredientUnitRange {
+  start: number;
+  end: number;
 }
 export interface RecipeCategory {
   id?: string | null;

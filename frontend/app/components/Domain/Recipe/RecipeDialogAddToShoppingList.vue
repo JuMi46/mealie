@@ -280,7 +280,7 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
     recipeData.recipeIngredient = reduceIngredients(recipeData.recipeIngredient);
 
     recipeData.recipeIngredient.forEach((ing) => {
-      ing = applyHouseholdFoodSubstitution(ing, substitutions.value, unitStore.store.value) as RecipeIngredient;
+      ing = applyHouseholdFoodSubstitution(ing, substitutions.value) as RecipeIngredient;
       addToGroups(ing, recipeItem);
     });
   }

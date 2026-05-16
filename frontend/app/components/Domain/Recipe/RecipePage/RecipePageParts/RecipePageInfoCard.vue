@@ -43,6 +43,7 @@
                 >
                   <RecipeYield
                     :yield-quantity="recipe.recipeYieldQuantity"
+                    :yield-unit="recipe.recipeYieldUnit"
                     :yield-text="recipe.recipeYield"
                     :scale="recipeScale"
                     class="mb-4"

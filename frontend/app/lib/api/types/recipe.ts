@@ -252,6 +252,7 @@ export interface Recipe {
   image?: unknown;
   recipeServings?: number;
   recipeYieldQuantity?: number;
+  recipeYieldUnit?: IngredientUnit | null;
   recipeYield?: string | null;
   totalTime?: string | null;
   prepTime?: string | null;
@@ -354,6 +355,7 @@ export interface RecipeSummary {
   image?: unknown;
   recipeServings?: number;
   recipeYieldQuantity?: number;
+  recipeYieldUnit?: IngredientUnit | null;
   recipeYield?: string | null;
   totalTime?: string | null;
   prepTime?: string | null;

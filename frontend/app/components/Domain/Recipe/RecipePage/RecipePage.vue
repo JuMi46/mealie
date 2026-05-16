@@ -545,7 +545,6 @@ const importParseAIMode = ref(paramsParseAI.value === "true");
 const isImportParseAIMode = computed(() => importParseAIMode.value);
 
 onMounted(() => {
-  console.log("recipe", recipe.value);
   if (paramsEdit.value === "true" && isOwnGroup.value) {
     setMode(PageMode.EDIT);
   }

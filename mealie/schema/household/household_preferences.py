@@ -85,6 +85,37 @@ class ReadHouseholdPreferences(HouseholdPreferencesBase):
     id: UUID4
     model_config = ConfigDict(from_attributes=True)
 
+    @staticmethod
+    def _unit_range_start(unit: IngredientUnit) -> float:
+        if not unit.range:
+            return float("-1")
+
+        return max(r.start for r in unit.range)
+
+    @model_validator(mode="after")
+    def sort_units_by_range_start(self):
+        self.primary_volume_units = sorted(
+            self.primary_volume_units,
+            key=self._unit_range_start,
+            reverse=True,
+        )
+        self.primary_mass_units = sorted(
+            self.primary_mass_units,
+            key=self._unit_range_start,
+            reverse=True,
+        )
+        self.secondary_volume_units = sorted(
+            self.secondary_volume_units,
+            key=self._unit_range_start,
+            reverse=True,
+        )
+        self.secondary_mass_units = sorted(
+            self.secondary_mass_units,
+            key=self._unit_range_start,
+            reverse=True,
+        )
+        return self
+
     @classmethod
     def loader_options(cls) -> list[LoaderOption]:
         return [

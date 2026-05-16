@@ -121,7 +121,9 @@ def test_food_extras(
 
 def test_update_food_household_label_override(api_client: TestClient, unique_user: TestUser):
     database = unique_user.repos
-    base_label = database.group_multi_purpose_labels.create({"name": random_string(10), "group_id": unique_user.group_id})
+    base_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
     override_label = database.group_multi_purpose_labels.create(
         {"name": random_string(10), "group_id": unique_user.group_id}
     )
@@ -145,7 +147,9 @@ def test_update_food_household_label_override(api_client: TestClient, unique_use
 
 def test_recipe_get_one_uses_household_food_label_override(api_client: TestClient, unique_user: TestUser):
     database = unique_user.repos
-    base_label = database.group_multi_purpose_labels.create({"name": random_string(10), "group_id": unique_user.group_id})
+    base_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
     override_label = database.group_multi_purpose_labels.create(
         {"name": random_string(10), "group_id": unique_user.group_id}
     )

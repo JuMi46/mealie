@@ -27,15 +27,18 @@
 <script setup lang="ts">
 import DOMPurify from "dompurify";
 import { useScaledAmount } from "~/composables/recipes/use-scaled-amount";
+import type { CreateIngredientUnit, IngredientUnit } from "~/lib/api/types/recipe";
 
 interface Props {
   yieldQuantity?: number;
+  yieldUnit?: IngredientUnit | CreateIngredientUnit | null;
   yieldText?: string;
   scale?: number;
   color?: string;
 }
 const props = withDefaults(defineProps<Props>(), {
   yieldQuantity: 0,
+  yieldUnit: null,
   yieldText: "",
   scale: 1,
   color: "accent custom-transparent",
@@ -54,6 +57,11 @@ const yieldDisplay = computed<string>(() => {
   const { scaledAmountDisplay } = useScaledAmount(props.yieldQuantity, props.scale);
   if (scaledAmountDisplay) {
     components.push(scaledAmountDisplay);
+  }
+
+  const unit = props.yieldUnit?.name;
+  if (unit) {
+    components.push(unit);
   }
 
   const text = props.yieldText;

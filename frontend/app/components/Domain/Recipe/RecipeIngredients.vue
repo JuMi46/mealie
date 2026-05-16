@@ -169,10 +169,8 @@ import RecipeIngredientListItem from "./RecipeIngredientListItem.vue";
 import { applyHouseholdFoodSubstitution, getHouseholdFoodSubstitutions, useIngredientTextParser } from "~/composables/recipes";
 import type { IngredientFood, RecipeIngredient } from "~/lib/api/types/recipe";
 import { reduceIngredients } from "~/composables/recipes/use-recipe";
-import { useUnitStore } from "~/composables/store";
 
 const { household } = useHouseholdSelf();
-const unitStore = useUnitStore();
 const substitutions = computed(() => getHouseholdFoodSubstitutions(household.value));
 
 interface Props {
@@ -268,7 +266,6 @@ const groupedIngredients = computed(() => {
     reducedIngredients[index] = applyHouseholdFoodSubstitution(
       ingredient,
       substitutions.value,
-      unitStore.store.value,
     ) as RecipeIngredient;
   });
   return reducedIngredients;

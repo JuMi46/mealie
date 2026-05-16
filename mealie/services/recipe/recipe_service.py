@@ -188,7 +188,9 @@ class RecipeService(RecipeServiceBase):
         else:
             recipe = self._get_recipe(slug_or_id, "slug")
 
-        food_ids = [ingredient.food.id for ingredient in recipe.recipe_ingredient if ingredient.food and ingredient.food.id]
+        food_ids = [
+            ingredient.food.id for ingredient in recipe.recipe_ingredient if ingredient.food and ingredient.food.id
+        ]
         label_map = get_household_food_label_map(self.repos.session, self.household.id, food_ids)
         for ingredient in recipe.recipe_ingredient:
             if not ingredient.food:

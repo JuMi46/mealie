@@ -55,6 +55,7 @@ export const useGroupRecipeActions = function (
       .replace("${slug}", recipe.slug || "")
       .replace("${servings}", recipeServings.toString())
       .replace("${yieldQuantity}", recipeYieldQuantity.toString())
+      .replace("${yieldUnit}", recipe.recipeYieldUnit?.name || "")
       .replace("${yieldText}", recipe.recipeYield || "");
   };
 

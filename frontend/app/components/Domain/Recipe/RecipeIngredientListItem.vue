@@ -8,11 +8,17 @@
     <template v-if="parsedIng.unit">
       {{ parsedIng.unit }}
     </template>
-    <SafeMarkdown
-      v-if="parsedIng.alternativeMeasurement"
-      class="d-inline"
-      :source="parsedIng.alternativeMeasurement"
-    />
+    <template v-if="parsedIng.secondaryQuantity || parsedIng.secondaryUnit">
+      {{ " /" }}
+      <SafeMarkdown
+        v-if="parsedIng.secondaryQuantity"
+        class="d-inline"
+        :source="parsedIng.secondaryQuantity"
+      /><template v-if="parsedIng.secondaryUnit">
+        {{ parsedIng.secondaryUnit }}
+      </template>
+    </template>
+
     <SafeMarkdown
       v-if="parsedIng.note && !parsedIng.name"
       class="text-bold d-inline"

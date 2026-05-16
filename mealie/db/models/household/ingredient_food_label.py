@@ -24,7 +24,9 @@ class HouseholdIngredientFoodLabel(SqlAlchemyBase, BaseMixins):
     label_id: Mapped[GUID] = mapped_column(GUID, sa.ForeignKey("multi_purpose_labels.id"), nullable=False, index=True)
 
     household: Mapped["Household"] = orm.relationship("Household", back_populates="ingredient_food_label_overrides")
-    food: Mapped["IngredientFoodModel"] = orm.relationship("IngredientFoodModel", back_populates="household_label_overrides")
+    food: Mapped["IngredientFoodModel"] = orm.relationship(
+        "IngredientFoodModel", back_populates="household_label_overrides"
+    )
     label: Mapped["MultiPurposeLabel"] = orm.relationship("MultiPurposeLabel")
 
     @auto_init()

@@ -129,6 +129,7 @@ class RecipeSummary(MealieModel):
     image: Any | None = None
     recipe_servings: float = 0
     recipe_yield_quantity: float = 0
+    recipe_yield_unit: IngredientUnit | None = None
     recipe_yield: str | None = None
 
     total_time: str | None = None
@@ -166,7 +167,9 @@ class RecipeSummary(MealieModel):
 
     @property
     def recipe_yield_display(self) -> str:
-        return f"{self.recipe_yield_quantity} {self.recipe_yield}".strip()
+        unit_name = self.recipe_yield_unit.name if self.recipe_yield_unit else None
+        parts = [self.recipe_yield_quantity, unit_name, self.recipe_yield]
+        return " ".join(str(part) for part in parts if part not in (None, "")).strip()
 
     @classmethod
     def loader_options(cls) -> list[LoaderOption]:
@@ -174,6 +177,7 @@ class RecipeSummary(MealieModel):
             joinedload(RecipeModel.recipe_category),
             joinedload(RecipeModel.tags),
             joinedload(RecipeModel.tools),
+            joinedload(RecipeModel.recipe_yield_unit),
             joinedload(RecipeModel.user).load_only(User.household_id),
         ]
 
@@ -311,6 +315,7 @@ class Recipe(RecipeSummary):
             joinedload(RecipeModel.recipe_category),
             selectinload(RecipeModel.tags),
             selectinload(RecipeModel.tools),
+            joinedload(RecipeModel.recipe_yield_unit),
             selectinload(RecipeModel.recipe_ingredient).joinedload(RecipeIngredientModel.unit),
             selectinload(RecipeModel.recipe_ingredient)
             .joinedload(RecipeIngredientModel.food)
@@ -403,7 +408,7 @@ class RecipeLastMade(BaseModel):
     timestamp: datetime.datetime
 
 
-from mealie.schema.recipe.recipe_ingredient import RecipeIngredient  # noqa: E402
+from mealie.schema.recipe.recipe_ingredient import IngredientUnit, RecipeIngredient  # noqa: E402
 
 RecipeSummary.model_rebuild()
 Recipe.model_rebuild()

@@ -170,7 +170,7 @@ export function useShoppingListPage(listId: string) {
       for (const item of items) {
         if (item.food) {
           const parsedIng = useParsedIngredientText(item as RecipeIngredient, 1, false);
-          printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.alternativeMeasurement)}${parseText(parsedIng.name)}</p>`;
+          printableList += `<p class="ingredient-item">${parseText(parsedIng.quantity)}${parseText(parsedIng.unit)}${parseText(parsedIng.secondaryQuantity)}${parseText(parsedIng.secondaryUnit)}${parseText(parsedIng.name)}</p>`;
         }
         else {
           printableList += `<p class="ingredient-item">${parseNumber(item.quantity)}${parseText(item.note)}</p>`;

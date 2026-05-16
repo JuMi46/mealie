@@ -74,8 +74,6 @@ export default function createTimer(
     state.timerInitialized = true;
     state.timerEnded = false;
 
-    console.log(timerSeconds.value);
-
     const hours = parseFloat(timerHours.value.toString()) > 0 ? parseFloat(timerHours.value.toString()) : 0;
     const minutes = parseFloat(timerMinutes.value.toString()) > 0 ? parseFloat(timerMinutes.value.toString()) : 0;
     const seconds = parseFloat(timerSeconds.value.toString()) > 0 ? parseFloat(timerSeconds.value.toString()) : 0;

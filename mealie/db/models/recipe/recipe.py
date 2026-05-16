@@ -14,7 +14,7 @@ from sqlalchemy.orm.session import object_session
 from mealie.db.models._model_utils.auto_init import auto_init
 from mealie.db.models._model_utils.datetime import NaiveDateTime, get_utc_today
 from mealie.db.models._model_utils.guid import GUID
-from mealie.db.models.recipe.ingredient import RecipeIngredientModel
+from mealie.db.models.recipe.ingredient import IngredientUnitModel, RecipeIngredientModel
 from mealie.db.models.recipe.timer_active import RecipeTimerActiveModel
 
 from .._model_base import BaseMixins, SqlAlchemyBase
@@ -91,6 +91,17 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
     cook_time: Mapped[str | None] = mapped_column(sa.String)
 
     recipe_yield: Mapped[str | None] = mapped_column(sa.String)
+    recipe_yield_unit_id: Mapped[GUID | None] = mapped_column(
+        GUID,
+        sa.ForeignKey("ingredient_units.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    recipe_yield_unit: Mapped[IngredientUnitModel | None] = orm.relationship(
+        "IngredientUnitModel",
+        foreign_keys=[recipe_yield_unit_id],
+        uselist=False,
+    )
     recipe_yield_quantity: Mapped[float] = mapped_column(sa.Float, index=True, default=0)
     recipe_servings: Mapped[float] = mapped_column(sa.Float, index=True, default=0)
 

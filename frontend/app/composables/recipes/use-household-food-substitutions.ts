@@ -11,6 +11,7 @@ type IngredientUnitLike = {
 };
 
 type RecipeLike = {
+  recipeYieldUnit?: IngredientUnitLike | null;
   recipeYield?: string | null;
 };
 
@@ -24,26 +25,6 @@ type RecipeIngredientLike = {
   unit?: IngredientUnitLike | null;
   referencedRecipe?: RecipeLike | null;
 };
-
-function findUnitByName<T extends IngredientUnitLike>(units: T[], unitName: string | null | undefined): T | null {
-  if (!unitName) {
-    return null;
-  }
-
-  const normalizedUnitName = unitName.toLowerCase().trim();
-  return units.find((unit) => {
-    const names = [
-      unit.name,
-      unit.pluralName,
-      unit.abbreviation,
-      unit.pluralAbbreviation,
-    ]
-      .filter((name): name is string => Boolean(name))
-      .map(name => name.toLowerCase().trim());
-
-    return names.includes(normalizedUnitName);
-  }) || null;
-}
 
 export function getHouseholdFoodSubstitutions(
   household: HouseholdInDB | null | undefined,
@@ -59,7 +40,6 @@ export function getHouseholdFoodSubstitutions(
 export function applyHouseholdFoodSubstitution<T extends RecipeIngredientLike>(
   ingredient: T,
   substitutions: ReadHouseholdFoodSubstitution[],
-  units: IngredientUnitLike[] = [],
 ): T {
   if (!ingredient.food?.id || !substitutions.length) {
     return ingredient;
@@ -87,7 +67,7 @@ export function applyHouseholdFoodSubstitution<T extends RecipeIngredientLike>(
   }
 
   if (substitution.substituteRecipe) {
-    const substituteYieldUnit = findUnitByName(units, substitution.substituteRecipe.recipeYield);
+    const substituteYieldUnit = substitution.substituteRecipe.recipeYieldUnit;
     const originalUnit = substitutedIngredient.unit;
 
     if (

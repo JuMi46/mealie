@@ -33,8 +33,4 @@ def get_household_food_label_map(
     )
     rows = session.execute(stmt).unique().scalars().all()
 
-    return {
-        row.food_id: MultiPurposeLabelSummary.model_validate(row.label)
-        for row in rows
-        if row.label is not None
-    }
+    return {row.food_id: MultiPurposeLabelSummary.model_validate(row.label) for row in rows if row.label is not None}

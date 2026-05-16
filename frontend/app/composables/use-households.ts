@@ -15,7 +15,7 @@ function serializeUnitIds(units?: ({ id: string } | string)[] | null): string[] 
     return [];
   }
 
-  return units.flatMap(unit => {
+  return units.flatMap((unit) => {
     if (typeof unit === "string") return [unit];
     return unit.id ? [unit.id] : [];
   });

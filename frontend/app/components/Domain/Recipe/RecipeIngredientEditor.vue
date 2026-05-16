@@ -160,7 +160,7 @@
       </v-col>
       <!-- Recipe Input -->
       <v-col
-        v-if="state.isRecipe && model.referencedRecipe?.recipeYield"
+        v-if="state.isRecipe && (model.referencedRecipe?.recipeYieldUnit || model.referencedRecipe?.recipeYield)"
         m="12"
         md="2"
         cols="12"
@@ -169,14 +169,14 @@
         <!-- v-field--variant-solo -->
         <!-- class="mx-1 py-0 v-field v-field--active v-field--appended v-field--center-affix v-field--dirty v-field--no-label v-field--variant-solo" -->
         <div class="mx-1 py-0 v-field v-field--variant-solo">
-          {{ parseYieldUnit(model.referencedRecipe?.recipeYield) }}
+          {{ model.referencedRecipe?.recipeYieldUnit?.name || model.referencedRecipe?.recipeYield || "" }}
         </div>
       </v-col>
 
       <v-col
         v-if="state.isRecipe"
         m="12"
-        :md="model.referencedRecipe?.recipeYield ? 4 : 6"
+        :md="(model.referencedRecipe?.recipeYieldUnit || model.referencedRecipe?.recipeYield) ? 4 : 6"
         cols="12"
         class=""
       >
@@ -342,6 +342,13 @@ const contextMenuOptions = computed(() => {
 const btns = computed(() => {
   const out = [
     {
+      icon: $globals.icons.delete,
+      text: i18n.t("general.delete"),
+      event: "delete",
+      children: [],
+      disabled: props.deleteDisabled,
+    },
+    {
       icon: $globals.icons.dotsVertical,
       text: i18n.t("general.menu"),
       event: "open",
@@ -349,15 +356,6 @@ const btns = computed(() => {
     },
   ];
 
-  // If delete event is being listened for, show delete button
-  // $attrs is not available in <script setup>, so always show if parent listens
-  out.unshift({
-    icon: $globals.icons.delete,
-    text: i18n.t("general.delete"),
-    event: "delete",
-    children: undefined,
-    disabled: props.deleteDisabled,
-  });
   return out;
 });
 
@@ -454,11 +452,6 @@ function convertUnit() {
   // TODO: convert to desired unit based on setting
   model.value.quantity = Number(convertToGram(model.value.quantity, model.value.unit));
   model.value.unit = unitStore.store.value.find(unit => unit.name === UnitNames.gram);
-}
-
-function parseYieldUnit(unitName: string) {
-  const unit = unitStore.store.value.find(unit => unit.abbreviation === unitName);
-  return unit ? unit.name : unitName;
 }
 
 const { showTitle } = toRefs(state);
