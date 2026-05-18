@@ -38,7 +38,7 @@ export const LOCALES = [
   {
     name: "Svenska (Swedish)",
     value: "sv-SE",
-    progress: 73,
+    progress: 75,
     dir: "ltr",
     pluralFoodHandling: "always",
   },
@@ -101,14 +101,14 @@ export const LOCALES = [
   {
     name: "Norsk (Norwegian)",
     value: "no-NO",
-    progress: 59,
+    progress: 60,
     dir: "ltr",
     pluralFoodHandling: "always",
   },
   {
     name: "Nederlands (Dutch)",
     value: "nl-NL",
-    progress: 97,
+    progress: 98,
     dir: "ltr",
     pluralFoodHandling: "always",
   },
@@ -143,14 +143,14 @@ export const LOCALES = [
   {
     name: "Italiano (Italian)",
     value: "it-IT",
-    progress: 72,
+    progress: 73,
     dir: "ltr",
     pluralFoodHandling: "always",
   },
   {
     name: "Íslenska (Icelandic)",
     value: "is-IS",
-    progress: 56,
+    progress: 57,
     dir: "ltr",
     pluralFoodHandling: "always",
   },
@@ -234,7 +234,7 @@ export const LOCALES = [
   {
     name: "British English",
     value: "en-GB",
-    progress: 35,
+    progress: 36,
     dir: "ltr",
     pluralFoodHandling: "without-unit",
   },

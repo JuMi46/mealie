@@ -6,10 +6,12 @@ import { UnitNames } from "~/composables/use-unit";
 
 const store: Ref<IngredientUnit[]> = ref([]);
 const loading = ref(false);
+const initialized = ref(false);
 
 export function resetUnitStore() {
   store.value = [];
   loading.value = false;
+  initialized.value = false;
   milliliterUnit.value = null;
   gramUnit.value = null;
 }
@@ -26,7 +28,7 @@ export const useUnitData = function () {
 
 export const useUnitStore = function (i18n?: Composer) {
   const api = useUserApi(i18n);
-  return useStore<IngredientUnit>("unit", store, loading, api.units, {
+  return useStore<IngredientUnit>("unit", store, loading, initialized, api.units, {
     orderBy: "position",
     orderByNullPosition: "last",
     orderDirection: "asc",

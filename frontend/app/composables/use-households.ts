@@ -61,8 +61,13 @@ function serializeHouseholdPreferences(preferences: ReadHouseholdPreferences): U
 
 export const useHouseholdSelf = function () {
   const api = useUserApi();
+  const auth = useMealieAuth();
 
   async function refreshHouseholdSelf() {
+    if (!auth.user.value) {
+      householdSelfRef.value = null;
+      return;
+    }
     loading.value = true;
     const { data } = await api.households.getCurrentUserHousehold();
     householdSelfRef.value = data;

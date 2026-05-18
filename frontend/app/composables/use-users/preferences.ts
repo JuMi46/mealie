@@ -80,6 +80,10 @@ export interface UserActivityPreferences {
   defaultActivity: ActivityKey;
 }
 
+export interface UserExperiencePreferences {
+  lockScreen: boolean;
+}
+
 export function useUserMealPlanPreferences(): Ref<UserMealPlanPreferences> {
   const fromStorage = useLocalStorage(
     "meal-planner-preferences",
@@ -88,9 +92,7 @@ export function useUserMealPlanPreferences(): Ref<UserMealPlanPreferences> {
       numberOfDays: 7,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserMealPlanPreferences>;
+  );
 
   return fromStorage;
 }
@@ -99,15 +101,14 @@ export function useUserPrintPreferences(): Ref<UserPrintPreferences> {
   const fromStorage = useLocalStorage(
     "recipe-print-preferences",
     {
-      imagePosition: "left",
+      imagePosition: "left" as ImagePosition,
       showDescription: true,
       showNotes: true,
+      showNutrition: false,
       expandChildRecipes: false,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserPrintPreferences>;
+  );
 
   return fromStorage;
 }
@@ -125,9 +126,7 @@ export function useUserSortPreferences(): Ref<UserRecipePreferences> {
       useMobileCards: false,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserRecipePreferences>;
+  );
 
   return fromStorage;
 }
@@ -155,9 +154,7 @@ export function useUserActivityPreferences(): Ref<UserActivityPreferences> {
       defaultActivity: ActivityKey.RECIPES,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as Ref<UserActivityPreferences>;
+  );
 
   return fromStorage;
 }
@@ -169,9 +166,7 @@ export function useUserSearchQuerySession(): Ref<UserSearchQuery> {
       recipe: "",
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserSearchQuery>;
+  );
 
   return fromStorage;
 }
@@ -183,9 +178,7 @@ export function useShoppingListPreferences(): Ref<UserShoppingListPreferences> {
       viewAllLists: false,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserShoppingListPreferences>;
+  );
 
   return fromStorage;
 }
@@ -198,9 +191,7 @@ export function useTimelinePreferences(): Ref<UserTimelinePreferences> {
       types: ["info", "system", "comment"] as TimelineEventType[],
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserTimelinePreferences>;
+  );
 
   return fromStorage;
 }
@@ -209,12 +200,10 @@ export function useParsingPreferences(): Ref<UserParsingPreferences> {
   const fromStorage = useLocalStorage(
     "parsing-preferences",
     {
-      parser: "nlp",
+      parser: "nlp" as RegisteredParser,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserParsingPreferences>;
+  );
 
   return fromStorage;
 }
@@ -226,9 +215,7 @@ export function useCookbookPreferences(): Ref<UserCookbooksPreferences> {
       hideOtherHouseholds: false,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserCookbooksPreferences>;
+  );
 
   return fromStorage;
 }
@@ -247,9 +234,7 @@ export function useRecipeFinderPreferences(): Ref<UserRecipeFinderPreferences> {
       includeToolsOnHand: true,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserRecipeFinderPreferences>;
+  );
 
   return fromStorage;
 }
@@ -265,9 +250,19 @@ export function useRecipeCreatePreferences(): Ref<UserRecipeCreatePreferences> {
       parseRecipeWithAI: false,
     },
     { mergeDefaults: true },
-    // we cast to a Ref because by default it will return an optional type ref
-    // but since we pass defaults we know all properties are set.
-  ) as unknown as Ref<UserRecipeCreatePreferences>;
+  );
+
+  return fromStorage;
+}
+
+export function useUserExperiencePreferences(): Ref<UserExperiencePreferences> {
+  const fromStorage = useLocalStorage(
+    "user-experience-preferences",
+    {
+      lockScreen: true,
+    },
+    { mergeDefaults: true },
+  );
 
   return fromStorage;
 }
