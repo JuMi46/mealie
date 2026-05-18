@@ -16,12 +16,13 @@ if TYPE_CHECKING:
 
 class MultiPurposeLabel(SqlAlchemyBase, BaseMixins):
     __tablename__ = "multi_purpose_labels"
-    __table_args__ = (UniqueConstraint("name", "group_id", name="multi_purpose_labels_name_group_id_key"),)
+    __table_args__ = (
+        UniqueConstraint("name", "place", "group_id", name="multi_purpose_labels_name_place_group_id_key"),
+    )
 
     id: Mapped[GUID] = mapped_column(GUID, default=GUID.generate, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     color: Mapped[str] = mapped_column(String(10), nullable=False, default="")
-    label_text: Mapped[str | None] = mapped_column(String)
     position: Mapped[int | None] = mapped_column(Integer)
     place: Mapped[str | None] = mapped_column(String)
 

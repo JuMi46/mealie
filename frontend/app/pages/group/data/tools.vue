@@ -76,6 +76,7 @@ const tableHeaders: TableHeaders[] = [
     text: i18n.t("data-pages.tools.serving-category"),
     value: "servingCategory",
     show: false,
+    sortable: true,
   },
   {
     text: i18n.t("tool.on-hand"),

@@ -1,7 +1,7 @@
 """add recipe yield unit
 
 Revision ID: f8a2b4c6d8e0
-Revises: d1f7a9c2b4e6
+Revises: c7427796f7b6
 Create Date: 2026-05-16 10:30:00.000000
 
 """
@@ -13,7 +13,7 @@ import mealie.db.migration_types
 
 # revision identifiers, used by Alembic.
 revision = "f8a2b4c6d8e0"
-down_revision: str | None = "d1f7a9c2b4e6"
+down_revision: str | None = "c7427796f7b6"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
 

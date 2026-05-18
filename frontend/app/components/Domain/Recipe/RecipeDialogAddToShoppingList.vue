@@ -152,7 +152,7 @@ export interface ShoppingListGroupedIngredient {
 
 export interface ShoppingListGroupedIngredientLabel {
   label: string;
-  labelSortOrder: number | null | undefined;
+  labelPosition: number | null | undefined;
   ingredients: ShoppingListGroupedIngredient[];
 }
 
@@ -349,16 +349,16 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
     });
 
     let label: string;
-    let labelSortOrder: number;
+    let labelPosition: number;
     const labelObject = (ing.ingredientSum.food as IngredientFood)?.label;
 
-    if (labelObject?.sortOrder) {
-      label = labelObject.labelText || labelObject.name;
-      labelSortOrder = labelObject.sortOrder;
+    if (labelObject?.position) {
+      label = labelObject.name;
+      labelPosition = labelObject.position;
     }
     else {
       label = "Mixed";
-      labelSortOrder = 999;
+      labelPosition = 999;
     }
 
     if (ing.checked) {
@@ -366,14 +366,14 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
         groupedIngredientLabelMap.get(label)?.ingredients.push(ing);
       }
       else {
-        groupedIngredientLabelMap.set(label, { label, labelSortOrder, ingredients: [ing] });
+        groupedIngredientLabelMap.set(label, { label, labelPosition, ingredients: [ing] });
       }
     }
     else if (groupedIngredientLabelOnHandMap.has(label)) {
       groupedIngredientLabelOnHandMap.get(label)?.ingredients.push(ing);
     }
     else {
-      groupedIngredientLabelOnHandMap.set(label, { label, labelSortOrder, ingredients: [ing] });
+      groupedIngredientLabelOnHandMap.set(label, { label, labelPosition, ingredients: [ing] });
     }
   });
 
@@ -381,10 +381,10 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
   moveToMixed(groupedIngredientLabelOnHandMap);
 
   groupedIngredients.value[0].labels = Array.from(groupedIngredientLabelMap.values()).sort((a, b) => {
-    return (a.labelSortOrder || a.label) < (b.labelSortOrder || b.label) ? -1 : 1;
+    return (a.labelPosition || a.label) < (b.labelPosition || b.label) ? -1 : 1;
   });
   groupedIngredients.value[1].labels = Array.from(groupedIngredientLabelOnHandMap.values()).sort((a, b) => {
-    return (a.labelSortOrder || a.label) < (b.labelSortOrder || b.label) ? -1 : 1;
+    return (a.labelPosition || a.label) < (b.labelPosition || b.label) ? -1 : 1;
   });
 
   function moveToMixed(map: Map<string, ShoppingListGroupedIngredientLabel>) {
@@ -412,7 +412,7 @@ async function consolidateRecipesIntoGroups(recipes: RecipeWithScale[]) {
         }
       }
       else {
-        map.set(mixedKey, { label: "Mixed", labelSortOrder: 999, ingredients: mixed });
+        map.set(mixedKey, { label: "Mixed", labelPosition: 999, ingredients: mixed });
       }
     }
   }

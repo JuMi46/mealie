@@ -49,7 +49,7 @@
       >
         <h3
           v-if="sectionName"
-          class="mt-2"
+          class="mt-4 mb-0"
         >
           {{ sectionName }}
         </h3>
@@ -60,7 +60,7 @@
         >
           <h3
             v-if="placeName && sortIngredientsByLabel"
-            class="mt-2"
+            class="mt-4 mb-0"
           >
             {{ placeName }}
           </h3>
@@ -322,10 +322,10 @@ function setReferencedIngredientChecked(
 }
 
 function sortSectionIngredientsByPlace(ingredientsByPlace: Map<string, RecipeIngredient[]>) {
-  for (const place in ingredientsByPlace) {
-    ingredientsByPlace[place].sort((a: RecipeIngredient, b: RecipeIngredient) => {
-      let aSortOrder = 100;
-      let bSortOrder = 100;
+  for (const [place] of ingredientsByPlace) {
+    ingredientsByPlace.get(place)?.sort((a: RecipeIngredient, b: RecipeIngredient) => {
+      let aPosition = 100;
+      let bPosition = 100;
 
       let aFood = a.food as IngredientFood;
       if (a.referencedRecipe?.recipeIngredient) {
@@ -335,7 +335,7 @@ function sortSectionIngredientsByPlace(ingredientsByPlace: Map<string, RecipeIng
         }
       }
       if (aFood?.label?.position) {
-        aSortOrder = aFood.label.position;
+        aPosition = aFood.label.position;
       }
 
       let bFood = b.food as IngredientFood;
@@ -346,9 +346,9 @@ function sortSectionIngredientsByPlace(ingredientsByPlace: Map<string, RecipeIng
         }
       }
       if (bFood?.label?.position) {
-        bSortOrder = bFood.label.position;
+        bPosition = bFood.label.position;
       }
-      return aSortOrder - bSortOrder;
+      return aPosition - bPosition;
     });
   }
 }

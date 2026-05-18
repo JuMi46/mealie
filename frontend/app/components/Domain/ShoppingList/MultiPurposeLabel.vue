@@ -7,7 +7,7 @@
     :text-color="textColor"
   >
     <span style="max-width: 100%; overflow: hidden; text-overflow: ellipsis;">
-      {{ parseLabelName(label, true) }}
+      {{ parseLabelName(label, true, $t("shopping-list.no-label")) }}
     </span>
   </v-chip>
 </template>

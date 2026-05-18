@@ -7,8 +7,13 @@ from mealie.routes._base.base_controllers import BaseUserController
 from mealie.routes._base.controller import controller
 from mealie.routes._base.mixins import HttpRepo
 from mealie.schema import mapper
-from mealie.schema.recipe.recipe import RecipeTool, RecipeToolPagination
-from mealie.schema.recipe.recipe_tool import RecipeToolCreate, RecipeToolResponse, RecipeToolSave
+from mealie.schema.recipe.recipe_tool import (
+    RecipeToolCreate,
+    RecipeToolOut,
+    RecipeToolPagination,
+    RecipeToolResponse,
+    RecipeToolSave,
+)
 from mealie.schema.response.pagination import PaginationQuery
 
 router = APIRouter(prefix="/tools", tags=["Organizer: Tools"])
@@ -22,34 +27,34 @@ class RecipeToolController(BaseUserController):
 
     @property
     def mixins(self) -> HttpRepo:
-        return HttpRepo[RecipeToolCreate, RecipeTool, RecipeToolCreate](self.repo, self.logger)
+        return HttpRepo[RecipeToolCreate, RecipeToolOut, RecipeToolCreate](self.repo, self.logger)
 
     @router.get("", response_model=RecipeToolPagination)
     def get_all(self, q: PaginationQuery = Depends(PaginationQuery), search: str | None = None):
         response = self.repo.page_all(
             pagination=q,
-            override=RecipeTool,
+            override=RecipeToolOut,
             search=search,
         )
 
         response.set_pagination_guides(router.url_path_for("get_all"), q.model_dump())
         return response
 
-    @router.post("", response_model=RecipeTool, status_code=201)
+    @router.post("", response_model=RecipeToolOut, status_code=201)
     def create_one(self, data: RecipeToolCreate):
         save_data = mapper.cast(data, RecipeToolSave, group_id=self.group_id)
         return self.mixins.create_one(save_data)
 
-    @router.get("/{item_id}", response_model=RecipeTool)
+    @router.get("/{item_id}", response_model=RecipeToolOut)
     def get_one(self, item_id: UUID4):
         return self.mixins.get_one(item_id)
 
-    @router.put("/{item_id}", response_model=RecipeTool)
+    @router.put("/{item_id}", response_model=RecipeToolOut)
     def update_one(self, item_id: UUID4, data: RecipeToolCreate):
         data = mapper.cast(data, RecipeToolSave, group_id=self.group_id)
         return self.mixins.update_one(data, item_id)
 
-    @router.delete("/{item_id}", response_model=RecipeTool)
+    @router.delete("/{item_id}", response_model=RecipeToolOut)
     def delete_one(self, item_id: UUID4):
         return self.mixins.delete_one(item_id)  # type: ignore
 

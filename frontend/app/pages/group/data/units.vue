@@ -290,7 +290,7 @@ const formItems = computed<AutoFormItems>(() => [
     numberInputConfig: {
       min: 0,
       max: undefined,
-      precision: undefined,
+      precision: null,
       controlVariant: "hidden",
     },
   },

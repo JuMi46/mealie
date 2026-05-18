@@ -6,7 +6,7 @@
           {{ $globals.icons.tags }}
         </v-icon>
       </span>
-      {{ parseLabelName(modelValue.label) }}
+      {{ parseLabelName(modelValue.label, false, $t("shopping-list.no-label")) }}
     </div>
     <div
       style="min-width: 72px"

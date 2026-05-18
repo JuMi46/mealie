@@ -90,7 +90,7 @@ const servingCount = ref(7);
 
 const myTools = computed(() => toolStore.store.value
   .filter(tool => tool.householdsWithTool?.includes(userHousehold.value) && tool.servingCategory)
-  .toSorted((a, b) => { return (a.sortOrder || 100) - (b.sortOrder || 100); }));
+  .toSorted((a, b) => { return (a.position || 100) - (b.position || 100); }));
 
 const servingCategories = computed(() => [...new Set(myTools.value.map(tool => tool.servingCategory))].sort());
 

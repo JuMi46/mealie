@@ -119,21 +119,15 @@ const tableHeaders: TableHeaders[] = [
     sortable: true,
   },
   {
-    text: i18n.t("data-pages.labels.label-text"),
-    value: "labelText",
-    show: false,
+    text: i18n.t("general.place"),
+    value: "place",
+    show: true,
     sortable: true,
   },
   {
     text: i18n.t("general.position"),
     value: "position",
     show: false,
-    sortable: true,
-  },
-  {
-    text: i18n.t("general.place"),
-    value: "place",
-    show: true,
     sortable: true,
   },
 ];
@@ -153,11 +147,6 @@ const formItems: AutoFormItems = [
     label: i18n.t("general.color"),
     varName: "color",
     type: fieldTypes.COLOR,
-  },
-  {
-    label: i18n.t("data-pages.labels.label-text"),
-    varName: "labelText",
-    type: fieldTypes.TEXT,
   },
   {
     label: i18n.t("general.position"),
@@ -184,7 +173,6 @@ const createForm = reactive({
   data: {
     name: "",
     color: "",
-    labelText: "",
     position: null,
     place: "",
   } as MultiPurposeLabelSummary,
@@ -195,7 +183,6 @@ async function handleCreate(createFormData: MultiPurposeLabelSummary) {
   createForm.data = {
     name: "",
     color: "#7417BE",
-    labelText: "",
     position: null,
     place: "",
   } as MultiPurposeLabelSummary;

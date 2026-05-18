@@ -6,6 +6,8 @@ import { parseLabelName } from "~/composables/use-extend-object";
  * Composable for managing shopping list label state and operations
  */
 export function useShoppingListLabels(shoppingList: Ref<ShoppingListOut | null>) {
+  const { t } = useI18n();
+  const noLabelText = t("shopping-list.no-label");
   const labelOpenState = ref<{ [key: string]: boolean }>({});
   const [showChecked, toggleShowChecked] = useToggle(false);
 
@@ -16,7 +18,7 @@ export function useShoppingListLabels(shoppingList: Ref<ShoppingListOut | null>)
     let hasChanges = false;
 
     for (const item of shoppingList.value.listItems) {
-      const labelName = parseLabelName(item.label);
+      const labelName = parseLabelName(item.label, false, noLabelText);
       if (!existingLabels.has(labelName) && !(labelName in labelOpenState.value)) {
         labelOpenState.value[labelName] = true;
         hasChanges = true;
@@ -31,7 +33,7 @@ export function useShoppingListLabels(shoppingList: Ref<ShoppingListOut | null>)
   const labelNames = computed(() => {
     return new Set(
       shoppingList.value?.listItems
-        ?.map(item => parseLabelName(item.label))
+        ?.map(item => parseLabelName(item.label, false, noLabelText))
         .filter(Boolean) ?? [],
     );
   });
@@ -40,7 +42,7 @@ export function useShoppingListLabels(shoppingList: Ref<ShoppingListOut | null>)
     const map: Record<string, string | undefined> = {};
     shoppingList.value?.listItems?.forEach((item) => {
       if (!item.label) return;
-      const labelName = parseLabelName(item.label);
+      const labelName = parseLabelName(item.label, false, noLabelText);
       map[labelName] = item.label.color;
     });
     return map;
@@ -62,7 +64,7 @@ export function useShoppingListLabels(shoppingList: Ref<ShoppingListOut | null>)
     shoppingList.value?.listItems?.forEach((item) => {
       if (item.labelId && item.label) {
         labels.push({
-          name: parseLabelName(item.label),
+          name: parseLabelName(item.label, false, noLabelText),
           id: item.labelId,
         });
       }

@@ -91,7 +91,7 @@ export function useShoppingListSorting() {
       }
 
       if (item.labelId) {
-        const labelName = parseLabelName(item.label);
+        const labelName = parseLabelName(item.label, false, noLabelText);
         if (item.label && labelName in items) {
           items[labelName].push(item);
         }
@@ -109,7 +109,7 @@ export function useShoppingListSorting() {
     }
 
     // sort the map by label order
-    const orderedLabelNames = shoppingList?.labelSettings?.map(labelSetting => parseLabelName(labelSetting.label));
+    const orderedLabelNames = shoppingList?.labelSettings?.map(labelSetting => parseLabelName(labelSetting.label, false, noLabelText));
     if (!orderedLabelNames) {
       return items;
     }

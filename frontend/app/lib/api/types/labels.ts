@@ -8,14 +8,12 @@
 export interface MultiPurposeLabelCreate {
   name: string;
   color?: string;
-  labelText?: string | null;
   position?: number | null;
   place?: string | null;
 }
 export interface MultiPurposeLabelOut {
   name: string;
   color?: string;
-  labelText?: string | null;
   position?: number | null;
   place?: string | null;
   groupId: string;
@@ -24,7 +22,6 @@ export interface MultiPurposeLabelOut {
 export interface MultiPurposeLabelSave {
   name: string;
   color?: string;
-  labelText?: string | null;
   position?: number | null;
   place?: string | null;
   groupId: string;
@@ -32,7 +29,6 @@ export interface MultiPurposeLabelSave {
 export interface MultiPurposeLabelSummary {
   name: string;
   color?: string;
-  labelText?: string | null;
   position?: number | null;
   place?: string | null;
   groupId: string;
@@ -41,7 +37,6 @@ export interface MultiPurposeLabelSummary {
 export interface MultiPurposeLabelUpdate {
   name: string;
   color?: string;
-  labelText?: string | null;
   position?: number | null;
   place?: string | null;
   groupId: string;

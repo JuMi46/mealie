@@ -414,7 +414,7 @@ const substituteOptions = computed<SubstituteOption[]>(() => {
 // ============================================================
 // Labels
 const { store: allLabels } = useLabelStore();
-const labelOptions = computed(() => allLabels.value.map(label => ({ text: parseLabelName(label, true), value: label.id })) || []);
+const labelOptions = computed(() => allLabels.value.map(label => ({ text: parseLabelName(label, true, i18n.t("shopping-list.no-label")), value: label.id })) || []);
 
 // ============================================================
 // Form items (shared)

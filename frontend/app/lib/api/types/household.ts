@@ -309,7 +309,6 @@ export interface IngredientFoodAlias {
 export interface MultiPurposeLabelSummary {
   name: string;
   color?: string;
-  labelText?: string | null;
   position?: number | null;
   place?: string | null;
   groupId: string;

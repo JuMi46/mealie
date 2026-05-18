@@ -4,6 +4,7 @@ from sqlalchemy.orm.interfaces import LoaderOption
 
 from mealie.db.models.recipe import RecipeModel, Tool
 from mealie.schema._mealie import MealieModel
+from mealie.schema.response.pagination import PaginationBase
 
 
 class RecipeToolCreate(MealieModel):
@@ -55,6 +56,10 @@ class RecipeToolResponse(RecipeToolOut):
             selectinload(Tool.recipes).joinedload(RecipeModel.tags),
             selectinload(Tool.recipes).joinedload(RecipeModel.tools),
         ]
+
+
+class RecipeToolPagination(PaginationBase):
+    items: list[RecipeToolOut]
 
 
 from .recipe import RecipeSummary  # noqa: E402
