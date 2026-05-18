@@ -10,7 +10,6 @@ const loading = ref(false);
 export function resetUnitStore() {
   store.value = [];
   loading.value = false;
-  unitsWithRange.value = [];
   milliliterUnit.value = null;
   gramUnit.value = null;
 }
@@ -29,16 +28,15 @@ export const useUnitStore = function (i18n?: Composer) {
   const api = useUserApi(i18n);
   return useStore<IngredientUnit>("unit", store, loading, api.units, {
     orderBy: "position",
+    orderByNullPosition: "last",
     orderDirection: "asc",
   });
 };
 
-export const unitsWithRange: Ref<IngredientUnit[]> = ref([]);
 export const milliliterUnit: Ref<IngredientUnit | null> = ref(null);
 export const gramUnit: Ref<IngredientUnit | null> = ref(null);
 
 watch(store, (units) => {
-  unitsWithRange.value = units.filter(unit => !!unit.range);
   milliliterUnit.value = units.find(unit => unit.standardUnit === UnitNames.milliliter && unit.standardQuantity === 1) || null;
   gramUnit.value = units.find(unit => unit.standardUnit === UnitNames.gram && unit.standardQuantity === 1) || null;
 });

@@ -50,7 +50,7 @@ export function applyHouseholdFoodSubstitution<T extends RecipeIngredientLike>(
     return ingredient;
   }
   const ratio = substitution.ratio && substitution.ratio > 0 ? substitution.ratio : 1;
-  const substitutedIngredient = structuredClone(ingredient) as T;
+  const substitutedIngredient = JSON.parse(JSON.stringify(ingredient)) as T;
 
   if (typeof substitutedIngredient.quantity === "number") {
     substitutedIngredient.quantity *= ratio;

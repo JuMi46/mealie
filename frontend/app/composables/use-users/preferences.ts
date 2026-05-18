@@ -34,6 +34,12 @@ export interface UserRecipePreferences {
   useMobileCards: boolean;
 }
 
+export interface UserRecipeIngredientPreferences {
+  sortByLabel: boolean;
+  sortBySection: boolean;
+  showIngredientCheckboxesInRecipe: boolean;
+}
+
 export interface UserShoppingListPreferences {
   viewAllLists: boolean;
 }
@@ -122,6 +128,22 @@ export function useUserSortPreferences(): Ref<UserRecipePreferences> {
     // we cast to a Ref because by default it will return an optional type ref
     // but since we pass defaults we know all properties are set.
   ) as unknown as Ref<UserRecipePreferences>;
+
+  return fromStorage;
+}
+
+export function useUserRecipeIngredientPreferences(): Ref<UserRecipeIngredientPreferences> {
+  const fromStorage = useLocalStorage(
+    "recipe-ingredient-preferences",
+    {
+      sortByLabel: true,
+      sortBySection: true,
+      showIngredientCheckboxesInRecipe: true,
+    },
+    { mergeDefaults: true },
+    // we cast to a Ref because by default it will return an optional type ref
+    // but since we pass defaults we know all properties are set.
+  ) as unknown as Ref<UserRecipeIngredientPreferences>;
 
   return fromStorage;
 }

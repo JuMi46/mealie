@@ -205,6 +205,12 @@
             @change="updateUser"
           />
           <v-checkbox
+            v-model="ingredientPreferences.showIngredientCheckboxesInRecipe"
+            hide-details
+            :label="$t('recipe.show-ingredient-checkboxes-in-recipe')"
+            color="primary"
+          />
+          <v-checkbox
             v-model="userCopy.advanced"
             hide-details
             :label="$t('profile.show-advanced-description')"
@@ -241,7 +247,7 @@ import { useUserApi } from "~/composables/api";
 import UserAvatar from "~/components/Domain/User/UserAvatar.vue";
 import UserPasswordStrength from "~/components/Domain/User/UserPasswordStrength.vue";
 import { validators } from "~/composables/use-validators";
-import { useUserActivityPreferences } from "~/composables/use-users/preferences";
+import { useUserActivityPreferences, useUserRecipeIngredientPreferences } from "~/composables/use-users/preferences";
 import useDefaultActivity from "~/composables/use-default-activity";
 import { ActivityKey } from "~/lib/api/types/activity";
 import type { UserBase } from "~/lib/api/types/user";
@@ -256,6 +262,7 @@ useSeoMeta({
 });
 
 const activityPreferences = useUserActivityPreferences();
+const ingredientPreferences = useUserRecipeIngredientPreferences();
 const activityOptions = getDefaultActivityLabels(i18n);
 const selectedDefaultActivity = ref(getActivityLabel(i18n, activityPreferences.value.defaultActivity));
 watch(selectedDefaultActivity, () => {
