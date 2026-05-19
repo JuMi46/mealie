@@ -1189,6 +1189,11 @@
       "substitute-type-food": "Food:",
       "substitute-type-recipe": "Recipe:",
       "density": "Density",
+      "calculate-density": "Calculate Density",
+      "volume-quantity": "Volume Quantity",
+      "volume-unit": "Volume Unit",
+      "mass-quantity": "Mass Quantity",
+      "mass-unit": "Mass Unit",
       "tip": "Tip"
     },
     "units": {

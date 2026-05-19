@@ -42,6 +42,7 @@
         :items="editForm.items"
         class="py-2"
       />
+      <slot name="edit-dialog-bottom" />
     </div>
     <template #custom-card-action>
       <slot name="edit-dialog-custom-action" />

@@ -224,6 +224,81 @@
           persistent-hint
         />
       </template>
+
+      <template #edit-dialog-bottom>
+        <template v-if="showDensityCalculator">
+          <div class="d-flex gap-2 px-2">
+            <v-text-field
+              v-model.number="densityCalcVolumeQty"
+              type="number"
+              variant="underlined"
+              density="comfortable"
+              :label="$t('data-pages.foods.volume-quantity')"
+              :min="0.0001"
+              step="any"
+              style="flex: 1"
+            />
+            <v-autocomplete
+              v-model="densityCalcVolumeUnit"
+              return-object
+              :items="volumeUnits"
+              :custom-filter="normalizeFilter"
+              item-title="name"
+              :label="$t('data-pages.foods.volume-unit')"
+              variant="solo-filled"
+              flat
+              density="comfortable"
+              style="flex: 2"
+            />
+          </div>
+          <div class="d-flex gap-2 px-2">
+            <v-text-field
+              v-model.number="densityCalcMassQty"
+              type="number"
+              variant="underlined"
+              density="comfortable"
+              :label="$t('data-pages.foods.mass-quantity')"
+              :min="0.0001"
+              step="any"
+              style="flex: 1"
+            />
+            <v-autocomplete
+              v-model="densityCalcMassUnit"
+              return-object
+              :items="massUnits"
+              :custom-filter="normalizeFilter"
+              item-title="name"
+              :label="$t('data-pages.foods.mass-unit')"
+              variant="solo-filled"
+              flat
+              density="comfortable"
+              style="flex: 2"
+            />
+          </div>
+        </template>
+        <div class="d-flex align-center gap-2 px-2 pb-2">
+          <v-text-field
+            v-model.number="editForm.data.density"
+            type="number"
+            variant="underlined"
+            density="comfortable"
+            :label="$t('data-pages.foods.density')"
+            :min="0"
+            step="any"
+            style="flex: 1"
+          />
+          <BaseButton
+            color="secondary"
+            class="mb-2"
+            @click="showDensityCalculator = !showDensityCalculator"
+          >
+            <template #icon>
+              {{ $globals.icons.testTube }}
+            </template>
+            {{ $t('data-pages.foods.calculate-density') }}
+          </BaseButton>
+        </div>
+      </template>
     </GroupDataPage>
   </div>
 </template>
@@ -234,11 +309,12 @@ import RecipeDataAliasManagerDialog from "~/components/Domain/Recipe/RecipeDataA
 import { validators } from "~/composables/use-validators";
 import { useUserApi } from "~/composables/api";
 import type { UpdateHouseholdFoodSubstitution } from "~/lib/api/types/household";
-import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias, RecipeSummary } from "~/lib/api/types/recipe";
+import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias, IngredientUnit, RecipeSummary } from "~/lib/api/types/recipe";
+import { convertToGram, convertToMilliliter } from "~/composables/recipes/use-recipe-ingredients";
 import MultiPurposeLabel from "~/components/Domain/ShoppingList/MultiPurposeLabel.vue";
 import { useLocales } from "~/composables/use-locales";
 import { normalizeFilter } from "~/composables/use-utils";
-import { useFoodStore, useLabelStore } from "~/composables/store";
+import { useFoodStore, useLabelStore, useUnitStore } from "~/composables/store";
 import type { MultiPurposeLabelOut } from "~/lib/api/types/labels";
 import type { AutoFormItems } from "~/types/auto-forms";
 import type { TableHeaders, TableConfig } from "~/components/global/CrudTable.vue";
@@ -412,6 +488,20 @@ const substituteOptions = computed<SubstituteOption[]>(() => {
 });
 
 // ============================================================
+// Units (for density calculator)
+const { store: allUnits } = useUnitStore();
+
+const VOLUME_STANDARD_UNIT = "milliliter";
+const MASS_STANDARD_UNIT = "gram";
+
+const volumeUnits = computed(() =>
+  allUnits.value.filter(u => u.standardUnit === VOLUME_STANDARD_UNIT),
+);
+const massUnits = computed(() =>
+  allUnits.value.filter(u => u.standardUnit === MASS_STANDARD_UNIT),
+);
+
+// ============================================================
 // Labels
 const { store: allLabels } = useLabelStore();
 const labelOptions = computed(() => allLabels.value.map(label => ({ text: parseLabelName(label, true, i18n.t("shopping-list.no-label")), value: label.id })) || []);
@@ -507,10 +597,33 @@ async function handleCreate() {
 
 const editForm = reactive({
   get items() {
-    return [...baseFormItems.value, householdOverrideFormItem.value];
+    return [...baseFormItems.value.filter(item => item.varName !== "density"), householdOverrideFormItem.value];
   },
   data: {} as IngredientFoodWithOnHand,
 });
+
+// ============================================================
+// Density Calculator
+
+const showDensityCalculator = ref(false);
+const densityCalcVolumeQty = ref<number | null>(null);
+const densityCalcVolumeUnit = ref<IngredientUnit | null>(null);
+const densityCalcMassQty = ref<number | null>(null);
+const densityCalcMassUnit = ref<IngredientUnit | null>(null);
+
+watch(
+  [densityCalcVolumeQty, densityCalcVolumeUnit, densityCalcMassQty, densityCalcMassUnit],
+  () => {
+    if (!densityCalcVolumeQty.value || !densityCalcVolumeUnit.value || !densityCalcMassQty.value || !densityCalcMassUnit.value) {
+      return;
+    }
+    const ml = convertToMilliliter(densityCalcVolumeQty.value, densityCalcVolumeUnit.value);
+    const grams = convertToGram(densityCalcMassQty.value, densityCalcMassUnit.value);
+    if (ml && grams) {
+      editForm.data.density = Math.round((grams / ml) * 1000) / 1000;
+    }
+  },
+);
 
 async function handleEdit() {
   if (!editForm.data) {
@@ -668,6 +781,25 @@ watch(
   () => editForm.data?.id,
   (foodId) => {
     hydrateSubstitutionFields(foodId);
+
+    // Reset density calculator state
+    showDensityCalculator.value = false;
+    densityCalcVolumeQty.value = null;
+    densityCalcVolumeUnit.value = null;
+    densityCalcMassQty.value = null;
+
+    // Default mass unit to smallest household preferred mass unit
+    const primaryMassUnits = household.value?.preferences?.primaryMassUnits ?? [];
+    if (primaryMassUnits.length > 0) {
+      const sorted = [...primaryMassUnits].sort(
+        (a, b) => (a.standardQuantity ?? Infinity) - (b.standardQuantity ?? Infinity),
+      );
+      const lowestUnit = sorted.at(0);
+      densityCalcMassUnit.value = lowestUnit ? (massUnits.value.find(u => u.id === lowestUnit.id) ?? null) : null;
+    }
+    else {
+      densityCalcMassUnit.value = null;
+    }
   },
 );
 
