@@ -651,7 +651,7 @@
     "enable-ingredient-amounts-to-use-this-feature": "Enable ingredient amounts to use this feature",
     "recipes-with-units-or-foods-defined-cannot-be-parsed": "Recipes with units or foods defined cannot be parsed.",
     "parse-ingredients": "Parse ingredients",
-    "parse-timers": "Parse timers",
+    "parse-timers-and-temperatures": "Parse timers and temperatures",
     "edit-markdown": "Edit Markdown",
     "recipe-creation": "Recipe Creation",
     "select-one-of-the-various-ways-to-create-a-recipe": "Select one of the various ways to create a recipe",

@@ -105,6 +105,28 @@ class OpenAIRecipeInstruction(OpenAIBase):
     )
 
 
+class OpenAIRecipeInstructionTimerStep(OpenAIBase):
+    id: str | None = Field(
+        None,
+        description="ID provided in the input for this instruction step. Return this value exactly unchanged.",
+    )
+    text: str = Field(
+        ...,
+        description="Instruction step text with temperature formatting updates when applicable.",
+    )
+    timers: list[OpenAIRecipeTimer] = Field(
+        default_factory=list,
+        description="Timers extracted from this instruction step.",
+    )
+
+
+class OpenAIRecipeInstructionTimerResult(OpenAIBase):
+    instructions: list[OpenAIRecipeInstructionTimerStep] = Field(
+        default_factory=list,
+        description="Instruction steps with enriched timer and temperature metadata.",
+    )
+
+
 class OpenAIRecipeNotes(OpenAIBase):
     title: str | None = Field(
         None,

@@ -211,8 +211,11 @@
                 :disabled="parseWithAILoading"
               />
               <div v-if="isEditForm" class="d-flex">
-                <BaseButton class="my-2 mr-1" :disabled="isParsingTimers" @click="parseTimersForRecipe">
-                  {{ $t("recipe.parse-timers") }}
+                <BaseButton class="my-2 mr-1" :disabled="isParsingTimers" @click="parseInstructionsWithAI">
+                  <template #icon>
+                    {{ $globals.icons.robot }}
+                  </template>
+                  {{ $t("recipe.parse-timers-and-temperatures") }}
                 </BaseButton>
                 <RecipeDialogBulkAdd class="ml-auto my-2 mr-1" @bulk-data="addStep" />
                 <BaseButton class="my-2" @click="addStep()">
@@ -340,7 +343,7 @@ import {
 } from "~/composables/recipe-page/shared-state";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import type { ParsedIngredient, Recipe, RecipeCategory, RecipeIngredient, RecipeTag, RecipeTool } from "~/lib/api/types/recipe";
-import type { ParseInstructionTimersStepOut, ParseWithAIOut } from "~/lib/api/user/recipes/recipe";
+import type { ParseInstructionsWithAIStepOut, ParseWithAIOut } from "~/lib/api/user/recipes/recipe";
 import { useRouteQuery } from "~/composables/use-router";
 import { useUserApi } from "~/composables/api";
 import { uuid4, deepCopy } from "~/composables/use-utils";
@@ -789,39 +792,46 @@ function addStep(steps: Array<string> | null = null) {
 
 const isParsingTimers = ref(false);
 
-async function parseTimersForRecipe() {
-  if (!recipe.value.recipeInstructions?.length || isParsingTimers.value) {
+async function parseInstructionsWithAI() {
+  if (!recipe.value.slug || !recipe.value.recipeInstructions?.length || isParsingTimers.value) {
     return;
   }
 
-  const stepsToParse = recipe.value.recipeInstructions
-    .map((step, index) => ({
-      index,
+  const payload = {
+    primaryUnitSystem: recipe.value.primaryUnitSystem ?? null,
+    orgURL: recipe.value.orgURL || null,
+    instructions: recipe.value.recipeInstructions.map(step => ({
+      id: step.id || null,
       text: step.text?.trim() ?? "",
-      hasTimers: !!step.timers?.length,
-    }))
-    .filter(step => !step.hasTimers && step.text.length > 0)
-    .map(({ index, text }) => ({ index, text }));
-
-  if (!stepsToParse.length) {
-    return;
-  }
+      timers: [],
+    })),
+  };
 
   isParsingTimers.value = true;
-  const { data } = await api.recipes.parseInstructionTimers(recipe.value.slug, { steps: stepsToParse });
+  const { data, error } = await api.recipes.parseInstructionsWithAI(recipe.value.slug, payload);
   isParsingTimers.value = false;
 
-  if (!data?.steps?.length || !recipe.value.recipeInstructions) {
+  if (error || !data?.instructions?.length || !recipe.value.recipeInstructions) {
+    alert.error(i18n.t("events.something-went-wrong"));
     return;
   }
 
-  // Merge into current unsaved state and avoid duplicates by re-checking each step.
-  data.steps.forEach((parsedStep: ParseInstructionTimersStepOut) => {
-    const targetStep = recipe.value.recipeInstructions?.[parsedStep.index];
-    if (!targetStep || (targetStep.timers && targetStep.timers.length > 0) || parsedStep.timers.length === 0) {
+  data.instructions.forEach((parsedStep: ParseInstructionsWithAIStepOut, index: number) => {
+    const targetStep = parsedStep.id
+      ? recipe.value.recipeInstructions.find(step => step.id === parsedStep.id)
+      : recipe.value.recipeInstructions[index];
+
+    if (!targetStep) {
       return;
     }
-    targetStep.timers = [...(targetStep.timers ?? []), ...parsedStep.timers];
+
+    targetStep.text = parsedStep.text;
+    targetStep.timers = (parsedStep.timers ?? []).map(timer => ({
+      id: timer.id || uuid4(),
+      duration: timer.duration,
+      text: timer.text || "",
+      timersActive: [],
+    })) as typeof targetStep.timers;
   });
 }
 

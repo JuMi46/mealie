@@ -529,6 +529,11 @@ def recipes_slug_parse_instruction_timers(slug):
     return f"{prefix}/recipes/{slug}/parse-instruction-timers"
 
 
+def recipes_slug_parse_instructions_with_ai(slug):
+    """`/api/recipes/{slug}/parse-instructions-with-ai`"""
+    return f"{prefix}/recipes/{slug}/parse-instructions-with-ai"
+
+
 def recipes_slug_parse_with_ai(slug):
     """`/api/recipes/{slug}/parse-with-ai`"""
     return f"{prefix}/recipes/{slug}/parse-with-ai"

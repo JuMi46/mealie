@@ -34,7 +34,7 @@ from mealie.routes._base.routers import MealieCrudRoute, UserAPIRouter
 from mealie.schema.cookbook.cookbook import ReadCookBook
 from mealie.schema.make_dependable import make_dependable
 from mealie.schema.openai import OpenAIRecipe
-from mealie.schema.openai.recipe import OpenAIRecipeIngredient
+from mealie.schema.openai.recipe import OpenAIRecipeIngredient, OpenAIRecipeInstructionTimerResult
 from mealie.schema.openai.recipe_ingredient import OpenAIIngredient
 from mealie.schema.recipe import (
     IngredientConfidence,
@@ -185,6 +185,30 @@ class ParseRecipeWithAIOut(BaseModel):
     primary_unit_system: str | None = Field(None, alias="primaryUnitSystem")
 
 
+class ParseRecipeInstructionsWithAIStepIn(BaseModel):
+    id: UUID | None = None
+    text: str = ""
+    timers: list[RecipeTimer] = Field(default_factory=list)
+
+
+class ParseRecipeInstructionsWithAIIn(BaseModel):
+    primary_unit_system: str | None = Field(None, alias="primaryUnitSystem")
+    org_url: str | None = Field(None, alias="orgURL")
+    instructions: list[ParseRecipeInstructionsWithAIStepIn] = Field(default_factory=list)
+
+
+class ParseRecipeInstructionsWithAIStepOut(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    id: UUID | None = None
+    text: str
+    timers: list[RecipeTimer] = Field(default_factory=list)
+
+
+class ParseRecipeInstructionsWithAIOut(BaseModel):
+    instructions: list[ParseRecipeInstructionsWithAIStepOut] = Field(default_factory=list)
+
+
 @controller(router)
 class RecipeController(BaseRecipeController):
     def _get_parse_recipe_with_ai_prompt(self, openai_service: OpenAIService) -> str:
@@ -207,6 +231,10 @@ class RecipeController(BaseRecipeController):
                 )
 
         return openai_service.get_prompt("recipes.parse-recipe-editor")
+
+    @staticmethod
+    def _get_parse_instruction_timers_with_ai_prompt(openai_service: OpenAIService) -> str:
+        return openai_service.get_prompt("recipes.parse-recipe-instruction-timers")
 
     @staticmethod
     def _parse_uuid(value: str | None) -> UUID | None:
@@ -775,6 +803,84 @@ class RecipeController(BaseRecipeController):
             org_url=data.org_url,
             primary_unit_system=response.primary_unit_system,
         )
+
+    @router.post("/{slug}/parse-instructions-with-ai", response_model=ParseRecipeInstructionsWithAIOut)
+    async def parse_instructions_with_ai(
+        self, slug: str, data: ParseRecipeInstructionsWithAIIn
+    ) -> ParseRecipeInstructionsWithAIOut:
+        """
+        Parse recipe instructions with OpenAI to enrich timers and temperature text.
+        This endpoint does not persist any data.
+        """
+        self.service.get_one(slug)
+
+        if not self.settings.OPENAI_ENABLED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message="OpenAI is not enabled"),
+            )
+
+        openai_service = OpenAIService()
+        prompt = self._get_parse_instruction_timers_with_ai_prompt(openai_service)
+
+        recipe_payload: dict[str, object] = {
+            "primaryUnitSystem": data.primary_unit_system,
+            "orgURL": data.org_url,
+            "instructions": [
+                {
+                    "id": str(step.id) if step.id else None,
+                    "text": step.text,
+                    "timers": [],
+                }
+                for step in data.instructions
+            ],
+        }
+
+        try:
+            response = await openai_service.get_response(
+                prompt,
+                orjson.dumps(recipe_payload).decode("utf-8"),
+                response_schema=OpenAIRecipeInstructionTimerResult,
+            )
+        except Exception as ex:
+            self.logger.exception(ex)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=ErrorResponse.respond(message="Failed to parse recipe instructions with AI"),
+            ) from ex
+
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=ErrorResponse.respond(message="OpenAI returned an empty response"),
+            )
+
+        seen_instruction_ids: set[UUID] = set()
+        instructions: list[ParseRecipeInstructionsWithAIStepOut] = []
+        for i, ai_instruction in enumerate(response.instructions):
+            if not ai_instruction.text:
+                continue
+
+            fallback_instruction_id = data.instructions[i].id if i < len(data.instructions) else None
+            instruction_id = self._resolve_unique_uuid(
+                preferred=self._parse_uuid(ai_instruction.id),
+                fallback=fallback_instruction_id,
+                seen=seen_instruction_ids,
+            )
+
+            instructions.append(
+                ParseRecipeInstructionsWithAIStepOut(
+                    id=instruction_id,
+                    text=ai_instruction.text,
+                    timers=[
+                        RecipeTimer(duration=timer.duration, text=timer.text, timers_active=[])
+                        for timer in ai_instruction.timers
+                        if 0 < timer.duration <= 176400
+                    ],
+                )
+            )
+
+        return ParseRecipeInstructionsWithAIOut(instructions=instructions)
 
     @router.post("", status_code=201, response_model=str)
     def create_one(self, data: CreateRecipe) -> str | None:

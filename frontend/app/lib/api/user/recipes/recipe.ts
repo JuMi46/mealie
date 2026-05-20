@@ -62,6 +62,7 @@ const routes = {
   recipesTimelineEventId: (id: string) => `${prefix}/recipes/timeline/events/${id}`,
   recipesTimelineEventIdImage: (id: string) => `${prefix}/recipes/timeline/events/${id}/image`,
   recipesParseInstructionTimers: (slug: string) => `${prefix}/recipes/${slug}/parse-instruction-timers`,
+  recipesParseInstructionsWithAI: (slug: string) => `${prefix}/recipes/${slug}/parse-instructions-with-ai`,
   recipesParseWithAI: (slug: string) => `${prefix}/recipes/${slug}/parse-with-ai`,
 };
 
@@ -81,6 +82,28 @@ export interface ParseInstructionTimersStepOut {
 
 export interface ParseInstructionTimersOut {
   steps: ParseInstructionTimersStepOut[];
+}
+
+export interface ParseInstructionsWithAIStepIn {
+  id?: string | null;
+  text: string;
+  timers: RecipeTimer[];
+}
+
+export interface ParseInstructionsWithAIIn {
+  primaryUnitSystem?: string | null;
+  orgURL?: string | null;
+  instructions: ParseInstructionsWithAIStepIn[];
+}
+
+export interface ParseInstructionsWithAIStepOut {
+  id?: string | null;
+  text: string;
+  timers: RecipeTimer[];
+}
+
+export interface ParseInstructionsWithAIOut {
+  instructions: ParseInstructionsWithAIStepOut[];
 }
 
 export interface ParseWithAIIngredient {
@@ -319,6 +342,10 @@ export class RecipeAPI extends BaseCRUDAPI<CreateRecipe, Recipe, Recipe> {
 
   async parseInstructionTimers(slug: string, payload: ParseInstructionTimersIn) {
     return await this.requests.post<ParseInstructionTimersOut>(routes.recipesParseInstructionTimers(slug), payload);
+  }
+
+  async parseInstructionsWithAI(slug: string, payload: ParseInstructionsWithAIIn) {
+    return await this.requests.post<ParseInstructionsWithAIOut>(routes.recipesParseInstructionsWithAI(slug), payload);
   }
 
   async parseWithAI(slug: string, payload: ParseWithAIIn) {
