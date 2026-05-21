@@ -33,7 +33,7 @@ from mealie.schema.user.user import PrivateUser, UserRatingCreate
 from mealie.services._base_service import BaseService
 from mealie.services.household_services.household_service import HouseholdService
 from mealie.services.household_services.ingredient_food_labels import get_household_food_label_map
-from mealie.services.openai import OpenAILocalImage, OpenAIService
+from mealie.services.openai import OpenAICallContext, OpenAILocalImage, OpenAIService
 from mealie.services.recipe.recipe_data_service import RecipeDataService
 from mealie.services.scraper import cleaner
 
@@ -663,6 +663,12 @@ class OpenAIRecipeService(RecipeServiceBase):
                 message,
                 response_schema=OpenAIRecipe,
                 attachments=openai_images,
+                context=OpenAICallContext(
+                    endpoint="service.recipe.build_recipe_from_images",
+                    user_id=str(self.user.id),
+                    household_id=str(self.household.id),
+                    group_id=str(self.user.group_id),
+                ),
             )
             if not response:
                 raise ValueError("Received empty response from OpenAI")

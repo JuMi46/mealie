@@ -28,7 +28,7 @@ from mealie.schema.openai.recipe import OpenAIRecipe
 from mealie.schema.recipe.recipe import Recipe, RecipeStep
 from mealie.schema.recipe.recipe_ingredient import RecipeIngredient
 from mealie.schema.recipe.recipe_notes import RecipeNote
-from mealie.services.openai import OpenAIService
+from mealie.services.openai import OpenAICallContext, OpenAIService
 from mealie.services.scraper.scraped_extras import ScrapedExtras
 
 from . import cleaner
@@ -454,7 +454,12 @@ class RecipeScraperOpenAI(RecipeScraperPackage):
             service = OpenAIService()
             prompt = service.get_prompt("recipes.scrape-recipe")
 
-            response = await service.get_response(prompt, text, response_schema=OpenAIText)
+            response = await service.get_response(
+                prompt,
+                text,
+                response_schema=OpenAIText,
+                context=OpenAICallContext(endpoint="service.scraper.openai.extract_html"),
+            )
             if not (response and response.text):
                 raise Exception("OpenAI did not return any data")
 
@@ -588,7 +593,10 @@ class RecipeScraperOpenAITranscription(ABCScraperStrategy):
                     await on_progress(self.translator.t("recipe.create-progress.transcribing-audio-with-ai"))
 
                 try:
-                    transcription = await openai_service.transcribe_audio(video_data["audio"])
+                    transcription = await openai_service.transcribe_audio(
+                        video_data["audio"],
+                        context=OpenAICallContext(endpoint="service.scraper.openai.transcribe_audio"),
+                    )
                 except exceptions.RateLimitError:
                     raise
                 except Exception as e:
@@ -614,7 +622,12 @@ class RecipeScraperOpenAITranscription(ABCScraperStrategy):
             await on_progress(self.translator.t("recipe.create-progress.creating-recipe-from-transcript-with-ai"))
 
         try:
-            response = await openai_service.get_response(prompt, "\n".join(message_parts), response_schema=OpenAIRecipe)
+            response = await openai_service.get_response(
+                prompt,
+                "\n".join(message_parts),
+                response_schema=OpenAIRecipe,
+                context=OpenAICallContext(endpoint="service.scraper.openai.parse_video_recipe"),
+            )
         except exceptions.RateLimitError:
             raise
         except Exception as e:

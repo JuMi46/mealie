@@ -8,7 +8,7 @@ from mealie.core.dependencies.dependencies import get_temporary_path
 from mealie.routes._base import BaseAdminController, controller
 from mealie.schema.admin.debug import DebugResponse
 from mealie.schema.openai.general import OpenAIText
-from mealie.services.openai import OpenAILocalImage, OpenAIService
+from mealie.services.openai import OpenAICallContext, OpenAILocalImage, OpenAIService
 
 router = APIRouter(prefix="/debug")
 
@@ -45,7 +45,16 @@ class AdminDebugController(BaseAdminController):
                     message = f"{message} Here is an image to test with:"
 
                 response = await openai_service.get_response(
-                    prompt, message, response_schema=OpenAIText, attachments=local_images
+                    prompt,
+                    message,
+                    response_schema=OpenAIText,
+                    attachments=local_images,
+                    context=OpenAICallContext(
+                        endpoint="/api/admin/debug/openai",
+                        user_id=str(self.user.id),
+                        household_id=str(self.user.household_id),
+                        group_id=str(self.user.group_id),
+                    ),
                 )
 
                 if not response:

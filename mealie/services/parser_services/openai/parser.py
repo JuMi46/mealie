@@ -11,7 +11,7 @@ from mealie.schema.recipe.recipe_ingredient import (
     ParsedIngredient,
     RecipeIngredient,
 )
-from mealie.services.openai import OpenAIDataInjection, OpenAIService
+from mealie.services.openai import OpenAICallContext, OpenAIDataInjection, OpenAIService
 
 from .._base import ABCIngredientParser
 from ..parser_utils import extract_quantity_from_string
@@ -141,7 +141,15 @@ class OpenAIParser(ABCIngredientParser):
         # chunk ingredients and send each chunk to its own worker
         ingredient_chunks = self._chunk_messages(ingredients, n=service.workers)
         tasks = [
-            service.get_response(prompt, json.dumps(chunk, separators=(",", ":")), response_schema=OpenAIIngredients)
+            service.get_response(
+                prompt,
+                json.dumps(chunk, separators=(",", ":")),
+                response_schema=OpenAIIngredients,
+                context=OpenAICallContext(
+                    endpoint="service.parser.openai.parse_ingredients",
+                    group_id=str(self.group_id),
+                ),
+            )
             for chunk in ingredient_chunks
         ]
 

@@ -2,7 +2,9 @@ import base64
 import inspect
 import json
 import os
+import time
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
 from typing import TypeVar
@@ -14,6 +16,8 @@ from pydantic import BaseModel, field_validator
 
 from mealie.core import exceptions, root_logger
 from mealie.core.config import get_app_settings
+from mealie.db.db_setup import session_context
+from mealie.db.models.group import OpenAIUsageLogModel
 from mealie.pkgs import img
 from mealie.schema.openai._base import OpenAIBase
 from mealie.schema.openai.general import OpenAIText
@@ -22,6 +26,14 @@ from .._base_service import BaseService
 
 T = TypeVar("T", bound=OpenAIBase)
 logger = root_logger.get_logger(__name__)
+
+
+@dataclass
+class OpenAICallContext:
+    endpoint: str
+    user_id: str | None = None
+    household_id: str | None = None
+    group_id: str | None = None
 
 
 class OpenAIDataInjection(BaseModel):
@@ -120,6 +132,51 @@ class OpenAIService(BaseService):
         )
 
         super().__init__()
+
+    def _log_usage(
+        self,
+        *,
+        context: OpenAICallContext | None,
+        operation: str,
+        status: str,
+        model: str | None,
+        request_id: str | None,
+        input_tokens: int | None,
+        output_tokens: int | None,
+        total_tokens: int | None,
+        latency_ms: int | None,
+        had_attachments: bool,
+        error_class: str | None = None,
+        error_message: str | None = None,
+    ) -> None:
+        endpoint = context.endpoint if context and context.endpoint else "unknown"
+
+        try:
+            with session_context() as session:
+                session.add(
+                    OpenAIUsageLogModel(
+                        session=session,
+                        endpoint=endpoint,
+                        operation=operation,
+                        status=status,
+                        model=model,
+                        provider=self.settings.OPENAI_BASE_URL,
+                        request_id=request_id,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        total_tokens=total_tokens,
+                        latency_ms=latency_ms,
+                        had_attachments=had_attachments,
+                        error_class=error_class,
+                        error_message=(error_message or "")[:1024] or None,
+                        user_id=context.user_id if context else None,
+                        household_id=context.household_id if context else None,
+                        group_id=context.group_id if context else None,
+                    )
+                )
+                session.commit()
+        except Exception as log_error:
+            self.logger.warning(f"Failed to persist OpenAI usage log: {log_error}")
 
     def _get_prompt_file_candidates(self, name: str) -> list[Path]:
         """
@@ -239,8 +296,12 @@ class OpenAIService(BaseService):
         *,
         response_schema: type[T],
         attachments: list[OpenAIAttachment] | None = None,
+        context: OpenAICallContext | None = None,
     ) -> T | None:
         """Send data to OpenAI and return the response message content"""
+
+        start_time = time.perf_counter()
+        had_attachments = bool(attachments)
 
         try:
             user_messages = [{"type": "text", "text": message}]
@@ -248,30 +309,119 @@ class OpenAIService(BaseService):
                 user_messages.append(attachment.build_message())
 
             response = await self._get_raw_response(prompt, user_messages, response_schema)
+
+            usage = response.usage
+            input_tokens = usage.prompt_tokens if usage else None
+            output_tokens = usage.completion_tokens if usage else None
+            total_tokens = usage.total_tokens if usage else None
+
+            self._log_usage(
+                context=context,
+                operation="chat.completions.parse",
+                status="success",
+                model=self.model,
+                request_id=response.id,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                total_tokens=total_tokens,
+                latency_ms=int((time.perf_counter() - start_time) * 1000),
+                had_attachments=had_attachments,
+            )
+
             if not response.choices:
                 return None
 
             response_text = response.choices[0].message.content
             return response_schema.parse_openai_response(response_text)
         except openai.RateLimitError as e:
+            self._log_usage(
+                context=context,
+                operation="chat.completions.parse",
+                status="rate_limit",
+                model=self.model,
+                request_id=None,
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                latency_ms=int((time.perf_counter() - start_time) * 1000),
+                had_attachments=had_attachments,
+                error_class=e.__class__.__name__,
+                error_message=str(e),
+            )
             raise exceptions.RateLimitError(str(e)) from e
         except Exception as e:
+            self._log_usage(
+                context=context,
+                operation="chat.completions.parse",
+                status="error",
+                model=self.model,
+                request_id=None,
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                latency_ms=int((time.perf_counter() - start_time) * 1000),
+                had_attachments=had_attachments,
+                error_class=e.__class__.__name__,
+                error_message=str(e),
+            )
             raise Exception(f"OpenAI Request Failed. {e.__class__.__name__}: {e}") from e
 
-    async def transcribe_audio(self, audio_file_path: Path) -> str | None:
+    async def transcribe_audio(self, audio_file_path: Path, *, context: OpenAICallContext | None = None) -> str | None:
         client = self.get_client()
 
         # Create a transcription from the audio
+        start_time = time.perf_counter()
         try:
             with open(audio_file_path, "rb") as audio_file:
                 transcript = await client.audio.transcriptions.create(
                     model=self.audio_model,
                     file=audio_file,
                 )
+
+            self._log_usage(
+                context=context,
+                operation="audio.transcriptions.create",
+                status="success",
+                model=self.audio_model,
+                request_id=getattr(transcript, "id", None),
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                latency_ms=int((time.perf_counter() - start_time) * 1000),
+                had_attachments=True,
+            )
             return transcript.text
         except openai.RateLimitError as e:
+            self._log_usage(
+                context=context,
+                operation="audio.transcriptions.create",
+                status="rate_limit",
+                model=self.audio_model,
+                request_id=None,
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                latency_ms=int((time.perf_counter() - start_time) * 1000),
+                had_attachments=True,
+                error_class=e.__class__.__name__,
+                error_message=str(e),
+            )
             raise exceptions.RateLimitError(str(e)) from e
         except Exception as e:
+            self._log_usage(
+                context=context,
+                operation="audio.transcriptions.create",
+                status="error",
+                model=self.audio_model,
+                request_id=None,
+                input_tokens=None,
+                output_tokens=None,
+                total_tokens=None,
+                latency_ms=int((time.perf_counter() - start_time) * 1000),
+                had_attachments=True,
+                error_class=e.__class__.__name__,
+                error_message=str(e),
+            )
             self.logger.warning(
                 f"Failed to create audio transcription, falling back to chat completion ({e.__class__.__name__}: {e})"
             )
@@ -288,6 +438,7 @@ class OpenAIService(BaseService):
             "Attached is the audio data.",
             response_schema=OpenAIText,
             attachments=[audio_attachment],
+            context=context,
         )
 
         return response.text if response else None

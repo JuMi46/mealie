@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from mealie.db.models._model_utils.guid import GUID
-from mealie.db.models.group import Group, ReportEntryModel, ReportModel
+from mealie.db.models.group import Group, OpenAIUsageLogModel, ReportEntryModel, ReportModel
 from mealie.db.models.group.exports import GroupDataExportsModel
 from mealie.db.models.group.preferences import GroupPreferencesModel
 from mealie.db.models.household.cookbook import CookBook
@@ -43,6 +43,7 @@ from mealie.repos.repository_foods import RepositoryFood
 from mealie.repos.repository_household import RepositoryHousehold, RepositoryHouseholdRecipes
 from mealie.repos.repository_meal_plan_rules import RepositoryMealPlanRules
 from mealie.repos.repository_units import RepositoryUnit
+from mealie.schema.admin.openai import OpenAIUsageLogOut
 from mealie.schema.cookbook.cookbook import ReadCookBook
 from mealie.schema.group.group_exports import GroupDataExport
 from mealie.schema.group.group_preferences import ReadGroupPreferences
@@ -222,6 +223,12 @@ class AllRepositories:
     @cached_property
     def group_report_entries(self) -> GroupRepositoryGeneric[ReportEntryOut, ReportEntryModel]:
         return GroupRepositoryGeneric(self.session, PK_ID, ReportEntryModel, ReportEntryOut, group_id=self.group_id)
+
+    @cached_property
+    def openai_usage_logs(self) -> GroupRepositoryGeneric[OpenAIUsageLogOut, OpenAIUsageLogModel]:
+        return GroupRepositoryGeneric(
+            self.session, PK_ID, OpenAIUsageLogModel, OpenAIUsageLogOut, group_id=self.group_id
+        )
 
     # ================================================================
     # Household

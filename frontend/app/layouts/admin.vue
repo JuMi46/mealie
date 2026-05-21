@@ -83,6 +83,31 @@ const topLinks: SidebarLinks = [
     title: i18n.t("sidebar.backups"),
     restricted: true,
   },
+  {
+    icon: $globals.icons.robot,
+    title: i18n.t("admin.openai"),
+    restricted: true,
+    children: [
+      {
+        icon: $globals.icons.timelineText,
+        to: "/admin/openai/logs",
+        title: i18n.t("admin.openai-logs"),
+        restricted: true,
+      },
+      {
+        icon: $globals.icons.cog,
+        to: "/admin/openai/summary",
+        title: i18n.t("admin.openai-usage-summary"),
+        restricted: true,
+      },
+      {
+        icon: $globals.icons.wrench,
+        to: "/admin/openai/debug",
+        title: i18n.t("admin.debug-openai-services"),
+        restricted: true,
+      },
+    ],
+  },
 ];
 
 const developerLinks: SidebarLinks = [
@@ -97,12 +122,6 @@ const developerLinks: SidebarLinks = [
     title: i18n.t("recipe.debug"),
     restricted: true,
     children: [
-      {
-        icon: $globals.icons.robot,
-        to: "/admin/debug/openai",
-        title: i18n.t("admin.openai"),
-        restricted: true,
-      },
       {
         icon: $globals.icons.slotMachine,
         to: "/admin/debug/parser",

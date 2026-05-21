@@ -74,7 +74,7 @@ from mealie.services.event_bus_service.event_types import (
     EventRecipeData,
     EventTypes,
 )
-from mealie.services.openai import OpenAIDataInjection, OpenAIService
+from mealie.services.openai import OpenAICallContext, OpenAIDataInjection, OpenAIService
 from mealie.services.parser_services._base import DataMatcher
 from mealie.services.parser_services.openai.parser import OpenAIParser
 from mealie.services.parser_services.parser_utils.duration_parser import DurationParser
@@ -716,6 +716,12 @@ class RecipeController(BaseRecipeController):
                 prompt,
                 orjson.dumps(recipe_payload).decode("utf-8"),
                 response_schema=OpenAIRecipe,
+                context=OpenAICallContext(
+                    endpoint="/api/recipes/{slug}/parse-with-ai",
+                    user_id=str(self.user.id),
+                    household_id=str(self.user.household_id),
+                    group_id=str(self.user.group_id),
+                ),
             )
         except Exception as ex:
             self.logger.exception(ex)
@@ -841,6 +847,12 @@ class RecipeController(BaseRecipeController):
                 prompt,
                 orjson.dumps(recipe_payload).decode("utf-8"),
                 response_schema=OpenAIRecipeInstructionTimerResult,
+                context=OpenAICallContext(
+                    endpoint="/api/recipes/{slug}/parse-instructions-with-ai",
+                    user_id=str(self.user.id),
+                    household_id=str(self.user.household_id),
+                    group_id=str(self.user.group_id),
+                ),
             )
         except Exception as ex:
             self.logger.exception(ex)
