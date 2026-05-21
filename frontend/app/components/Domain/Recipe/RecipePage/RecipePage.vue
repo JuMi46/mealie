@@ -281,6 +281,17 @@
             :recipe="recipe"
             :scale="scale"
           />
+          <template v-if="ingredientTips.length">
+            <v-divider class="my-2" />
+            <v-list density="compact" class="px-4">
+              <v-list-item
+                v-for="tip in ingredientTips"
+                :key="tip.ingredient"
+              >
+                {{ tip.text }}
+              </v-list-item>
+            </v-list>
+          </template>
         </v-col>
       </v-row>
     </v-sheet>
@@ -295,6 +306,17 @@
         :recipe="recipe"
         :scale="scale"
       />
+      <template v-if="ingredientTips.length">
+        <v-divider class="my-2" />
+        <v-list density="compact" class="px-2 px-md-4">
+          <v-list-item
+            v-for="tip in ingredientTips"
+            :key="tip.ingredient"
+          >
+            {{ tip.text }}
+          </v-list-item>
+        </v-list>
+      </template>
 
       <div v-if="notLinkedIngredients.length > 0" class="px-2 px-md-4 pb-4">
         <v-divider />
@@ -532,6 +554,21 @@ const hasLinkedIngredients = computed(() => {
     step => step.ingredientReferences && step.ingredientReferences.length > 0,
   );
 });
+
+const ingredientTips = computed(
+  () => recipe.value.recipeIngredient.reduce((res, ingredient) => {
+    if (ingredient.food?.tip && !res.some(tip => tip.ingredient == ingredient.food.name)) {
+      res.push({
+        text: `${ingredient.food.name}: ${ingredient.food.tip}`,
+        ingredient: ingredient.food.name,
+      });
+    }
+    return res;
+  }, [] as {
+    text: string;
+    ingredient: string;
+  }[]),
+);
 /** =============================================================
  * Set State onMounted
  */

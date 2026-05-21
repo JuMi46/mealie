@@ -24,15 +24,18 @@
           </div>
           <v-divider class="my-2" />
           <SafeMarkdown :source="recipe.description" class="my-3" />
-          <v-list density="compact">
-            <v-list-item
-              v-for="tip in ingredientTips"
-              :key="tip.ingredient"
-            >
-              {{ tip.text }}
-            </v-list-item>
-          </v-list>
           <v-divider v-if="recipe.description" />
+          <template v-if="ingredientTips.length">
+            <v-list density="compact">
+              <v-list-item
+                v-for="tip in ingredientTips"
+                :key="tip.ingredient"
+              >
+                {{ tip.text }}
+              </v-list-item>
+            </v-list>
+            <v-divider />
+          </template>
           <v-container class="d-flex flex-row flex-wrap justify-center">
             <div class="mx-6">
               <v-row no-gutters>
