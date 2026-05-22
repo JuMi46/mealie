@@ -95,6 +95,8 @@ import RecipeLastMade from "~/components/Domain/Recipe/RecipeLastMade.vue";
 import RecipeTimeCard from "~/components/Domain/Recipe/RecipeTimeCard.vue";
 import RecipeYield from "~/components/Domain/Recipe/RecipeYield.vue";
 import RecipePageInfoCardImage from "~/components/Domain/Recipe/RecipePage/RecipePageParts/RecipePageInfoCardImage.vue";
+import { parseTemperaturesInText } from "~/composables/use-utils";
+import { useHouseholdSelf } from "~/composables/use-households";
 import type { Recipe } from "~/lib/api/types/recipe";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 
@@ -108,11 +110,14 @@ const props = withDefaults(defineProps<Props>(), {
   recipeScale: 1,
 });
 
+const { household } = useHouseholdSelf();
+const temperatureDisplayTemplate = computed(() => household.value?.preferences?.temperatureDisplayTemplate);
+
 const ingredientTips = computed(
   () => props.recipe.recipeIngredient.reduce((res, ingredient) => {
     if (ingredient.food?.tip && !res.some(tip => tip.ingredient == ingredient.food.name)) {
       res.push({
-        text: `${ingredient.food.name}: ${ingredient.food.tip}`,
+        text: `${ingredient.food.name}: ${parseTemperaturesInText(ingredient.food.tip, temperatureDisplayTemplate.value)}`,
         ingredient: ingredient.food.name,
       });
     }

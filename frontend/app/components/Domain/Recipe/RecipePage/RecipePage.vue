@@ -368,7 +368,8 @@ import type { ParsedIngredient, Recipe, RecipeCategory, RecipeIngredient, Recipe
 import type { ParseInstructionsWithAIStepOut, ParseWithAIOut } from "~/lib/api/user/recipes/recipe";
 import { useRouteQuery } from "~/composables/use-router";
 import { useUserApi } from "~/composables/api";
-import { uuid4, deepCopy } from "~/composables/use-utils";
+import { uuid4, deepCopy, parseTemperaturesInText } from "~/composables/use-utils";
+import { useHouseholdSelf } from "~/composables/use-households";
 import RecipeDialogBulkAdd from "~/components/Domain/Recipe/RecipeDialogBulkAdd.vue";
 import RecipeNotes from "~/components/Domain/Recipe/RecipeNotes.vue";
 import { useLoggedInState } from "~/composables/use-logged-in-state";
@@ -382,6 +383,9 @@ const auth = useMealieAuth();
 const route = useRoute();
 const i18n = useI18n();
 const { isOwnGroup } = useLoggedInState();
+const { household } = useHouseholdSelf();
+
+const temperatureDisplayTemplate = computed(() => household.value?.preferences?.temperatureDisplayTemplate);
 
 const groupSlug = computed(() => (route.params.groupSlug as string) || auth.user?.value?.groupSlug || "");
 
@@ -559,7 +563,7 @@ const ingredientTips = computed(
   () => recipe.value.recipeIngredient.reduce((res, ingredient) => {
     if (ingredient.food?.tip && !res.some(tip => tip.ingredient == ingredient.food.name)) {
       res.push({
-        text: `${ingredient.food.name}: ${ingredient.food.tip}`,
+        text: `${ingredient.food.name}: ${parseTemperaturesInText(ingredient.food.tip, temperatureDisplayTemplate.value)}`,
         ingredient: ingredient.food.name,
       });
     }

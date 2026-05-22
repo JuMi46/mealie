@@ -312,7 +312,7 @@
                       <v-col>
                         <SafeMarkdown
                           class="markdown"
-                          :source="parseInstructionTemperatures(step.text)"
+                          :source="parseTemperaturesInText(step.text, temperatureDisplayTemplate)"
                         />
                       </v-col>
                     </v-row>
@@ -402,11 +402,7 @@ const usedIngredients = ref<RecipeIngredient[]>([]);
 
 const showTitleEditor = ref<{ [key: string]: boolean }>({});
 const instructionSelections = ref<Record<string, InstructionSelectionState | null>>({});
-
-function parseInstructionTemperatures(text: string) {
-  const temperatureDisplayTemplate = household.value?.preferences?.temperatureDisplayTemplate ?? "℃ / ℉";
-  return parseTemperaturesInText(text, temperatureDisplayTemplate);
-}
+const temperatureDisplayTemplate = computed(() => household.value?.preferences?.temperatureDisplayTemplate);
 
 // ===============================================================
 // UI State Helpers
