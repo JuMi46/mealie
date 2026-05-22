@@ -15,9 +15,12 @@ class BackupSchemaMismatch(Exception): ...
 
 
 class BackupV2(BaseService):
-    EXCLUDE_DIRS = {"backups", ".temp"}
+    EXCLUDE_DIRS = {"backups", ".temp", "branch-dbs", ".branch-bootstrap"}
     EXCLUDE_FILES = {"mealie.db"}
-    EXCLUDE_FILES_REGEX = {re.compile(r"^mealie\.log(?:\.\d+)?$")}
+    EXCLUDE_FILES_REGEX = {
+        re.compile(r"^mealie\.log(?:\.\d+)?$"),
+        re.compile(r"^mealie_\d{4}\.\d{2}\.\d{2}\.bak\.db$"),
+    }
     EXCLUDE_EXTENTIONS = {".zip"}
 
     RESTORE_FILES = {".secret"}

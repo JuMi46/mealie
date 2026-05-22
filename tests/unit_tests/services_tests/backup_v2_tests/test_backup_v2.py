@@ -1,5 +1,7 @@
+import shutil
 import statistics
 from typing import Any
+from zipfile import ZipFile
 
 from sqlalchemy.orm import Session
 
@@ -40,6 +42,43 @@ def test_database_backup():
 
     with backup as contents:
         assert contents.validate()
+
+
+def test_database_backup_excludes_dev_artifacts():
+    backup_v2 = BackupV2()
+    branch_db_dir = backup_v2.directories.DATA_DIR / "branch-dbs"
+    branch_db_file = branch_db_dir / "feature.db"
+    nested_branch_db_file = branch_db_dir / "nested" / "inner.db"
+    branch_bootstrap_dir = backup_v2.directories.DATA_DIR / ".branch-bootstrap"
+    branch_bootstrap_file = branch_bootstrap_dir / "feat-branch" / "mealie.db"
+    sqlite_sidecar = backup_v2.directories.DATA_DIR / "mealie_2026.04.14.bak.db"
+
+    try:
+        branch_db_file.parent.mkdir(parents=True, exist_ok=True)
+        nested_branch_db_file.parent.mkdir(parents=True, exist_ok=True)
+        branch_bootstrap_file.parent.mkdir(parents=True, exist_ok=True)
+        branch_db_file.write_text("branch snapshot")
+        nested_branch_db_file.write_text("nested branch snapshot")
+        branch_bootstrap_file.write_text("bootstrap db")
+        sqlite_sidecar.write_text("sqlite sidecar backup")
+
+        path_to_backup = backup_v2.backup()
+
+        with ZipFile(path_to_backup) as archive:
+            archive_paths = archive.namelist()
+
+        assert all(not path.startswith("data/branch-dbs/") for path in archive_paths)
+        assert all(not path.startswith("data/.branch-bootstrap/") for path in archive_paths)
+        assert "data/mealie_2026.04.14.bak.db" not in archive_paths
+    finally:
+        if sqlite_sidecar.exists():
+            sqlite_sidecar.unlink()
+
+        if branch_db_dir.exists():
+            shutil.rmtree(branch_db_dir)
+
+        if branch_bootstrap_dir.exists():
+            shutil.rmtree(branch_bootstrap_dir)
 
 
 def test_database_restore():
