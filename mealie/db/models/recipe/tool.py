@@ -5,7 +5,7 @@ from slugify import slugify
 from sqlalchemy import Boolean, Column, Float, ForeignKey, Integer, String, Table, UniqueConstraint, orm
 from sqlalchemy.orm import Mapped, mapped_column
 
-from mealie.db.models._model_base import BaseMixins, SqlAlchemyBase
+from mealie.db.models._model_base import BaseMixins, FilterableColumn, SqlAlchemyBase
 from mealie.db.models._model_utils.auto_init import auto_init
 from mealie.db.models._model_utils.guid import GUID
 
@@ -42,18 +42,18 @@ cookbooks_to_tools = Table(
 class Tool(SqlAlchemyBase, BaseMixins):
     __tablename__ = "tools"
     __table_args__ = (UniqueConstraint("slug", "group_id", name="tools_slug_group_id_key"),)
-    id: Mapped[GUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
+    id: FilterableColumn[GUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
 
     # ID Relationships
-    group_id: Mapped[GUID] = mapped_column(GUID, ForeignKey("groups.id"), nullable=False, index=True)
+    group_id: FilterableColumn[GUID] = mapped_column(GUID, ForeignKey("groups.id"), nullable=False, index=True)
     group: Mapped["Group"] = orm.relationship("Group", back_populates="tools", foreign_keys=[group_id])
 
-    name: Mapped[str] = mapped_column(String, index=True, nullable=False)
-    slug: Mapped[str] = mapped_column(String, index=True, nullable=False)
-    position: Mapped[int | None] = mapped_column(Integer)
-    label_text: Mapped[str | None] = mapped_column(String)
-    weight: Mapped[float | None] = mapped_column(Float)
-    serving_category: Mapped[str | None] = mapped_column(String)
+    name: FilterableColumn[str] = mapped_column(String, index=True, nullable=False)
+    slug: FilterableColumn[str] = mapped_column(String, index=True, nullable=False)
+    position: FilterableColumn[int | None] = mapped_column(Integer)
+    label_text: FilterableColumn[str | None] = mapped_column(String)
+    weight: FilterableColumn[float | None] = mapped_column(Float)
+    serving_category: FilterableColumn[str | None] = mapped_column(String)
 
     households_with_tool: Mapped[list["Household"]] = orm.relationship(
         "Household", secondary=households_to_tools, back_populates="tools_on_hand"
