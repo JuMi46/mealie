@@ -98,6 +98,7 @@ class IngredientFoodsController(BaseUserController):
 
     @router.post("", response_model=IngredientFood, status_code=201)
     def create_one(self, data: CreateIngredientFood):
+        self.checks.can_organize()
         should_set_override = "household_label_id" in data.model_fields_set
         if should_set_override:
             self._validate_household_label_override(data.household_label_id)
@@ -109,6 +110,7 @@ class IngredientFoodsController(BaseUserController):
 
     @router.put("/merge", response_model=SuccessResponse)
     def merge_one(self, data: MergeFood):
+        self.checks.can_organize()
         try:
             self.repo.merge(data.from_food, data.to_food)
             return SuccessResponse.respond("Successfully merged foods")
@@ -123,6 +125,7 @@ class IngredientFoodsController(BaseUserController):
 
     @router.put("/{item_id}", response_model=IngredientFood)
     def update_one(self, item_id: UUID4, data: CreateIngredientFood):
+        self.checks.can_organize()
         should_set_override = "household_label_id" in data.model_fields_set
         if should_set_override:
             self._validate_household_label_override(data.household_label_id)
@@ -134,4 +137,5 @@ class IngredientFoodsController(BaseUserController):
 
     @router.delete("/{item_id}", response_model=IngredientFood)
     def delete_one(self, item_id: UUID4):
+        self.checks.can_organize()
         return self.mixins.delete_one(item_id)

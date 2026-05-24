@@ -11,7 +11,7 @@
         <v-card-text>
           <v-card-text class="pa-0">
             <p>{{ $t('recipe.scrape-recipe-description') }}</p>
-            <p v-if="$appInfo.enableOpenaiTranscriptionServices">
+            <p v-if="group?.aiProviderSettings?.audioProviderEnabled">
               {{ $t('recipe.scrape-recipe-description-transcription') }}
             </p>
           </v-card-text>
@@ -152,6 +152,7 @@
 <script setup lang="ts">
 import type { AxiosResponse } from "axios";
 import { useUserApi } from "~/composables/api";
+import { useGroupSelf } from "~/composables/use-groups";
 import { useTagStore } from "~/composables/store/use-tag-store";
 import { useNewRecipeOptions } from "~/composables/use-new-recipe-options";
 import { validators } from "~/composables/use-validators";
@@ -170,6 +171,7 @@ const api = useUserApi();
 const { $appInfo } = useNuxtApp();
 const route = useRoute();
 const groupSlug = computed(() => route.params.groupSlug as string || auth.user.value?.groupSlug || "");
+const { group } = useGroupSelf();
 
 const router = useRouter();
 const tags = useTagStore();

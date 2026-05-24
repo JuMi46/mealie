@@ -1,4 +1,3 @@
-import asyncio
 import json
 
 from rapidfuzz import fuzz
@@ -110,7 +109,7 @@ class OpenAIParser(ABCIngredientParser):
         return self._convert_ingredient(original_text, openai_ing)
 
     def _get_prompt(self, service: OpenAIService) -> str:
-        if service.send_db_data and self.data_matcher.units_by_alias:
+        if self.data_matcher.units_by_alias:
             data_injections = [
                 OpenAIDataInjection(
                     description=(
@@ -128,44 +127,24 @@ class OpenAIParser(ABCIngredientParser):
 
         return service.get_prompt("recipes.parse-recipe-ingredients", data_injections=data_injections)
 
-    @staticmethod
-    def _chunk_messages(messages: list[str], n=1) -> list[list[str]]:
-        if n < 1:
-            n = 1
-        return [messages[i : i + n] for i in range(0, len(messages), n)]
-
     async def _parse(self, ingredients: list[str]) -> OpenAIIngredients:
-        service = OpenAIService()
+        service = OpenAIService(self.repos)
         prompt = self._get_prompt(service)
 
-        # chunk ingredients and send each chunk to its own worker
-        ingredient_chunks = self._chunk_messages(ingredients, n=service.workers)
-        tasks = [
-            service.get_response(
-                prompt,
-                json.dumps(chunk, separators=(",", ":")),
-                response_schema=OpenAIIngredients,
-                context=OpenAICallContext(
-                    endpoint="service.parser.openai.parse_ingredients",
-                    group_id=str(self.group_id),
-                ),
-            )
-            for chunk in ingredient_chunks
-        ]
+        response = await service.get_response(
+            prompt,
+            json.dumps(ingredients, separators=(",", ":")),
+            response_schema=OpenAIIngredients,
+            context=OpenAICallContext(
+                endpoint="service.parser.openai.parse_ingredients",
+                group_id=str(self.group_id),
+            ),
+        )
 
-        # re-combine chunks into one response
-        try:
-            unfiltered_responses = await asyncio.gather(*tasks)
-        except Exception as e:
-            raise Exception("Failed to call OpenAI services") from e
-
-        responses = [response for response in unfiltered_responses if response]
-        if not responses:
+        if not response:
             raise Exception("No response from OpenAI")
 
-        return OpenAIIngredients(
-            ingredients=[ingredient for response in responses for ingredient in response.ingredients]
-        )
+        return OpenAIIngredients(ingredients=response.ingredients)
 
     async def parse_one(self, ingredient_string: str) -> ParsedIngredient:
         items = await self.parse([ingredient_string])
