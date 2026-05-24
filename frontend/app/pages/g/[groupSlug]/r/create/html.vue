@@ -83,8 +83,8 @@
           :label="$t('recipe.parse-recipe-ingredients-after-import')"
         />
         <v-checkbox
+          v-if="group?.aiProviderSettings?.aiEnabled"
           v-model="parseRecipeWithAI"
-          v-if="$appInfo.enableOpenai"
           color="primary"
           hide-details
           :label="$t('recipe.parse-recipe-with-ai-after-import')"
@@ -115,6 +115,7 @@
 import type { AxiosResponse } from "axios";
 import { useTagStore } from "~/composables/store/use-tag-store";
 import { useUserApi } from "~/composables/api";
+import { useGroupSelf } from "~/composables/use-groups";
 import { useNewRecipeOptions } from "~/composables/use-new-recipe-options";
 import { validators } from "~/composables/use-validators";
 import type { VForm } from "~/types/auto-forms";
@@ -124,11 +125,11 @@ const state = reactive({
   loading: false,
   isEditJSON: false,
 });
-const { $appInfo } = useNuxtApp();
 const auth = useMealieAuth();
 const route = useRoute();
 const groupSlug = computed(() => route.params.groupSlug as string || auth.user.value?.groupSlug || "");
 const domUrlForm = ref<VForm | null>(null);
+const { group } = useGroupSelf();
 
 const api = useUserApi();
 const tags = useTagStore();
@@ -141,7 +142,7 @@ const {
   parseRecipeWithAI,
   navigateToRecipe,
 } = useNewRecipeOptions({
-  enableParseRecipeWithAI: $appInfo.enableOpenai,
+  enableParseRecipeWithAI: () => !!group.value?.aiProviderSettings?.aiEnabled,
 });
 
 function handleResponse(response: AxiosResponse<string> | null, refreshTags = false) {

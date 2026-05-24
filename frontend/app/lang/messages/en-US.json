@@ -761,7 +761,7 @@
       "select-parser": "Select Parser",
       "natural-language-processor": "Natural Language Processor",
       "brute-parser": "Brute Parser",
-      "openai-parser": "OpenAI Parser",
+      "openai-parser": "AI Parser",
       "parse-all": "Parse All",
       "no-unit": "No unit",
       "missing-unit": "Create missing unit: {unit}",

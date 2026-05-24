@@ -1,84 +1,83 @@
 import { useRecipeCreatePreferences } from "~/composables/use-users/preferences";
+import type { MaybeRefOrGetter } from "vue";
+import { toValue } from "vue";
 
 export interface UseNewRecipeOptionsProps {
-  enableImportKeywords?: boolean;
-  enableImportCategories?: boolean;
-  enableStayInEditMode?: boolean;
-  enableParseRecipe?: boolean;
-  enableParseRecipeWithAI?: boolean;
+  enableImportKeywords?: MaybeRefOrGetter<boolean>;
+  enableImportCategories?: MaybeRefOrGetter<boolean>;
+  enableStayInEditMode?: MaybeRefOrGetter<boolean>;
+  enableParseRecipe?: MaybeRefOrGetter<boolean>;
+  enableParseRecipeWithAI?: MaybeRefOrGetter<boolean>;
 }
 
 export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
-  const {
-    enableImportKeywords = true,
-    enableImportCategories = true,
-    enableStayInEditMode = true,
-    enableParseRecipe = true,
-    enableParseRecipeWithAI = true,
-  } = props;
-
   const router = useRouter();
   const recipeCreatePreferences = useRecipeCreatePreferences();
 
+  function isEnabled(flag: MaybeRefOrGetter<boolean> | undefined, defaultValue = true) {
+    const value = flag === undefined ? undefined : toValue(flag);
+    return value ?? defaultValue;
+  }
+
   const importKeywordsAsTags = computed({
     get() {
-      if (!enableImportKeywords) return false;
+      if (!isEnabled(props.enableImportKeywords)) return false;
       return recipeCreatePreferences.value.importKeywordsAsTags;
     },
     set(v: boolean) {
-      if (!enableImportKeywords) return;
+      if (!isEnabled(props.enableImportKeywords)) return;
       recipeCreatePreferences.value.importKeywordsAsTags = v;
     },
   });
 
   const importCategories = computed({
     get() {
-      if (!enableImportCategories) return false;
+      if (!isEnabled(props.enableImportCategories)) return false;
       return recipeCreatePreferences.value.importCategories;
     },
     set(v: boolean) {
-      if (!enableImportCategories) return;
+      if (!isEnabled(props.enableImportCategories)) return;
       recipeCreatePreferences.value.importCategories = v;
     },
   });
 
   const stayInEditMode = computed({
     get() {
-      if (!enableStayInEditMode) return false;
+      if (!isEnabled(props.enableStayInEditMode)) return false;
       return recipeCreatePreferences.value.stayInEditMode;
     },
     set(v: boolean) {
-      if (!enableStayInEditMode) return;
+      if (!isEnabled(props.enableStayInEditMode)) return;
       recipeCreatePreferences.value.stayInEditMode = v;
     },
   });
 
   const parseRecipe = computed({
     get() {
-      if (!enableParseRecipe) return false;
+      if (!isEnabled(props.enableParseRecipe)) return false;
       return recipeCreatePreferences.value.parseRecipe;
     },
     set(v: boolean) {
-      if (!enableParseRecipe) return;
+      if (!isEnabled(props.enableParseRecipe)) return;
       recipeCreatePreferences.value.parseRecipe = v;
     },
   });
 
   const parseRecipeWithAI = computed({
     get() {
-      if (!enableParseRecipeWithAI) return false;
+      if (!isEnabled(props.enableParseRecipeWithAI)) return false;
       return recipeCreatePreferences.value.parseRecipeWithAI;
     },
     set(v: boolean) {
-      if (!enableParseRecipeWithAI) return;
+      if (!isEnabled(props.enableParseRecipeWithAI)) return;
       recipeCreatePreferences.value.parseRecipeWithAI = v;
     },
   });
 
   function navigateToRecipe(recipeSlug: string, groupSlug: string, createPagePath: string) {
-    const editParam = enableStayInEditMode ? stayInEditMode.value : false;
-    const parseParam = enableParseRecipe ? parseRecipe.value : false;
-    const parseAIParam = enableParseRecipeWithAI ? parseRecipeWithAI.value : false;
+    const editParam = isEnabled(props.enableStayInEditMode) ? stayInEditMode.value : false;
+    const parseParam = isEnabled(props.enableParseRecipe) ? parseRecipe.value : false;
+    const parseAIParam = isEnabled(props.enableParseRecipeWithAI) ? parseRecipeWithAI.value : false;
 
     const queryParams = new URLSearchParams();
     if (editParam || parseAIParam) {
@@ -110,10 +109,10 @@ export function useNewRecipeOptions(props: UseNewRecipeOptionsProps = {}) {
     navigateToRecipe,
 
     // Props for conditional rendering
-    enableImportKeywords,
-    enableImportCategories,
-    enableStayInEditMode,
-    enableParseRecipe,
-    enableParseRecipeWithAI,
+    enableImportKeywords: isEnabled(props.enableImportKeywords),
+    enableImportCategories: isEnabled(props.enableImportCategories),
+    enableStayInEditMode: isEnabled(props.enableStayInEditMode),
+    enableParseRecipe: isEnabled(props.enableParseRecipe),
+    enableParseRecipeWithAI: isEnabled(props.enableParseRecipeWithAI),
   };
 }

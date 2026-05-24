@@ -148,7 +148,8 @@ const emit = defineEmits(["print", "input", "save", "delete", "close", "json", "
 const deleteDialog = ref(false);
 
 const i18n = useI18n();
-const { $globals, $appInfo } = useNuxtApp();
+const { $globals } = useNuxtApp();
+const { group } = useGroupSelf();
 const { toggleIsParsing } = usePageState(props.recipe.slug as string);
 
 function hasFoodOrUnit() {
@@ -213,7 +214,7 @@ const editorButtons = computed(() => {
   }
 
   if (!hasFoodOrUnit() && !props.hideParseActions) {
-    if ($appInfo.enableOpenai) {
+    if (group.value?.aiProviderSettings?.aiEnabled) {
       buttons.unshift({
         text: i18n.t("recipe.parse-with-ai"),
         icon: $globals.icons.robot,

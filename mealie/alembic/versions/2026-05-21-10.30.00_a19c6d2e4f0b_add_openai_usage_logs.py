@@ -1,7 +1,7 @@
 """add openai usage logs
 
 Revision ID: a19c6d2e4f0b
-Revises: 6f8d2f7b2b21
+Revises: 2187537c52b8
 Create Date: 2026-05-21 10:30:00.000000
 
 """
@@ -14,7 +14,7 @@ import mealie.db.migration_types
 
 # revision identifiers, used by Alembic.
 revision = "a19c6d2e4f0b"
-down_revision: str | None = "6f8d2f7b2b21"
+down_revision: str | None = "2187537c52b8"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
 

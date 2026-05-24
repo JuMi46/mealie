@@ -77,7 +77,7 @@
             :disabled="state.loading"
           />
           <v-checkbox
-            v-if="uploadedImages.length && $appInfo.enableOpenai"
+            v-if="uploadedImages.length && group?.aiProviderSettings?.aiEnabled"
             v-model="parseRecipeWithAI"
             color="primary"
             hide-details
@@ -106,6 +106,7 @@
 
 <script setup lang="ts">
 import { useUserApi } from "~/composables/api";
+import { useGroupSelf } from "~/composables/use-groups";
 import { alert } from "~/composables/use-toast";
 import { useNewRecipeOptions } from "~/composables/use-new-recipe-options";
 import type { VForm } from "~/types/auto-forms";
@@ -116,9 +117,9 @@ const state = reactive({
 
 const i18n = useI18n();
 const api = useUserApi();
-const { $appInfo } = useNuxtApp();
 const route = useRoute();
 const groupSlug = computed(() => route.params.groupSlug || "");
+const { group } = useGroupSelf();
 
 const domUrlForm = ref<VForm | null>(null);
 const uploadedImages = ref<(Blob | File)[]>([]);
@@ -127,7 +128,7 @@ const uploadedImagesPreviewUrls = ref<string[]>([]);
 const shouldTranslate = ref(true);
 
 const { parseRecipe, parseRecipeWithAI, navigateToRecipe } = useNewRecipeOptions({
-  enableParseRecipeWithAI: $appInfo.enableOpenai,
+  enableParseRecipeWithAI: () => !!group.value?.aiProviderSettings?.aiEnabled,
 });
 
 function uploadImages(files: File[]) {

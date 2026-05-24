@@ -1,7 +1,7 @@
 """add table for ai providers
 
 Revision ID: 2187537c52b8
-Revises: c7427796f7b6
+Revises: 6f8d2f7b2b21
 Create Date: 2026-05-18 16:27:05.770218
 
 """
@@ -18,7 +18,7 @@ from mealie.db.models._model_utils.guid import GUID
 
 # revision identifiers, used by Alembic.
 revision = "2187537c52b8"
-down_revision: str | None = "c7427796f7b6"
+down_revision: str | None = "6f8d2f7b2b21"
 branch_labels: str | tuple[str, ...] | None = None
 depends_on: str | tuple[str, ...] | None = None
 

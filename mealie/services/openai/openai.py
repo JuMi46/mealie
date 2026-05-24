@@ -186,6 +186,7 @@ class OpenAIService(BaseService):
         operation: str,
         status: str,
         model: str | None,
+        provider: str | None,
         request_id: str | None,
         input_tokens: int | None,
         output_tokens: int | None,
@@ -206,7 +207,7 @@ class OpenAIService(BaseService):
                         operation=operation,
                         status=status,
                         model=model,
-                        provider=self.settings.OPENAI_BASE_URL,
+                        provider=provider,
                         request_id=request_id,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
@@ -351,14 +352,15 @@ class OpenAIService(BaseService):
 
         start_time = time.perf_counter()
         had_attachments = bool(attachments)
+        selected_provider: AIProviderOut | None = None
 
         try:
-            provider = provider or self._get_provider(attachments)
+            selected_provider = provider or self._get_provider(attachments)
             user_messages: list[dict] = [{"type": "text", "text": message}]
             for attachment in attachments or []:
                 user_messages.append(attachment.build_message())
 
-            response = await self._get_raw_response(prompt, user_messages, response_schema, provider)
+            response = await self._get_raw_response(prompt, user_messages, response_schema, selected_provider)
 
             usage = response.usage
             input_tokens = usage.prompt_tokens if usage else None
@@ -369,7 +371,8 @@ class OpenAIService(BaseService):
                 context=context,
                 operation="chat.completions.parse",
                 status="success",
-                model=self.model,
+                model=selected_provider.model,
+                provider=selected_provider.name,
                 request_id=response.id,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
@@ -388,7 +391,8 @@ class OpenAIService(BaseService):
                 context=context,
                 operation="chat.completions.parse",
                 status="rate_limit",
-                model=self.model,
+                model=selected_provider.model if selected_provider else None,
+                provider=selected_provider.name if selected_provider else None,
                 request_id=None,
                 input_tokens=None,
                 output_tokens=None,
@@ -404,7 +408,8 @@ class OpenAIService(BaseService):
                 context=context,
                 operation="chat.completions.parse",
                 status="error",
-                model=self.model,
+                model=selected_provider.model if selected_provider else None,
+                provider=selected_provider.name if selected_provider else None,
                 request_id=None,
                 input_tokens=None,
                 output_tokens=None,
@@ -435,7 +440,8 @@ class OpenAIService(BaseService):
                 context=context,
                 operation="audio.transcriptions.create",
                 status="success",
-                model=self.audio_model,
+                model=self.audio_provider.model,
+                provider=self.audio_provider.name,
                 request_id=getattr(transcript, "id", None),
                 input_tokens=None,
                 output_tokens=None,
@@ -449,7 +455,8 @@ class OpenAIService(BaseService):
                 context=context,
                 operation="audio.transcriptions.create",
                 status="rate_limit",
-                model=self.audio_model,
+                model=self.audio_provider.model,
+                provider=self.audio_provider.name,
                 request_id=None,
                 input_tokens=None,
                 output_tokens=None,
@@ -465,7 +472,8 @@ class OpenAIService(BaseService):
                 context=context,
                 operation="audio.transcriptions.create",
                 status="error",
-                model=self.audio_model,
+                model=self.audio_provider.model,
+                provider=self.audio_provider.name,
                 request_id=None,
                 input_tokens=None,
                 output_tokens=None,

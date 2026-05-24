@@ -212,23 +212,22 @@ class ParseRecipeInstructionsWithAIOut(BaseModel):
 @controller(router)
 class RecipeController(BaseRecipeController):
     def _get_parse_recipe_with_ai_prompt(self, openai_service: OpenAIService) -> str:
-        if openai_service.send_db_data:
-            data_matcher = DataMatcher(self.repos)
-            unit_aliases = list(set(data_matcher.units_by_alias))
-            if unit_aliases:
-                return openai_service.get_prompt(
-                    "recipes.parse-recipe-editor",
-                    data_injections=[
-                        OpenAIDataInjection(
-                            description=(
-                                "Below is a list of unit names and abbreviations from the user's database. "
-                                "Use this as the preferred unit vocabulary when parsing ingredients and "
-                                "instruction quantities."
-                            ),
-                            value=unit_aliases,
-                        )
-                    ],
-                )
+        data_matcher = DataMatcher(self.repos)
+        unit_aliases = list(set(data_matcher.units_by_alias))
+        if unit_aliases:
+            return openai_service.get_prompt(
+                "recipes.parse-recipe-editor",
+                data_injections=[
+                    OpenAIDataInjection(
+                        description=(
+                            "Below is a list of unit names and abbreviations from the user's database. "
+                            "Use this as the preferred unit vocabulary when parsing ingredients and "
+                            "instruction quantities."
+                        ),
+                        value=unit_aliases,
+                    )
+                ],
+            )
 
         return openai_service.get_prompt("recipes.parse-recipe-editor")
 
@@ -535,7 +534,7 @@ class RecipeController(BaseRecipeController):
         translate_language: str | None = Query(None, alias="translateLanguage"),
     ):
         """
-        Create a recipe from an image using OpenAI.
+        Create a recipe from an image using AI.
         Optionally specify a language for it to translate the recipe to.
         """
 
@@ -543,7 +542,7 @@ class RecipeController(BaseRecipeController):
         if not (ai_settings and ai_settings.image_provider_enabled):
             raise HTTPException(
                 status_code=400,
-                detail=ErrorResponse.respond("OpenAI image services are not enabled"),
+                detail=ErrorResponse.respond("AI image services are not enabled for this group"),
             )
 
         recipe = await self.service.create_from_images(images, translate_language)
@@ -676,18 +675,25 @@ class RecipeController(BaseRecipeController):
     @router.post("/{slug}/parse-with-ai", response_model=ParseRecipeWithAIOut)
     async def parse_recipe_with_ai(self, slug: str, data: ParseRecipeWithAIIn) -> ParseRecipeWithAIOut:
         """
-        Parse recipe editor data with OpenAI. This endpoint does not persist any data.
+        Parse recipe editor data with AI. This endpoint does not persist any data.
         """
         # Ensure the recipe exists and the user has access to it.
         self.service.get_one(slug)
 
-        if not self.settings.OPENAI_ENABLED:
+        ai_settings = self.group.ai_provider_settings
+        if not ai_settings or not ai_settings.ai_enabled:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=ErrorResponse.respond(message="OpenAI is not enabled"),
+                detail=ErrorResponse.respond(message="AI is not enabled for this group"),
             )
 
-        openai_service = OpenAIService()
+        openai_service = OpenAIService(self.repos)
+        provider = openai_service.default_provider
+        if not provider:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message="No default AI provider configured"),
+            )
         prompt = self._get_parse_recipe_with_ai_prompt(openai_service)
 
         recipe_payload = {
@@ -717,6 +723,7 @@ class RecipeController(BaseRecipeController):
                 prompt,
                 orjson.dumps(recipe_payload).decode("utf-8"),
                 response_schema=OpenAIRecipe,
+                provider=provider,
                 context=OpenAICallContext(
                     endpoint="/api/recipes/{slug}/parse-with-ai",
                     user_id=str(self.user.id),
@@ -734,7 +741,7 @@ class RecipeController(BaseRecipeController):
         if not response:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=ErrorResponse.respond(message="OpenAI returned an empty response"),
+                detail=ErrorResponse.respond(message="AI provider returned an empty response"),
             )
 
         ingredient_parser = OpenAIParser(self.group_id, self.session, self.translator)
@@ -816,18 +823,25 @@ class RecipeController(BaseRecipeController):
         self, slug: str, data: ParseRecipeInstructionsWithAIIn
     ) -> ParseRecipeInstructionsWithAIOut:
         """
-        Parse recipe instructions with OpenAI to enrich timers and temperature text.
+        Parse recipe instructions with AI to enrich timers and temperature text.
         This endpoint does not persist any data.
         """
         self.service.get_one(slug)
 
-        if not self.settings.OPENAI_ENABLED:
+        ai_settings = self.group.ai_provider_settings
+        if not ai_settings or not ai_settings.ai_enabled:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=ErrorResponse.respond(message="OpenAI is not enabled"),
+                detail=ErrorResponse.respond(message="AI is not enabled for this group"),
             )
 
-        openai_service = OpenAIService()
+        openai_service = OpenAIService(self.repos)
+        provider = openai_service.default_provider
+        if not provider:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message="No default AI provider configured"),
+            )
         prompt = self._get_parse_instruction_timers_with_ai_prompt(openai_service)
 
         recipe_payload: dict[str, object] = {
@@ -848,6 +862,7 @@ class RecipeController(BaseRecipeController):
                 prompt,
                 orjson.dumps(recipe_payload).decode("utf-8"),
                 response_schema=OpenAIRecipeInstructionTimerResult,
+                provider=provider,
                 context=OpenAICallContext(
                     endpoint="/api/recipes/{slug}/parse-instructions-with-ai",
                     user_id=str(self.user.id),
@@ -865,7 +880,7 @@ class RecipeController(BaseRecipeController):
         if not response:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=ErrorResponse.respond(message="OpenAI returned an empty response"),
+                detail=ErrorResponse.respond(message="AI provider returned an empty response"),
             )
 
         seen_instruction_ids: set[UUID] = set()
