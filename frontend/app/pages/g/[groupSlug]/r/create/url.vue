@@ -65,6 +65,7 @@
           :label="$t('recipe.parse-recipe-ingredients-after-import')"
         />
         <v-checkbox
+          v-if="$appInfo.enableOpenai"
           v-model="parseRecipeWithAI"
           color="primary"
           hide-details
@@ -166,6 +167,7 @@ const state = reactive({
 
 const auth = useMealieAuth();
 const api = useUserApi();
+const { $appInfo } = useNuxtApp();
 const route = useRoute();
 const groupSlug = computed(() => route.params.groupSlug as string || auth.user.value?.groupSlug || "");
 
@@ -179,7 +181,9 @@ const {
   parseRecipe,
   parseRecipeWithAI,
   navigateToRecipe,
-} = useNewRecipeOptions();
+} = useNewRecipeOptions({
+  enableParseRecipeWithAI: $appInfo.enableOpenai,
+});
 
 const bulkImporterTarget = computed(() => `/g/${groupSlug.value}/r/create/bulk`);
 const htmlOrJsonImporterTarget = computed(() => `/g/${groupSlug.value}/r/create/html`);

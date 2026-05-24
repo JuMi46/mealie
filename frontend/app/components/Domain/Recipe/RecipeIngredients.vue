@@ -1,18 +1,17 @@
 <template>
   <div v-if="value && value.length > 0">
-    <div
-      v-if="!isCookMode"
-      class="d-flex justify-start"
-    >
-      <h2 class="mt-1 text-h5 font-weight-medium opacity-80">
-        {{ $t("recipe.ingredients") }}
-      </h2>
-      <AppButtonCopy
-        btn-class="ml-auto"
-        :copy-text="ingredientCopyText"
-      />
-    </div>
-    <div>
+    <template v-if="!isCookMode">
+      <div
+        class="d-flex justify-start"
+      >
+        <h2 class="mt-1 text-h5 font-weight-medium opacity-80">
+          {{ $t("recipe.ingredients") }}
+        </h2>
+        <AppButtonCopy
+          btn-class="ml-auto"
+          :copy-text="ingredientCopyText"
+        />
+      </div>
       <div class="ingredient-sort-controls">
         <v-icon
           size="18"
@@ -21,7 +20,6 @@
           {{ $globals.icons.sortDescending }}
         </v-icon>
         <div
-          v-if="!isCookMode"
           class="ingredient-sort-toggles"
         >
           <v-checkbox
@@ -42,7 +40,8 @@
           />
         </div>
       </div>
-
+    </template>
+    <div>
       <div
         v-for="[sectionName, ingredientsByPlace] in ingredients"
         :key="'section' + sectionName"
@@ -59,12 +58,12 @@
           :key="'place' + placeName"
         >
           <h3
-            v-if="placeName && sortIngredientsByLabel"
+            v-if="placeName && placeName !== 'all'"
             class="mt-4 mb-0"
           >
             {{ placeName }}
           </h3>
-          <v-divider v-if="placeName && sortIngredientsByLabel" thickness="2" gradient class="my-2" />
+          <v-divider v-if="placeName && placeName !== 'all'" thickness="2" gradient class="my-2" />
 
           <v-list>
             <template
@@ -354,39 +353,38 @@ function sortSectionIngredientsByPlace(ingredientsByPlace: Map<string, RecipeIng
 }
 
 function transformToIngredientsByPlace(ingredients: RecipeIngredient[]): Map<string, RecipeIngredient[]> {
-  const ingredientsByPlace = new Map<string, RecipeIngredient[]>([
-    ["fridge", []],
-    ["freezer", []],
-    ["pantry", []],
-    ["all", []],
-  ]);
-
   ingredients = reduceIngredients(ingredients);
-  ingredients.forEach((ingredient) => {
-    let place: string | null | undefined = "all";
-    if (sortIngredientsByLabel.value) {
-      place = (ingredient.food as IngredientFood)?.label?.place;
+
+  let ingredientsByPlace: Map<string, RecipeIngredient[]>;
+  if (sortIngredientsByLabel.value && !props.isCookMode) {
+    ingredientsByPlace = new Map<string, RecipeIngredient[]>([
+      ["fridge", []],
+      ["freezer", []],
+      ["pantry", []],
+    ]);
+
+    ingredients.forEach((ingredient) => {
+      let place = (ingredient.food as IngredientFood)?.label?.place;
       if (ingredient.referencedRecipe?.recipeIngredient) {
         const refFood = ingredient.referencedRecipe?.recipeIngredient[0].food as IngredientFood;
         place = refFood?.label?.place;
       }
-      if (!place) {
-        place = "pantry";
+
+      ingredientsByPlace.get(place || "pantry")?.push(ingredient);
+    });
+
+    for (const [place, placeIngredients] of ingredientsByPlace.entries()) {
+      if (placeIngredients.length === 0) {
+        ingredientsByPlace.delete(place);
       }
     }
 
-    ingredientsByPlace.get(place)?.push(ingredient);
-  });
-
-  for (const [place, placeIngredients] of ingredientsByPlace.entries()) {
-    if (placeIngredients.length === 0) {
-      ingredientsByPlace.delete(place);
-    }
-  }
-
-  if (sortIngredientsByLabel.value) {
     sortSectionIngredientsByPlace(ingredientsByPlace);
   }
+  else {
+    ingredientsByPlace = new Map<string, RecipeIngredient[]>([["all", ingredients]]);
+  }
+
   return ingredientsByPlace;
 }
 
@@ -400,24 +398,29 @@ const substitutedIngredients = computed(() => {
 const ingredients = computed(() => {
   const ingredientsBySection = new Map<string, Map<string, RecipeIngredient[]>>();
 
-  let ingredientTitle = "";
-  let ingredientsInSection: RecipeIngredient[] = [];
+  if (sortIngredientsBySection.value && !props.isCookMode) {
+    let ingredientTitle = "";
+    let ingredientsInSection: RecipeIngredient[] = [];
 
-  substitutedIngredients.value.forEach((ingredient, index) => {
-    if (index === 0) {
-      ingredientTitle = sortIngredientsBySection.value ? ingredient.title || "" : "";
-    }
-    else if (ingredient.title && sortIngredientsBySection.value) {
+    substitutedIngredients.value.forEach((ingredient, index) => {
+      if (index === 0) {
+        ingredientTitle = sortIngredientsBySection.value ? ingredient.title || "" : "";
+      }
+      else if (ingredient.title) {
+        ingredientsBySection.set(ingredientTitle, transformToIngredientsByPlace(ingredientsInSection));
+        ingredientTitle = ingredient.title || "";
+        ingredientsInSection = [];
+      }
+
+      ingredientsInSection.push(ingredient);
+    });
+
+    if (ingredientsInSection.length > 0) {
       ingredientsBySection.set(ingredientTitle, transformToIngredientsByPlace(ingredientsInSection));
-      ingredientTitle = ingredient.title || "";
-      ingredientsInSection = [];
     }
-
-    ingredientsInSection.push(ingredient);
-  });
-
-  if (ingredientsInSection.length > 0) {
-    ingredientsBySection.set(ingredientTitle, transformToIngredientsByPlace(ingredientsInSection));
+  }
+  else {
+    ingredientsBySection.set("", transformToIngredientsByPlace(substitutedIngredients.value));
   }
 
   return ingredientsBySection;

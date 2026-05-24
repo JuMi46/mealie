@@ -84,6 +84,7 @@
         />
         <v-checkbox
           v-model="parseRecipeWithAI"
+          v-if="$appInfo.enableOpenai"
           color="primary"
           hide-details
           :label="$t('recipe.parse-recipe-with-ai-after-import')"
@@ -123,6 +124,7 @@ const state = reactive({
   loading: false,
   isEditJSON: false,
 });
+const { $appInfo } = useNuxtApp();
 const auth = useMealieAuth();
 const route = useRoute();
 const groupSlug = computed(() => route.params.groupSlug as string || auth.user.value?.groupSlug || "");
@@ -138,7 +140,9 @@ const {
   parseRecipe,
   parseRecipeWithAI,
   navigateToRecipe,
-} = useNewRecipeOptions();
+} = useNewRecipeOptions({
+  enableParseRecipeWithAI: $appInfo.enableOpenai,
+});
 
 function handleResponse(response: AxiosResponse<string> | null, refreshTags = false) {
   if (response?.status !== 201) {

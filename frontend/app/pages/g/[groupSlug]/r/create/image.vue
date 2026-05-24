@@ -77,7 +77,7 @@
             :disabled="state.loading"
           />
           <v-checkbox
-            v-if="uploadedImages.length"
+            v-if="uploadedImages.length && $appInfo.enableOpenai"
             v-model="parseRecipeWithAI"
             color="primary"
             hide-details
@@ -116,6 +116,7 @@ const state = reactive({
 
 const i18n = useI18n();
 const api = useUserApi();
+const { $appInfo } = useNuxtApp();
 const route = useRoute();
 const groupSlug = computed(() => route.params.groupSlug || "");
 
@@ -125,7 +126,9 @@ const uploadedImageNames = ref<string[]>([]);
 const uploadedImagesPreviewUrls = ref<string[]>([]);
 const shouldTranslate = ref(true);
 
-const { parseRecipe, parseRecipeWithAI, navigateToRecipe } = useNewRecipeOptions();
+const { parseRecipe, parseRecipeWithAI, navigateToRecipe } = useNewRecipeOptions({
+  enableParseRecipeWithAI: $appInfo.enableOpenai,
+});
 
 function uploadImages(files: File[]) {
   uploadedImages.value = [...uploadedImages.value, ...files];
