@@ -100,6 +100,21 @@ class CreateIngredientFood(UnitFoodBase):
     tip: str | None = None
 
 
+class UpdateIngredientFood(MealieModel):
+    name: str | None = None
+    plural_name: str | None = None
+    description: str | None = None
+    extras: dict | None = None
+    name_jp: str | None = None
+    name_jp_kanji: str | None = None
+    label_id: UUID4 | None = None
+    household_label_id: UUID4 | None = None
+    aliases: list[CreateIngredientFoodAlias] | None = None
+    households_with_ingredient_food: list[str] | None = None
+    density: float | None = None
+    tip: str | None = None
+
+
 class SaveIngredientFood(CreateIngredientFood):
     group_id: UUID4
 

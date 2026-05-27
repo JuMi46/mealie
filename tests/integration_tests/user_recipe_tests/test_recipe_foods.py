@@ -68,6 +68,24 @@ def test_update_food(api_client: TestClient, food: dict, unique_user: TestUser):
     assert as_json["description"] == update_data["description"]
 
 
+def test_patch_food_name_jp_by_id(api_client: TestClient, food: dict, unique_user: TestUser):
+    original_name = food["name"]
+    original_description = food["description"]
+    new_name_jp = random_string(10)
+
+    response = api_client.patch(
+        api_routes.foods_item_id(food["id"]),
+        json={"nameJp": new_name_jp},
+        headers=unique_user.token,
+    )
+    as_json = utils.assert_deserialize(response, 200)
+
+    assert as_json["id"] == food["id"]
+    assert as_json["name"] == original_name
+    assert as_json["description"] == original_description
+    assert as_json["nameJp"] == new_name_jp
+
+
 def test_delete_food(api_client: TestClient, food: dict, unique_user: TestUser):
     id = food["id"]
 
@@ -128,12 +146,54 @@ def test_update_food_household_label_override(api_client: TestClient, unique_use
         {"name": random_string(10), "group_id": unique_user.group_id}
     )
     food = database.ingredient_foods.create(
-        {"name": random_string(10), "group_id": unique_user.group_id, "label_id": base_label.id}
+        {
+            "name": random_string(10),
+            "description": random_string(10),
+            "group_id": unique_user.group_id,
+            "label_id": base_label.id,
+        }
     )
 
     response = api_client.put(
         api_routes.foods_item_id(food.id),
-        json={"name": food.name, "householdLabelId": str(override_label.id)},
+        json={
+            "id": str(food.id),
+            "name": food.name,
+            "description": food.description,
+            "labelId": str(base_label.id),
+            "householdLabelId": str(override_label.id),
+        },
+        headers=unique_user.token,
+    )
+    as_json = utils.assert_deserialize(response, 200)
+    assert as_json["householdLabelId"] == str(override_label.id)
+    assert as_json["labelId"] == str(base_label.id)
+
+    response = api_client.get(api_routes.foods_item_id(food.id), headers=unique_user.token)
+    as_json = utils.assert_deserialize(response, 200)
+    assert as_json["householdLabelId"] == str(override_label.id)
+
+
+def test_patch_food_household_label_override(api_client: TestClient, unique_user: TestUser):
+    database = unique_user.repos
+    base_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
+    override_label = database.group_multi_purpose_labels.create(
+        {"name": random_string(10), "group_id": unique_user.group_id}
+    )
+    food = database.ingredient_foods.create(
+        {
+            "name": random_string(10),
+            "description": random_string(10),
+            "group_id": unique_user.group_id,
+            "label_id": base_label.id,
+        }
+    )
+
+    response = api_client.patch(
+        api_routes.foods_item_id(food.id),
+        json={"householdLabelId": str(override_label.id)},
         headers=unique_user.token,
     )
     as_json = utils.assert_deserialize(response, 200)
@@ -154,7 +214,12 @@ def test_recipe_get_one_uses_household_food_label_override(api_client: TestClien
         {"name": random_string(10), "group_id": unique_user.group_id}
     )
     food = database.ingredient_foods.create(
-        {"name": random_string(10), "group_id": unique_user.group_id, "label_id": base_label.id}
+        {
+            "name": random_string(10),
+            "description": random_string(10),
+            "group_id": unique_user.group_id,
+            "label_id": base_label.id,
+        }
     )
     recipe = database.recipes.create(
         Recipe(
@@ -168,6 +233,7 @@ def test_recipe_get_one_uses_household_food_label_override(api_client: TestClien
 
     database.session.add(
         HouseholdIngredientFoodLabel(
+            session=database.session,
             household_id=unique_user.household_id,
             food_id=food.id,
             label_id=override_label.id,

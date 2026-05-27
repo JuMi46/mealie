@@ -99,6 +99,23 @@ def test_food_merge_requires_organize_permission(api_client: TestClient, unique_
     assert response.status_code == 200
 
 
+def test_food_patch_requires_organize_permission(api_client: TestClient, unique_user_fn_scoped: TestUser):
+    user = unique_user_fn_scoped
+    food_id = create_item(api_client, user, api_routes.foods)
+
+    set_can_organize(user, False)
+    response = api_client.patch(
+        api_routes.foods_item_id(food_id), json={"nameJp": random_string(10)}, headers=user.token
+    )
+    assert response.status_code == 403
+
+    set_can_organize(user, True)
+    response = api_client.patch(
+        api_routes.foods_item_id(food_id), json={"nameJp": random_string(10)}, headers=user.token
+    )
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize("name, collection, item", RESOURCES, ids=RESOURCE_IDS)
 def test_read_endpoints_do_not_require_organize_permission(
     api_client: TestClient, unique_user_fn_scoped: TestUser, name: str, collection: str, item

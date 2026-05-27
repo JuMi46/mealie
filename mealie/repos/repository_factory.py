@@ -83,6 +83,7 @@ from .repository_group import RepositoryGroup
 from .repository_meals import RepositoryMeals
 from .repository_recipes import RepositoryRecipes
 from .repository_shopping_list import RepositoryShoppingList
+from .repository_shopping_list_item import RepositoryShoppingListItem
 from .repository_users import RepositoryUserRatings, RepositoryUsers
 
 PK_ID = "id"
@@ -330,8 +331,8 @@ class AllRepositories:
         )
 
     @cached_property
-    def group_shopping_list_item(self) -> HouseholdRepositoryGeneric[ShoppingListItemOut, ShoppingListItem]:
-        return HouseholdRepositoryGeneric(
+    def group_shopping_list_item(self) -> RepositoryShoppingListItem:
+        return RepositoryShoppingListItem(
             self.session,
             PK_ID,
             ShoppingListItem,

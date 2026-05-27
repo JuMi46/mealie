@@ -12,9 +12,12 @@ from mealie.schema.household.group_shopping_list import (
     ShoppingListAddRecipeParamsBulk,
     ShoppingListCreate,
     ShoppingListItemCreate,
+    ShoppingListItemFoodTrimmed,
+    ShoppingListItemLabelTrimmed,
     ShoppingListItemOut,
     ShoppingListItemPagination,
     ShoppingListItemsCollectionOut,
+    ShoppingListItemTrimmedOut,
     ShoppingListItemUpdate,
     ShoppingListItemUpdateBulk,
     ShoppingListMultiPurposeLabelUpdate,
@@ -95,6 +98,32 @@ def publish_list_item_events(publisher: Callable, items_collection: ShoppingList
             )
 
 
+def to_trimmed_shopping_item(item: ShoppingListItemOut) -> ShoppingListItemTrimmedOut:
+    return ShoppingListItemTrimmedOut(
+        id=item.id,
+        food=(
+            ShoppingListItemFoodTrimmed(
+                id=item.food.id,
+                name=item.food.name,
+                name_jp=item.food.name_jp,
+                name_jp_kanji=item.food.name_jp_kanji,
+            )
+            if item.food
+            else None
+        ),
+        label=(
+            ShoppingListItemLabelTrimmed(
+                name=item.label.name,
+                place=item.label.place,
+            )
+            if item.label
+            else None
+        ),
+        display=item.display,
+        note=item.note,
+    )
+
+
 @controller(item_router)
 class ShoppingListItemController(BaseCrudController):
     @cached_property
@@ -143,6 +172,38 @@ class ShoppingListItemController(BaseCrudController):
     @item_router.put("/{item_id}", response_model=ShoppingListItemsCollectionOut)
     def update_one(self, item_id: UUID4, data: ShoppingListItemUpdate):
         return self.update_many([data.cast(ShoppingListItemUpdateBulk, id=item_id)])
+
+    @item_router.post("/{item_id}/checked-and-next-unsent", response_model=ShoppingListItemTrimmedOut)
+    def check_and_next_unsent(self, item_id: UUID4):
+        item = self.mixins.get_one(item_id)
+
+        update_result = self.service.bulk_update_items(
+            [
+                ShoppingListItemUpdateBulk(
+                    id=item.id,
+                    shopping_list_id=item.shopping_list_id,
+                    checked=True,
+                    position=item.position,
+                    quantity=item.quantity,
+                    food_id=item.food_id,
+                    label_id=item.label_id,
+                    unit_id=item.unit_id,
+                    note=item.note,
+                    extras=item.extras,
+                    recipe_references=item.recipe_references,
+                )
+            ]
+        )
+
+        publish_list_item_events(self.publish_event, update_result)
+
+        next_unsent_item = self.repos.group_shopping_list_item.get_next_unsent(item.shopping_list_id)
+
+        if next_unsent_item is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No unsent shopping list item found")
+
+        next_unsent_item = self.service._apply_food_label_overrides_to_items([next_unsent_item])[0]
+        return to_trimmed_shopping_item(next_unsent_item)
 
     @item_router.delete("", response_model=SuccessResponse)
     def delete_many(self, ids: list[UUID4] = Query(None)):
@@ -255,6 +316,40 @@ class ShoppingListController(BaseCrudController):
         )
 
         return updated_list
+
+    @router.post("/{list_id}/items/next-unsent", response_model=ShoppingListItemTrimmedOut)
+    def get_and_mark_next_unsent(self, list_id: UUID4):
+        item = self.repos.group_shopping_list_item.get_next_unsent(list_id)
+
+        if item is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No unsent shopping list item found")
+
+        extras = item.extras or {}
+        extras["sent"] = "true"
+
+        update_result = self.service.bulk_update_items(
+            [
+                ShoppingListItemUpdateBulk(
+                    id=item.id,
+                    shopping_list_id=item.shopping_list_id,
+                    checked=item.checked,
+                    position=item.position,
+                    quantity=item.quantity,
+                    food_id=item.food_id,
+                    label_id=item.label_id,
+                    unit_id=item.unit_id,
+                    note=item.note,
+                    extras=extras,
+                    recipe_references=item.recipe_references,
+                )
+            ]
+        )
+
+        publish_list_item_events(self.publish_event, update_result)
+
+        updated_item = update_result.updated_items[0]
+        updated_item = self.service._apply_food_label_overrides_to_items([updated_item])[0]
+        return to_trimmed_shopping_item(updated_item)
 
     @router.post("/{item_id}/recipe", response_model=ShoppingListOut)
     def add_recipe_ingredients_to_list(self, item_id: UUID4, data: list[ShoppingListAddRecipeParamsBulk]):

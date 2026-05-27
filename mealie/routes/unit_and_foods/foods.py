@@ -18,6 +18,7 @@ from mealie.schema.recipe.recipe_ingredient import (
     IngredientFoodPagination,
     MergeFood,
     SaveIngredientFood,
+    UpdateIngredientFood,
 )
 from mealie.schema.response.pagination import PaginationQuery
 from mealie.schema.response.responses import ErrorResponse, SuccessResponse
@@ -72,6 +73,7 @@ class IngredientFoodsController(BaseUserController):
         else:
             self.session.add(
                 HouseholdIngredientFoodLabel(
+                    session=self.session,
                     household_id=self.household_id,
                     food_id=food_id,
                     label_id=household_label_id,
@@ -219,6 +221,31 @@ class IngredientFoodsController(BaseUserController):
     @router.get("/{item_id}", response_model=IngredientFood)
     def get_one(self, item_id: UUID4):
         food = self.mixins.get_one(item_id)
+        return self._apply_household_label_override([food])[0]
+
+    @router.patch("/{item_id}", response_model=IngredientFood)
+    def patch_one(self, item_id: UUID4, data: UpdateIngredientFood):
+        self.checks.can_organize()
+
+        should_set_override = "household_label_id" in data.model_fields_set
+        if should_set_override:
+            self._validate_household_label_override(data.household_label_id)
+
+        patch_data = data.model_dump(exclude_unset=True, exclude_defaults=True)
+        patch_data.pop("household_label_id", None)
+
+        if patch_data:
+            existing_food = self.mixins.get_one(item_id)
+            merged_data = existing_food.model_dump()
+            merged_data.update(patch_data)
+            save_data = SaveIngredientFood.model_validate({**merged_data, "group_id": self.group_id})
+            food = self.mixins.update_one(save_data, item_id)
+        else:
+            food = self.mixins.get_one(item_id)
+
+        if should_set_override:
+            self._set_household_label_override(item_id, data.household_label_id)
+
         return self._apply_household_label_override([food])[0]
 
     @router.put("/{item_id}", response_model=IngredientFood)

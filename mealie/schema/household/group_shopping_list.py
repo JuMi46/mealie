@@ -143,6 +143,26 @@ class ShoppingListItemOut(ShoppingListItemBase):
         ]
 
 
+class ShoppingListItemFoodTrimmed(MealieModel):
+    id: UUID4
+    name: str | None = None
+    name_jp: str | None = None
+    name_jp_kanji: str | None = None
+
+
+class ShoppingListItemLabelTrimmed(MealieModel):
+    name: str | None = None
+    place: str | None = None
+
+
+class ShoppingListItemTrimmedOut(MealieModel):
+    food: ShoppingListItemFoodTrimmed | None = None
+    label: ShoppingListItemLabelTrimmed | None = None
+    id: UUID4
+    display: str | None = None
+    note: str | None = None
+
+
 class ShoppingListItemsCollectionOut(MealieModel):
     """Container for bulk shopping list item changes"""
 

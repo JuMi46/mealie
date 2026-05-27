@@ -590,6 +590,56 @@ def test_shopping_list_items_checked_off(
         assert updated_item_data["checked"]
 
 
+def test_shopping_list_items_check_and_get_next_unsent(
+    api_client: TestClient, unique_user: TestUser, list_with_items: ShoppingListOut
+):
+    item_to_check = list_with_items.list_items[0]
+
+    response = api_client.post(
+        api_routes.households_shopping_items_item_id_checked_and_next_unsent(item_to_check.id),
+        headers=unique_user.token,
+    )
+
+    next_item_json = utils.assert_deserialize(response, 200)
+    assert set(next_item_json.keys()) == {"food", "label", "display", "note", "id"}
+
+    if next_item_json["food"] is not None:
+        assert set(next_item_json["food"].keys()) == {"id", "name", "nameJp", "nameJpKanji"}
+
+    if next_item_json["label"] is not None:
+        assert set(next_item_json["label"].keys()) == {"name", "place"}
+
+    response = api_client.get(
+        api_routes.households_shopping_items_item_id(item_to_check.id),
+        headers=unique_user.token,
+    )
+    checked_item_json = utils.assert_deserialize(response, 200)
+    assert checked_item_json["checked"]
+
+
+def test_shopping_list_items_check_and_get_next_unsent_404_when_no_unsent_items(
+    api_client: TestClient, unique_user: TestUser, list_with_items: ShoppingListOut
+):
+    items = list_with_items.list_items
+    for item in items:
+        item.checked = True
+
+    response = api_client.put(
+        api_routes.households_shopping_items,
+        json=utils.jsonify([item.model_dump() for item in items]),
+        headers=unique_user.token,
+    )
+    utils.assert_deserialize(response, 200)
+
+    response = api_client.post(
+        api_routes.households_shopping_items_item_id_checked_and_next_unsent(items[0].id),
+        headers=unique_user.token,
+    )
+
+    as_json = utils.assert_deserialize(response, 404)
+    assert as_json["detail"] == "No unsent shopping list item found"
+
+
 def test_shopping_list_items_with_zero_quantity(
     api_client: TestClient, unique_user: TestUser, shopping_list: ShoppingListOut
 ):

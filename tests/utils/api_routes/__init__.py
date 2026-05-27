@@ -406,6 +406,11 @@ def households_shopping_items_item_id(item_id):
     return f"{prefix}/households/shopping/items/{item_id}"
 
 
+def households_shopping_items_item_id_checked_and_next_unsent(item_id):
+    """`/api/households/shopping/items/{item_id}/checked-and-next-unsent`"""
+    return f"{prefix}/households/shopping/items/{item_id}/checked-and-next-unsent"
+
+
 def households_shopping_lists_item_id(item_id):
     """`/api/households/shopping/lists/{item_id}`"""
     return f"{prefix}/households/shopping/lists/{item_id}"
