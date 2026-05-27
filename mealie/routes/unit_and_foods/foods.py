@@ -1,7 +1,8 @@
 from functools import cached_property
 
+import orjson
 import sqlalchemy as sa
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import UUID4
 
 from mealie.db.models.household.ingredient_food_label import HouseholdIngredientFoodLabel
@@ -10,6 +11,7 @@ from mealie.routes._base.controller import controller
 from mealie.routes._base.mixins import HttpRepo
 from mealie.routes._base.routers import MealieCrudRoute
 from mealie.schema import mapper
+from mealie.schema.openai.general import OpenAIFoodTranslations
 from mealie.schema.recipe.recipe_ingredient import (
     CreateIngredientFood,
     IngredientFood,
@@ -18,8 +20,9 @@ from mealie.schema.recipe.recipe_ingredient import (
     SaveIngredientFood,
 )
 from mealie.schema.response.pagination import PaginationQuery
-from mealie.schema.response.responses import SuccessResponse
+from mealie.schema.response.responses import ErrorResponse, SuccessResponse
 from mealie.services.household_services.ingredient_food_labels import get_household_food_label_map
+from mealie.services.openai.openai import OpenAICallContext, OpenAIService
 
 router = APIRouter(prefix="/foods", tags=["Recipes: Foods"], route_class=MealieCrudRoute)
 
@@ -117,6 +120,101 @@ class IngredientFoodsController(BaseUserController):
         except Exception as e:
             self.logger.error(e)
             raise HTTPException(500, "Failed to merge foods") from e
+
+    @router.post("/translate-jp", response_model=SuccessResponse)
+    async def translate_foods_jp(self):
+        self.checks.can_organize()
+
+        ai_settings = self.group.ai_provider_settings
+        if not ai_settings or not ai_settings.ai_enabled:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message="AI is not enabled for this group"),
+            )
+
+        openai_service = OpenAIService(self.repos)
+        provider = openai_service.default_provider
+        if not provider:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=ErrorResponse.respond(message="No default AI provider configured"),
+            )
+
+        foods = self.repo.get_all(override=IngredientFood)
+        target_foods = [food for food in foods if food.name and not (food.name_jp or "").strip()]
+
+        if not target_foods:
+            return SuccessResponse.respond("No foods required translation")
+
+        source_food_names = list(dict.fromkeys(food.name.strip() for food in target_foods if food.name))
+        prompt = openai_service.get_prompt("foods.translate-jp")
+
+        try:
+            response = await openai_service.get_response(
+                prompt,
+                orjson.dumps(source_food_names).decode("utf-8"),
+                response_schema=OpenAIFoodTranslations,
+                provider=provider,
+                context=OpenAICallContext(
+                    endpoint="/api/foods/translate-jp",
+                    user_id=str(self.user.id),
+                    household_id=str(self.user.household_id),
+                    group_id=str(self.user.group_id),
+                ),
+            )
+        except Exception as ex:
+            self.logger.exception(ex)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=ErrorResponse.respond(message="Failed to translate foods with AI"),
+            ) from ex
+
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=ErrorResponse.respond(message="AI provider returned an empty response"),
+            )
+
+        translated_by_en = {
+            item.en.strip().lower(): item for item in response.translations if item.en and item.jp and item.en.strip()
+        }
+
+        updates_by_id: dict[UUID4, dict[str, str]] = {}
+        for food in target_foods:
+            key = food.name.strip().lower()
+            translated = translated_by_en.get(key)
+            if not translated:
+                continue
+
+            jp = (translated.jp or "").strip()
+            if not jp:
+                continue
+
+            updates_by_id[food.id] = {
+                "name_jp": jp,
+                "name_jp_kanji": (translated.jpKanji or "").strip(),
+            }
+
+        translated_count = 0
+        if updates_by_id:
+            model = self.repo.model
+            stmt = sa.select(model).where(
+                model.id.in_(list(updates_by_id.keys())),
+                model.group_id == self.group_id,
+            )
+            db_foods = self.session.execute(stmt).scalars().all()
+
+            for db_food in db_foods:
+                update = updates_by_id.get(db_food.id)
+                if not update:
+                    continue
+                db_food.name_jp = update["name_jp"]
+                db_food.name_jp_kanji = update["name_jp_kanji"]
+                translated_count += 1
+
+            self.session.commit()
+
+        return SuccessResponse.respond(f"Translated {translated_count} foods")
 
     @router.get("/{item_id}", response_model=IngredientFood)
     def get_one(self, item_id: UUID4):

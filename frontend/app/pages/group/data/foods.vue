@@ -183,6 +183,13 @@
       </template>
 
       <template #table-button-bottom>
+        <BaseButton
+          v-if="isAiEnabled"
+          :loading="isTranslatingJp"
+          @click="translateJp"
+        >
+          {{ $t('data-pages.foods.translate-jp') }}
+        </BaseButton>
         <BaseButton @click="seedDialog = true">
           <template #icon>
             {{ $globals.icons.database }}
@@ -312,6 +319,7 @@ import type { UpdateHouseholdFoodSubstitution } from "~/lib/api/types/household"
 import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias, IngredientUnit, RecipeSummary } from "~/lib/api/types/recipe";
 import { convertToGram, convertToMilliliter } from "~/composables/recipes/use-recipe-ingredients";
 import MultiPurposeLabel from "~/components/Domain/ShoppingList/MultiPurposeLabel.vue";
+import { useGroupSelf } from "~/composables/use-groups";
 import { useLocales } from "~/composables/use-locales";
 import { normalizeFilter } from "~/composables/use-utils";
 import { useFoodStore, useLabelStore, useUnitStore } from "~/composables/store";
@@ -346,7 +354,10 @@ interface SubstituteOption {
 const userApi = useUserApi();
 const i18n = useI18n();
 const auth = useMealieAuth();
+const { group } = useGroupSelf();
 const { household, actions: householdActions } = useHouseholdSelf();
+const isTranslatingJp = ref(false);
+const isAiEnabled = computed(() => !!group.value?.aiProviderSettings?.aiEnabled);
 const tableConfig: TableConfig = {
   hideColumns: true,
   canExport: true,
@@ -842,6 +853,18 @@ async function seedDatabase() {
 
   if (data) {
     foodStore.actions.refresh();
+  }
+}
+
+async function translateJp() {
+  isTranslatingJp.value = true;
+
+  try {
+    await userApi.foods.translateJp();
+    await foodStore.actions.refresh();
+  }
+  finally {
+    isTranslatingJp.value = false;
   }
 }
 
