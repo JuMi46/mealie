@@ -170,6 +170,8 @@ class IngredientFoodModel(SqlAlchemyBase, BaseMixins):
     )
 
     name: FilterableColumn[str | None] = mapped_column(String)
+    name_jp: FilterableColumn[str | None] = mapped_column(String)
+    name_jp_kanji: FilterableColumn[str | None] = mapped_column(String)
     plural_name: FilterableColumn[str | None] = mapped_column(String)
     description: FilterableColumn[str | None] = mapped_column(String)
     density: FilterableColumn[float | None] = mapped_column(Float)
@@ -208,6 +210,8 @@ class IngredientFoodModel(SqlAlchemyBase, BaseMixins):
         session: Session,
         group_id: GUID,
         name: str | None = None,
+        name_jp: str | None = None,
+        name_jp_kanji: str | None = None,
         plural_name: str | None = None,
         households_with_ingredient_food: list[str] | None = None,
         **_,
@@ -216,6 +220,10 @@ class IngredientFoodModel(SqlAlchemyBase, BaseMixins):
 
         if name is not None:
             self.name_normalized = self.normalize(name)
+        if name_jp is not None:
+            self.name_jp = name_jp
+        if name_jp_kanji is not None:
+            self.name_jp_kanji = name_jp_kanji
         if plural_name is not None:
             self.plural_name_normalized = self.normalize(plural_name)
 

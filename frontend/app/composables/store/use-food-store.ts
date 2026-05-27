@@ -21,6 +21,8 @@ export const useFoodData = function () {
   return useData<IngredientFood>({
     id: "",
     name: "",
+    nameJp: "",
+    nameJpKanji: "",
     description: "",
     labelId: undefined,
   });

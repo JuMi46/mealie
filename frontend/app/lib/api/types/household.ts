@@ -292,6 +292,8 @@ export interface IngredientFood {
   extras?: {
     [k: string]: unknown;
   } | null;
+  nameJp?: string | null;
+  nameJpKanji?: string | null;
   labelId?: string | null;
   householdLabelId?: string | null;
   aliases?: IngredientFoodAlias[];
@@ -418,6 +420,8 @@ export interface CreateIngredientFood {
   extras?: {
     [k: string]: unknown;
   } | null;
+  nameJp?: string | null;
+  nameJpKanji?: string | null;
   labelId?: string | null;
   householdLabelId?: string | null;
   aliases?: CreateIngredientFoodAlias[];

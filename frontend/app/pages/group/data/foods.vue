@@ -364,6 +364,18 @@ const tableHeaders: TableHeaders[] = [
     sortable: true,
   },
   {
+    text: i18n.t("data-pages.foods.name-jp"),
+    value: "nameJp",
+    show: true,
+    sortable: true,
+  },
+  {
+    text: i18n.t("data-pages.foods.name-jp-kanji"),
+    value: "nameJpKanji",
+    show: true,
+    sortable: true,
+  },
+  {
     text: i18n.t("general.plural-name"),
     value: "pluralName",
     show: true,
@@ -516,6 +528,16 @@ const baseFormItems = computed<AutoFormItems>(() => [
     rules: [validators.required],
   },
   {
+    label: i18n.t("data-pages.foods.name-jp"),
+    varName: "nameJp",
+    type: fieldTypes.TEXT,
+  },
+  {
+    label: i18n.t("data-pages.foods.name-jp-kanji"),
+    varName: "nameJpKanji",
+    type: fieldTypes.TEXT,
+  },
+  {
     label: i18n.t("general.plural-name"),
     varName: "pluralName",
     type: fieldTypes.TEXT,
@@ -571,7 +593,13 @@ const createForm = reactive({
   get items() {
     return baseFormItems.value;
   },
-  data: { name: "", onHand: false, householdsWithIngredientFood: [] } as CreateIngredientFoodWithOnHand,
+  data: {
+    name: "",
+    nameJp: "",
+    nameJpKanji: "",
+    onHand: false,
+    householdsWithIngredientFood: [],
+  } as CreateIngredientFoodWithOnHand,
 });
 
 async function handleCreate() {
@@ -587,6 +615,8 @@ async function handleCreate() {
   await foodStore.actions.createOne(createForm.data);
   createForm.data = {
     name: "",
+    nameJp: "",
+    nameJpKanji: "",
     onHand: false,
     householdsWithIngredientFood: [],
   };

@@ -90,6 +90,8 @@ class IngredientFoodAlias(CreateIngredientFoodAlias):
 
 
 class CreateIngredientFood(UnitFoodBase):
+    name_jp: str | None = None
+    name_jp_kanji: str | None = None
     label_id: UUID4 | None = None
     household_label_id: UUID4 | None = None
     aliases: list[CreateIngredientFoodAlias] = []
