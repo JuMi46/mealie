@@ -71,6 +71,49 @@
         <v-alert v-if="aiLowConfidenceCount > 0" type="warning" variant="tonal" density="compact" class="mt-3">
           {{ $t("recipe.ai-parse-low-confidence-warning", { count: aiLowConfidenceCount }) }}
         </v-alert>
+        <template v-if="aiInstructionChanges.length > 0">
+          <v-divider class="my-3" />
+          <v-alert
+            v-if="recipe.recipeInstructions.length !== aiParsedRecipe.recipeInstructions.length"
+            type="info"
+            variant="tonal"
+            density="compact"
+            class="mb-2"
+          >
+            {{ $t("recipe.instructions") }}: {{ recipe.recipeInstructions.length }} -> {{ aiParsedRecipe.recipeInstructions.length }}
+            ({{ aiInstructionAddedCount > 0 ? `+${aiInstructionAddedCount}` : "" }}{{ aiInstructionAddedCount > 0 && aiInstructionRemovedCount > 0 ? " / " : "" }}{{ aiInstructionRemovedCount > 0 ? `-${aiInstructionRemovedCount}` : "" }})
+          </v-alert>
+          <div class="text-subtitle-2 mb-1">
+            {{ $t("recipe.instructions") }} {{ $t("recipe.preview") }}
+          </div>
+          <v-list density="compact" class="py-0">
+            <v-list-item
+              v-for="change in aiInstructionChangesPreview"
+              :key="`ai-instruction-change-${change.index}`"
+            >
+              <template #prepend>
+                <v-icon size="small">
+                  {{
+                    change.changeType === "added"
+                      ? $globals.icons.linkVariantPlus
+                      : change.changeType === "removed"
+                        ? $globals.icons.minus
+                        : $globals.icons.edit
+                  }}
+                </v-icon>
+              </template>
+              <v-list-item-title class="text-body-2">
+                {{ `${change.index + 1}.` }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="text-caption">
+                {{ change.before || $t("general.none") }} -> {{ change.after || $t("general.none") }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+          <div v-if="aiInstructionChanges.length > aiInstructionChangesPreview.length" class="text-caption mt-1">
+            +{{ aiInstructionChanges.length - aiInstructionChangesPreview.length }}
+          </div>
+        </template>
         <template v-if="aiIngredientPreview.length > 0 || aiInstructionPreview.length > 0">
           <v-divider class="my-3" />
           <div class="text-subtitle-2 mb-1">
@@ -476,6 +519,59 @@ const aiInstructionPreview = computed(() => {
     .filter(Boolean)
     .slice(0, 4);
 });
+
+type AIInstructionChange = {
+  index: number;
+  changeType: "added" | "removed" | "updated";
+  before: string;
+  after: string;
+};
+
+const aiInstructionChanges = computed<AIInstructionChange[]>(() => {
+  if (!aiParsedRecipe.value) {
+    return [];
+  }
+
+  const existingInstructions = recipe.value.recipeInstructions;
+  const parsedInstructions = aiParsedRecipe.value.recipeInstructions;
+  const maxLen = Math.max(existingInstructions.length, parsedInstructions.length);
+  const changes: AIInstructionChange[] = [];
+
+  for (let index = 0; index < maxLen; index++) {
+    const before = previewText(existingInstructions[index]?.text, 120);
+    const after = previewText(parsedInstructions[index]?.text, 120);
+
+    if (!before && !after) {
+      continue;
+    }
+
+    if (!before && after) {
+      changes.push({ index, changeType: "added", before, after });
+      continue;
+    }
+
+    if (before && !after) {
+      changes.push({ index, changeType: "removed", before, after });
+      continue;
+    }
+
+    if (before !== after) {
+      changes.push({ index, changeType: "updated", before, after });
+    }
+  }
+
+  return changes;
+});
+
+const aiInstructionChangesPreview = computed(() => aiInstructionChanges.value.slice(0, 6));
+
+const aiInstructionAddedCount = computed(() =>
+  aiInstructionChanges.value.filter(change => change.changeType === "added").length,
+);
+
+const aiInstructionRemovedCount = computed(() =>
+  aiInstructionChanges.value.filter(change => change.changeType === "removed").length,
+);
 
 const aiLowConfidenceCount = computed(() => {
   const confidenceThreshold = 0.85;
