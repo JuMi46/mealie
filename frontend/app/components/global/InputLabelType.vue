@@ -96,5 +96,9 @@ function emitCreate() {
 
 defineExpose({
   focus: () => autocompleteRef.value?.focus(),
+  focusWithSearch: (value: string) => {
+    searchInput.value = value;
+    autocompleteRef.value?.focus();
+  },
 });
 </script>

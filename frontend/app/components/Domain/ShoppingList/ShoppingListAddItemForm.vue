@@ -12,18 +12,16 @@
     <div class="d-flex flex-column ga-3">
       <v-card-actions class="pa-0">
         <div class="position-relative" style="flex: 1;">
-          <InputLabelType
-            ref="foodInputRef"
-            v-model="listItem.food"
-            v-model:item-id="listItem.foodId!"
-            :items="foods"
-            :label="rail ? $t('shopping-list.add-item') : $t('shopping-list.food')"
-            :icon="$globals.icons.foods"
+          <v-text-field
+            ref="quickEntryRef"
+            v-model="quickEntry"
+            hide-details
+            clearable
             :style="rail ? 'margin-inline: 3px;' : undefined"
             :search="rail"
-            :menu-props="{ location: menuDirection }"
-            create
-            @create="createAssignFood"
+            :placeholder="$t('shopping-list.quick-entry')"
+            @keyup.enter.stop.prevent="parseQuickEntry"
+            @blur="parseQuickEntry"
           />
           <!-- Intercept clicks when collapsed so the drawer expands before the autocomplete opens -->
           <div
@@ -52,6 +50,17 @@
         />
       </v-card-actions>
 
+      <InputLabelType
+        v-if="!rail"
+        ref="foodInputRef"
+        v-model="listItem.food"
+        v-model:item-id="listItem.foodId!"
+        :items="foods"
+        :icon="$globals.icons.foods"
+        :menu-props="{ location: menuDirection }"
+        create
+        @create="createAssignFood"
+      />
       <ShoppingListItemDetails
         v-if="!rail"
         v-model="listItem"
@@ -65,6 +74,7 @@
 
 <script setup lang="ts">
 import { useShoppingListItemEditor } from "~/composables/shopping-list-page/use-shopping-list-item-editor";
+import { useShoppingListQuickEntry } from "~/composables/shopping-list-page/use-shopping-list-quick-entry";
 import type { ShoppingListItemCreate, ShoppingListItemOut } from "~/lib/api/types/household";
 import type { MultiPurposeLabelOut } from "~/lib/api/types/labels";
 import type { IngredientFood, IngredientUnit } from "~/lib/api/types/recipe";
@@ -73,7 +83,7 @@ import ShoppingListItemDetails from "./ShoppingListItemDetails.vue";
 // modelValue as reactive v-model
 const listItem = defineModel<ShoppingListItemCreate | ShoppingListItemOut>({ required: true });
 
-defineProps({
+const { labels, units, foods } = defineProps({
   labels: {
     type: Array as () => MultiPurposeLabelOut[],
     required: true,
@@ -97,14 +107,21 @@ const { createAssignFood } = useShoppingListItemEditor(listItem);
 const { smAndDown } = useDisplay();
 const menuDirection = computed(() => smAndDown.value ? "top" : "bottom");
 
-const foodInputRef = ref<{ focus: () => void } | null>(null);
+const foodInputRef = ref<{ focusWithSearch: (value: string) => void } | null>(null);
+const quickEntryRef = ref<{ focus: () => void } | null>(null);
 const rail = ref(true);
+const { quickEntry, parseQuickEntry } = useShoppingListQuickEntry({
+  listItem,
+  foods: () => foods,
+  units: () => units,
+  foodInputRef,
+});
 
 async function expandAndFocus() {
   rail.value = false;
   await nextTick();
   setTimeout(() => {
-    foodInputRef.value?.focus();
+    quickEntryRef.value?.focus();
   }, 200);
 }
 
