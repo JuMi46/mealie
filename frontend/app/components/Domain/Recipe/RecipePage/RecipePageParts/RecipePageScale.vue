@@ -26,14 +26,25 @@ const recipeServings = computed<number>(() => {
   return props.recipe.recipeServings || props.recipe.recipeYieldQuantity || 1;
 });
 
-const hasFoodOrUnit = computed(() => {
-  if (props.recipe.recipeIngredient) {
-    for (const ingredient of props.recipe.recipeIngredient) {
-      if (ingredient.food || ingredient.unit) {
-        return true;
-      }
+function hasFoodOrUnitInIngredients(ingredients: Recipe["recipeIngredient"]): boolean {
+  if (!ingredients) {
+    return false;
+  }
+
+  for (const ingredient of ingredients) {
+    if (ingredient.food || ingredient.unit) {
+      return true;
+    }
+
+    if (ingredient.referencedRecipe?.recipeIngredient && hasFoodOrUnitInIngredients(ingredient.referencedRecipe.recipeIngredient)) {
+      return true;
     }
   }
+
   return false;
+}
+
+const hasFoodOrUnit = computed(() => {
+  return hasFoodOrUnitInIngredients(props.recipe.recipeIngredient);
 });
 </script>

@@ -112,12 +112,7 @@ export function useIngredientTextParser() {
     if (primaryVolumeUnits.length == 0)
       return null;
 
-    const primaryMassUnits = household.value?.preferences?.primaryMassUnits || [];
-    const secondaryVolumeUnits = household.value?.preferences?.secondaryVolumeUnits || [];
-    let secondaryUnit: IngredientUnit | CreateIngredientUnit | null | undefined;
-    let secondaryUnitQuantity: number | undefined;
-
-    if (!primaryVolumeUnits.some(unit => unit.id === returnUnit?.id) || !inRange(returnUnit?.range, quantityInMl)) {
+    if (!primaryVolumeUnits.some(unit => unit.id === returnUnit?.id)) {
       for (const unitObject of primaryVolumeUnits) {
         if (unitObject.standardUnit === UnitNames.milliliter && inRange(unitObject.range, quantityInMl)) {
           scaledQuantity = quantityInMl / (unitObject.standardQuantity || 1);
@@ -127,23 +122,27 @@ export function useIngredientTextParser() {
       }
     }
 
-    if (food?.density) {
+    let secondaryUnit: IngredientUnit | CreateIngredientUnit | null | undefined;
+    let secondaryUnitQuantity: number | undefined;
+    const primaryMassUnits = household.value?.preferences?.primaryMassUnits || [];
+    const secondaryVolumeUnits = household.value?.preferences?.secondaryVolumeUnits || [];
+    if (food?.density && primaryMassUnits.length != 0) {
       const quantityInGrams = quantityInMl * food.density;
       const matchingPrimaryMassUnit = primaryMassUnits.find(
         unitObject => unitObject.standardUnit === UnitNames.gram
           && inRange(unitObject.range, quantityInGrams),
-      ) || primaryMassUnits.find(unitObject => unitObject.standardUnit === UnitNames.gram);
+      );
 
       if (matchingPrimaryMassUnit) {
         secondaryUnit = matchingPrimaryMassUnit;
         secondaryUnitQuantity = quantityInGrams / (matchingPrimaryMassUnit.standardQuantity || 1);
       }
     }
-    else {
+    else if (secondaryVolumeUnits.length != 0) {
       const matchingSecondaryVolumeUnit = secondaryVolumeUnits.find(
         unitObject => unitObject.standardUnit === UnitNames.milliliter
           && inRange(unitObject.range, quantityInMl),
-      ) || secondaryVolumeUnits.find(unitObject => unitObject.standardUnit === UnitNames.milliliter);
+      );
 
       if (matchingSecondaryVolumeUnit) {
         secondaryUnit = matchingSecondaryVolumeUnit;
@@ -159,30 +158,25 @@ export function useIngredientTextParser() {
     if (primaryMassUnits.length == 0)
       return null;
 
-    const secondaryMassUnits = household.value?.preferences?.secondaryMassUnits || [];
-    let secondaryUnit: IngredientUnit | CreateIngredientUnit | null | undefined;
-    let secondaryUnitQuantity: number | undefined;
-
     const quantityInGrams = convertToGram(scaledQuantity, returnUnit) || 0;
 
-    // Check if not in primary mass units or out of range
-    if (!primaryMassUnits.some(unit => unit.id === returnUnit.id)
-      || !inRange(returnUnit?.range, quantityInGrams)) {
-      // Find best matching primary mass unit
-      for (const unitObject of primaryMassUnits) {
-        if (unitObject.standardUnit === UnitNames.gram && inRange(unitObject.range, quantityInGrams)) {
-          scaledQuantity = quantityInGrams / (unitObject.standardQuantity || 1);
-          returnUnit = unitObject;
-          break;
-        }
+    // Find best matching primary mass unit
+    for (const unitObject of primaryMassUnits) {
+      if (unitObject.standardUnit === UnitNames.gram && inRange(unitObject.range, quantityInGrams)) {
+        scaledQuantity = quantityInGrams / (unitObject.standardQuantity || 1);
+        returnUnit = unitObject;
+        break;
       }
     }
 
+    const secondaryMassUnits = household.value?.preferences?.secondaryMassUnits || [];
+    let secondaryUnit: IngredientUnit | CreateIngredientUnit | null | undefined;
+    let secondaryUnitQuantity: number | undefined;
     // Find best matching secondary mass unit
     const matchingSecondaryMassUnit = secondaryMassUnits.find(
       unitObject => unitObject.standardUnit === UnitNames.gram
         && inRange(unitObject.range, quantityInGrams),
-    ) || secondaryMassUnits.find(unitObject => unitObject.standardUnit === UnitNames.gram);
+    );
 
     if (matchingSecondaryMassUnit) {
       secondaryUnit = matchingSecondaryMassUnit;
@@ -287,9 +281,9 @@ export function useIngredientTextParser() {
   };
 
   function parseIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true, includeNote = true): string {
-    const { quantity, unit, name, note } = useParsedIngredientText(ingredient, scale, includeFormating);
+    const { quantity, secondaryQuantity, unit, secondaryUnit, name, note } = useParsedIngredientText(ingredient, scale, includeFormating);
 
-    const text = `${quantity || ""} ${unit || ""} ${name || ""} ${includeNote && note ? note : ""}`.replace(/ {2,}/g, " ").trim();
+    const text = `${quantity || ""} ${unit || ""} ${secondaryQuantity ? `(${secondaryQuantity} ${secondaryUnit || ""})` : ""} ${name || ""} ${includeNote && note ? note : ""}`.replace(/ {2,}/g, " ").trim();
     return sanitizeIngredientHTML(text);
   };
 
