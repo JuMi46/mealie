@@ -60,9 +60,10 @@
   >
     <v-card-text>
       {{ $t("general.confirm-delete-generic") }}
-      <p v-if="deleteTarget" class="mt-4 ml-4">
+      <p v-if="deleteTarget" class="mt-4 mb-0 font-weight-bold">
         {{ deleteTarget.name || deleteTarget.title || deleteTarget.id }}
       </p>
+      <slot name="delete-dialog-bottom" />
     </v-card-text>
   </BaseDialog>
 
@@ -89,6 +90,7 @@
           </template>
         </v-virtual-scroll>
       </v-card>
+      <slot name="delete-dialog-bottom" />
     </v-card-text>
   </BaseDialog>
 
@@ -152,7 +154,7 @@ const createDialog = defineModel("createDialog", { type: Boolean, default: false
 const editForm = defineModel<{ items: AutoFormItems; data: Record<string, any> }>("editForm", { required: true });
 const editDialog = defineModel("editDialog", { type: Boolean, default: false });
 
-defineProps({
+const props = defineProps({
   icon: {
     type: String,
     required: true,
@@ -186,6 +188,10 @@ defineProps({
     type: String,
     default: "name",
   },
+  onDeleteDialogOpen: {
+    type: Function as PropType<(items: any[]) => Promise<void>>,
+    default: null,
+  },
 });
 
 // ============================================================
@@ -213,8 +219,11 @@ const editEventHandler = (item: any) => {
 const deleteTarget = ref<any>(null);
 const deleteDialog = ref(false);
 
-function deleteEventHandler(item: any) {
+async function deleteEventHandler(item: any) {
   deleteTarget.value = item;
+  if (props.onDeleteDialogOpen) {
+    await props.onDeleteDialogOpen([item]);
+  }
   deleteDialog.value = true;
 }
 
@@ -223,8 +232,11 @@ function deleteEventHandler(item: any) {
 const bulkDeleteTarget = ref<Array<any>>([]);
 const bulkDeleteDialog = ref(false);
 
-function bulkDeleteEventHandler(items: Array<any>) {
+async function bulkDeleteEventHandler(items: Array<any>) {
   bulkDeleteTarget.value = items;
+  if (props.onDeleteDialogOpen) {
+    await props.onDeleteDialogOpen(items);
+  }
   bulkDeleteDialog.value = true;
   console.log("Bulk Delete Event Handler", items);
 }
