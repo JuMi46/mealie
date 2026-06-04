@@ -286,10 +286,10 @@ export function useIngredientTextParser() {
     };
   };
 
-  function parseIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true): string {
+  function parseIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true, includeNote = true): string {
     const { quantity, unit, name, note } = useParsedIngredientText(ingredient, scale, includeFormating);
 
-    const text = `${quantity || ""} ${unit || ""} ${name || ""} ${note || ""}`.replace(/ {2,}/g, " ").trim();
+    const text = `${quantity || ""} ${unit || ""} ${name || ""} ${includeNote && note ? note : ""}`.replace(/ {2,}/g, " ").trim();
     return sanitizeIngredientHTML(text);
   };
 

@@ -4,6 +4,7 @@
       v-if="!isEditMode"
       v-model.number="scale"
       :recipe-servings="recipeServings"
+      :recipe-ingredients="recipe.recipeIngredient || []"
       :edit-scale="hasFoodOrUnit && !isEditMode"
     />
   </div>
