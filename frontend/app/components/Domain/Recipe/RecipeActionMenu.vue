@@ -51,11 +51,11 @@
         </v-tooltip>
       </div>
 
-      <RecipeTimerMenu
+      <!-- <RecipeTimerMenu
         fab
         color="info"
         class="ml-1"
-      />
+      /> -->
 
       <RecipeContextMenu
         show-print
