@@ -165,11 +165,6 @@ class IngredientUnitAlias(CreateIngredientUnitAlias):
     model_config = ConfigDict(from_attributes=True)
 
 
-class IngredientUnitRange(MealieModel):
-    start: float
-    end: float
-
-
 class CreateIngredientUnit(UnitFoodBase):
     fraction: bool = True
     abbreviation: str = ""
@@ -180,7 +175,8 @@ class CreateIngredientUnit(UnitFoodBase):
     standard_quantity: float | None = None
     standard_unit: str | None = None
     position: int | None = None
-    range: list[IngredientUnitRange] | None = None
+    rangeStart: float | None = None
+    rangeStart2: float | None = None
 
     @model_validator(mode="after")
     def validate_standardization_fields(self):

@@ -80,8 +80,77 @@ function shouldUsePluralFood(quantity: number, hasUnit: boolean, pluralFoodHandl
   }
 }
 
-function inRange(range: IngredientUnitRange[] | null | undefined, quantity: number): boolean {
-  return range?.some(range => quantity >= range.start && quantity <= range.end) || false;
+function findInRange(units: IngredientUnit[], quantity: number, standardUnit: string): IngredientUnit | null {
+  if (units.length == 0) return null;
+  else if (units.length == 1) return units[0];
+
+  const unitThresholds: { [key: number]: IngredientUnit } = {};
+
+  units.forEach((unit) => {
+    if (unit.standardUnit === standardUnit && unit.standardQuantity) {
+      if (unit.rangeStart !== undefined && unit.rangeStart !== null) {
+        unitThresholds[unit.rangeStart * unit.standardQuantity] = unit;
+      }
+      if (unit.rangeStart2 !== undefined && unit.rangeStart2 !== null) {
+        unitThresholds[unit.rangeStart2 * unit.standardQuantity] = unit;
+      }
+    }
+  });
+
+  if (Object.keys(unitThresholds).length == 0) return null;
+
+  const sortedThresholds = Object.keys(unitThresholds).map(Number).sort((a, b) => b - a);
+  for (let i = 0; i < sortedThresholds.length; i++) {
+    const threshold = sortedThresholds[i];
+    if (quantity >= threshold || i === sortedThresholds.length - 1) {
+      return unitThresholds[threshold];
+    }
+  }
+  return null;
+}
+
+function parseQuantity(quantity: number, quantityInMl: number | null | undefined,
+  unit: IngredientUnit | CreateIngredientUnit | null | undefined, includeFormating: boolean): string {
+  // casting to number is required as sometimes quantity is a string
+  if (!quantity && Number(quantity) === 0) {
+    return "";
+  }
+
+  let returnQty = "";
+  if (!unit || !unit.fraction) {
+    const minVal = 10 ** -DECIMAL_PRECISION;
+    returnQty = quantity >= minVal
+      ? Number(quantity.toPrecision(DECIMAL_PRECISION)).toString()
+      : `< ${minVal}`;
+  }
+  else {
+    const minVal = 1 / FRAC_MIN_DENOM;
+    const isUnderMinVal = !(quantity >= minVal);
+
+    // const fraction = !isUnderMinVal ? frac(quantity, FRAC_MIN_DENOM, true) : [0, 1, FRAC_MIN_DENOM];
+    let fraction;
+    if (unit?.name === UnitNames.teaspoon && quantityInMl && quantityInMl < 2.1875) {
+      // Finer precision under 3/8 teaspoon
+      fraction = quantityInMl < 0.9375 ? [0, 1, 8] : quantityInMl < 1.5625 ? [0, 1, 4] : [0, 3, 8];
+    }
+    else {
+      fraction = simpleFrac(quantity, !quantityInMl || quantityInMl >= 58.125);
+    }
+    if (fraction[0] !== undefined && fraction[0] > 0) {
+      returnQty += fraction[0];
+    }
+
+    if (fraction[1] > 0) {
+      returnQty += includeFormating
+        ? `<sup>${fraction[1]}</sup><span>&frasl;</span><sub>${fraction[2]}</sub>`
+        : ` ${fraction[1]}/${fraction[2]}`;
+    }
+
+    if (isUnderMinVal) {
+      returnQty = `< ${returnQty}`;
+    }
+  }
+  return returnQty;
 }
 
 export function useIngredientTextParser() {
@@ -112,14 +181,10 @@ export function useIngredientTextParser() {
     if (primaryVolumeUnits.length == 0)
       return null;
 
-    if (!primaryVolumeUnits.some(unit => unit.id === returnUnit?.id)) {
-      for (const unitObject of primaryVolumeUnits) {
-        if (unitObject.standardUnit === UnitNames.milliliter && inRange(unitObject.range, quantityInMl)) {
-          scaledQuantity = quantityInMl / (unitObject.standardQuantity || 1);
-          returnUnit = unitObject;
-          break;
-        }
-      }
+    const matchingPrimaryVolumeUnit = findInRange(primaryVolumeUnits, quantityInMl, UnitNames.milliliter);
+    if (matchingPrimaryVolumeUnit) {
+      scaledQuantity = quantityInMl / (matchingPrimaryVolumeUnit.standardQuantity || 1);
+      returnUnit = matchingPrimaryVolumeUnit;
     }
 
     let secondaryUnit: IngredientUnit | CreateIngredientUnit | null | undefined;
@@ -128,10 +193,7 @@ export function useIngredientTextParser() {
     const secondaryVolumeUnits = household.value?.preferences?.secondaryVolumeUnits || [];
     if (food?.density && primaryMassUnits.length != 0) {
       const quantityInGrams = quantityInMl * food.density;
-      const matchingPrimaryMassUnit = primaryMassUnits.find(
-        unitObject => unitObject.standardUnit === UnitNames.gram
-          && inRange(unitObject.range, quantityInGrams),
-      );
+      const matchingPrimaryMassUnit = findInRange(primaryMassUnits, quantityInGrams, UnitNames.gram);
 
       if (matchingPrimaryMassUnit) {
         secondaryUnit = matchingPrimaryMassUnit;
@@ -139,10 +201,7 @@ export function useIngredientTextParser() {
       }
     }
     else if (secondaryVolumeUnits.length != 0) {
-      const matchingSecondaryVolumeUnit = secondaryVolumeUnits.find(
-        unitObject => unitObject.standardUnit === UnitNames.milliliter
-          && inRange(unitObject.range, quantityInMl),
-      );
+      const matchingSecondaryVolumeUnit = findInRange(secondaryVolumeUnits, quantityInMl, UnitNames.milliliter);
 
       if (matchingSecondaryVolumeUnit) {
         secondaryUnit = matchingSecondaryVolumeUnit;
@@ -161,22 +220,17 @@ export function useIngredientTextParser() {
     const quantityInGrams = convertToGram(scaledQuantity, returnUnit) || 0;
 
     // Find best matching primary mass unit
-    for (const unitObject of primaryMassUnits) {
-      if (unitObject.standardUnit === UnitNames.gram && inRange(unitObject.range, quantityInGrams)) {
-        scaledQuantity = quantityInGrams / (unitObject.standardQuantity || 1);
-        returnUnit = unitObject;
-        break;
-      }
+    const matchingPrimaryMassUnit = findInRange(primaryMassUnits, quantityInGrams, UnitNames.gram);
+    if (matchingPrimaryMassUnit) {
+      scaledQuantity = quantityInGrams / (matchingPrimaryMassUnit.standardQuantity || 1);
+      returnUnit = matchingPrimaryMassUnit;
     }
 
     const secondaryMassUnits = household.value?.preferences?.secondaryMassUnits || [];
     let secondaryUnit: IngredientUnit | CreateIngredientUnit | null | undefined;
     let secondaryUnitQuantity: number | undefined;
     // Find best matching secondary mass unit
-    const matchingSecondaryMassUnit = secondaryMassUnits.find(
-      unitObject => unitObject.standardUnit === UnitNames.gram
-        && inRange(unitObject.range, quantityInGrams),
-    );
+    const matchingSecondaryMassUnit = findInRange(secondaryMassUnits, quantityInGrams, UnitNames.gram);
 
     if (matchingSecondaryMassUnit) {
       secondaryUnit = matchingSecondaryMassUnit;
@@ -184,50 +238,6 @@ export function useIngredientTextParser() {
     }
 
     return { scaledQuantity, returnUnit, secondaryUnit, secondaryUnitQuantity };
-  }
-
-  function parseQuantity(quantity: number, quantityInMl: number | null | undefined,
-    unit: IngredientUnit | CreateIngredientUnit | null | undefined, includeFormating: boolean): string {
-    // casting to number is required as sometimes quantity is a string
-    if (!quantity && Number(quantity) === 0) {
-      return "";
-    }
-
-    let returnQty = "";
-    if (!unit || !unit.fraction) {
-      const minVal = 10 ** -DECIMAL_PRECISION;
-      returnQty = quantity >= minVal
-        ? Number(quantity.toPrecision(DECIMAL_PRECISION)).toString()
-        : `< ${minVal}`;
-    }
-    else {
-      const minVal = 1 / FRAC_MIN_DENOM;
-      const isUnderMinVal = !(quantity >= minVal);
-
-      // const fraction = !isUnderMinVal ? frac(quantity, FRAC_MIN_DENOM, true) : [0, 1, FRAC_MIN_DENOM];
-      let fraction;
-      if (unit?.name === UnitNames.teaspoon && quantityInMl && quantityInMl < 2.1875) {
-        // Finer precision under 3/8 teaspoon
-        fraction = quantityInMl < 0.9375 ? [0, 1, 8] : quantityInMl < 1.5625 ? [0, 1, 4] : [0, 3, 8];
-      }
-      else {
-        fraction = simpleFrac(quantity, !quantityInMl || quantityInMl >= 58.125);
-      }
-      if (fraction[0] !== undefined && fraction[0] > 0) {
-        returnQty += fraction[0];
-      }
-
-      if (fraction[1] > 0) {
-        returnQty += includeFormating
-          ? `<sup>${fraction[1]}</sup><span>&frasl;</span><sub>${fraction[2]}</sub>`
-          : ` ${fraction[1]}/${fraction[2]}`;
-      }
-
-      if (isUnderMinVal) {
-        returnQty = `< ${returnQty}`;
-      }
-    }
-    return returnQty;
   }
 
   function useParsedIngredientText(ingredient: RecipeIngredient, scale = 1, includeFormating = true, groupSlug?: string): ParsedIngredientText {

@@ -93,14 +93,11 @@ export interface CreateIngredientUnit {
   standardQuantity?: number | null;
   standardUnit?: string | null;
   position?: number | null;
-  range?: IngredientUnitRange[] | null;
+  rangeStart?: number | null;
+  rangeStart2?: number | null;
 }
 export interface CreateIngredientUnitAlias {
   name: string;
-}
-export interface IngredientUnitRange {
-  start: number;
-  end: number;
 }
 export interface CreateRecipe {
   name: string;
@@ -197,7 +194,8 @@ export interface IngredientUnit {
   standardQuantity?: number | null;
   standardUnit?: string | null;
   position?: number | null;
-  range?: IngredientUnitRange[] | null;
+  rangeStart?: number | null;
+  rangeStart2?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -589,7 +587,8 @@ export interface SaveIngredientUnit {
   standardQuantity?: number | null;
   standardUnit?: string | null;
   position?: number | null;
-  range?: IngredientUnitRange[] | null;
+  rangeStart?: number | null;
+  rangeStart2?: number | null;
   groupId: string;
 }
 export interface ScrapeRecipe {

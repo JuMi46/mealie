@@ -118,16 +118,13 @@ export interface IngredientUnit {
   standardQuantity?: number | null;
   standardUnit?: string | null;
   position?: number | null;
-  range?: IngredientUnitRange[] | null;
+  rangeStart?: number | null;
+  rangeStart2?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 }
 export interface IngredientUnitAlias {
   name: string;
-}
-export interface IngredientUnitRange {
-  start: number;
-  end: number;
 }
 export interface RecipeCategory {
   id?: string | null;

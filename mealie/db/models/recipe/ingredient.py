@@ -57,8 +57,8 @@ class IngredientUnitModel(SqlAlchemyBase, BaseMixins):
     standard_quantity: FilterableColumn[float | None] = mapped_column(Float)
     standard_unit: FilterableColumn[str | None] = mapped_column(String)
     position: FilterableColumn[int | None] = mapped_column(Integer)
-    range: FilterableColumn[list[dict[str, float]] | None] = mapped_column(sa.JSON)
-
+    rangeStart: FilterableColumn[float | None] = mapped_column(Float)
+    rangeStart2: FilterableColumn[float | None] = mapped_column(Float)
     # Automatically updated by sqlalchemy event, do not write to this manually
     name_normalized: FilterableColumn[str | None] = mapped_column(sa.String, index=True)
     plural_name_normalized: FilterableColumn[str | None] = mapped_column(sa.String, index=True)
