@@ -636,6 +636,22 @@ export interface UnitFoodBase {
 export interface UpdateImageResponse {
   image: string;
 }
+export interface UpdateIngredientFood {
+  name?: string | null;
+  pluralName?: string | null;
+  description?: string | null;
+  extras?: {
+    [k: string]: unknown;
+  } | null;
+  nameJp?: string | null;
+  nameJpKanji?: string | null;
+  labelId?: string | null;
+  householdLabelId?: string | null;
+  aliases?: CreateIngredientFoodAlias[] | null;
+  householdsWithIngredientFood?: string[] | null;
+  density?: number | null;
+  tip?: string | null;
+}
 export interface RequestQuery {
   orderBy?: string | null;
   orderByNullPosition?: OrderByNullPosition | null;

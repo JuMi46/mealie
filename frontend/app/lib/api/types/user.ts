@@ -106,6 +106,7 @@ export interface AIProviderSettingsOut {
 export interface AIProviderSummary {
   id: string;
   name: string;
+  [k: string]: unknown;
 }
 export interface GroupSummary {
   name: string;

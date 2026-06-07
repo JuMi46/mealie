@@ -67,3 +67,19 @@ export interface OpenAIText {
   text: string;
 }
 export interface OpenAIBase {}
+export interface OpenAIFoodTranslationItem {
+  en: string;
+  jp: string;
+  jpKanji?: string;
+}
+export interface OpenAIFoodTranslations {
+  translations?: OpenAIFoodTranslationItem[];
+}
+export interface OpenAIRecipeInstructionTimerResult {
+  instructions?: OpenAIRecipeInstructionTimerStep[];
+}
+export interface OpenAIRecipeInstructionTimerStep {
+  id?: string | null;
+  text: string;
+  timers?: OpenAIRecipeTimer[];
+}
