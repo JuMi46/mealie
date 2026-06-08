@@ -149,6 +149,11 @@ const formItems: AutoFormItems = [
     type: fieldTypes.COLOR,
   },
   {
+    label: i18n.t("general.place"),
+    varName: "place",
+    type: fieldTypes.TEXT,
+  },
+  {
     label: i18n.t("general.position"),
     varName: "position",
     type: fieldTypes.NUMBER,
@@ -158,11 +163,6 @@ const formItems: AutoFormItems = [
       precision: undefined,
       controlVariant: "hidden",
     },
-  },
-  {
-    label: i18n.t("general.place"),
-    varName: "place",
-    type: fieldTypes.TEXT,
   },
 ];
 

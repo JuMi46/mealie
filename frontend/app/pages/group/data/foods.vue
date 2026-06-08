@@ -188,6 +188,16 @@
         </BaseButton>
       </template>
 
+      <template #create-dialog-bottom>
+        <RecipeDensityCalculator
+          v-model="createForm.data.density"
+          :volume-units="volumeUnits"
+          :mass-units="massUnits"
+          :default-mass-unit-id="defaultMassUnitId"
+          :reset-key="createDensityCalculatorResetKey"
+        />
+      </template>
+
       <template #edit-dialog-custom-action>
         <BaseButton edit @click="aliasManagerDialog = true">
           {{ $t("data-pages.manage-aliases") }}
@@ -212,7 +222,15 @@
         </v-alert>
       </template>
 
-      <template #edit-dialog-top>
+      <template #edit-dialog-bottom>
+        <RecipeDensityCalculator
+          v-model="editForm.data.density"
+          :volume-units="volumeUnits"
+          :mass-units="massUnits"
+          :default-mass-unit-id="defaultMassUnitId"
+          :reset-key="editDensityCalculatorResetKey"
+        />
+
         <v-autocomplete
           v-model="editForm.data.substituteTarget"
           clearable
@@ -236,81 +254,6 @@
           persistent-hint
         />
       </template>
-
-      <template #edit-dialog-bottom>
-        <template v-if="showDensityCalculator">
-          <div class="d-flex gap-2 px-2">
-            <v-text-field
-              v-model.number="densityCalcVolumeQty"
-              type="number"
-              variant="underlined"
-              density="comfortable"
-              :label="$t('data-pages.foods.volume-quantity')"
-              :min="0.0001"
-              step="any"
-              style="flex: 1"
-            />
-            <v-autocomplete
-              v-model="densityCalcVolumeUnit"
-              return-object
-              :items="volumeUnits"
-              :custom-filter="normalizeFilter"
-              item-title="name"
-              :label="$t('data-pages.foods.volume-unit')"
-              variant="solo-filled"
-              flat
-              density="comfortable"
-              style="flex: 2"
-            />
-          </div>
-          <div class="d-flex gap-2 px-2">
-            <v-text-field
-              v-model.number="densityCalcMassQty"
-              type="number"
-              variant="underlined"
-              density="comfortable"
-              :label="$t('data-pages.foods.mass-quantity')"
-              :min="0.0001"
-              step="any"
-              style="flex: 1"
-            />
-            <v-autocomplete
-              v-model="densityCalcMassUnit"
-              return-object
-              :items="massUnits"
-              :custom-filter="normalizeFilter"
-              item-title="name"
-              :label="$t('data-pages.foods.mass-unit')"
-              variant="solo-filled"
-              flat
-              density="comfortable"
-              style="flex: 2"
-            />
-          </div>
-        </template>
-        <div class="d-flex align-center gap-2 px-2 pb-2">
-          <v-text-field
-            v-model.number="editForm.data.density"
-            type="number"
-            variant="underlined"
-            density="comfortable"
-            :label="$t('data-pages.foods.density')"
-            :min="0"
-            step="any"
-            style="flex: 1"
-          />
-          <BaseButton
-            color="secondary"
-            class="mb-2"
-            @click="showDensityCalculator = !showDensityCalculator"
-          >
-            <template #icon>
-              {{ $globals.icons.testTube }}
-            </template>
-            {{ $t('data-pages.foods.calculate-density') }}
-          </BaseButton>
-        </div>
-      </template>
     </GroupDataPage>
   </div>
 </template>
@@ -318,11 +261,11 @@
 <script setup lang="ts">
 import type { LocaleObject } from "@nuxtjs/i18n";
 import RecipeDataAliasManagerDialog from "~/components/Domain/Recipe/RecipeDataAliasManagerDialog.vue";
+import RecipeDensityCalculator from "~/components/Domain/Recipe/RecipeDensityCalculator.vue";
 import { validators } from "~/composables/use-validators";
 import { useUserApi } from "~/composables/api";
 import type { UpdateHouseholdFoodSubstitution } from "~/lib/api/types/household";
-import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias, IngredientUnit, RecipeSummary } from "~/lib/api/types/recipe";
-import { convertToGram, convertToMilliliter } from "~/composables/recipes/use-recipe-ingredients";
+import type { CreateIngredientFood, IngredientFood, IngredientFoodAlias, RecipeSummary } from "~/lib/api/types/recipe";
 import MultiPurposeLabel from "~/components/Domain/ShoppingList/MultiPurposeLabel.vue";
 import { useGroupSelf } from "~/composables/use-groups";
 import { useLocales } from "~/composables/use-locales";
@@ -382,13 +325,13 @@ const tableHeaders: TableHeaders[] = [
   {
     text: i18n.t("data-pages.foods.name-jp"),
     value: "nameJp",
-    show: true,
+    show: false,
     sortable: true,
   },
   {
     text: i18n.t("data-pages.foods.name-jp-kanji"),
     value: "nameJpKanji",
-    show: true,
+    show: false,
     sortable: true,
   },
   {
@@ -400,7 +343,7 @@ const tableHeaders: TableHeaders[] = [
   {
     text: i18n.t("recipe.description"),
     value: "description",
-    show: true,
+    show: false,
   },
   {
     text: i18n.t("data-pages.foods.density"),
@@ -412,6 +355,7 @@ const tableHeaders: TableHeaders[] = [
     text: i18n.t("data-pages.foods.tip"),
     value: "tip",
     show: false,
+    sortable: true,
   },
   {
     text: i18n.t("shopping-list.label"),
@@ -429,7 +373,7 @@ const tableHeaders: TableHeaders[] = [
   {
     text: i18n.t("data-pages.foods.substitute-target"),
     value: "substitutionDisplay",
-    show: true,
+    show: false,
     sortable: true,
   },
   {
@@ -529,6 +473,18 @@ const volumeUnits = computed(() =>
 const massUnits = computed(() =>
   allUnits.value.filter(u => u.standardUnit === MASS_STANDARD_UNIT),
 );
+const defaultMassUnitId = computed<string | null>(() => {
+  const primaryMassUnits = household.value?.preferences?.primaryMassUnits ?? [];
+  if (primaryMassUnits.length === 0) {
+    return null;
+  }
+
+  const sorted = [...primaryMassUnits].sort(
+    (a, b) => (a.standardQuantity ?? Infinity) - (b.standardQuantity ?? Infinity),
+  );
+
+  return sorted.at(0)?.id ?? null;
+});
 
 // ============================================================
 // Labels
@@ -537,22 +493,15 @@ const labelOptions = computed(() => allLabels.value.map(label => ({ text: parseL
 
 // ============================================================
 // Form items (shared)
-const baseFormItems = computed<AutoFormItems>(() => [
+type FormMode = "create" | "edit";
+type ModeAwareFormItem = AutoFormItems[number] & { onlyInMode?: FormMode };
+
+const allFormItems = computed((): ModeAwareFormItem[] => ([
   {
     label: i18n.t("general.name"),
     varName: "name",
     type: fieldTypes.TEXT,
     rules: [validators.required],
-  },
-  {
-    label: i18n.t("data-pages.foods.name-jp"),
-    varName: "nameJp",
-    type: fieldTypes.TEXT,
-  },
-  {
-    label: i18n.t("data-pages.foods.name-jp-kanji"),
-    varName: "nameJpKanji",
-    type: fieldTypes.TEXT,
   },
   {
     label: i18n.t("general.plural-name"),
@@ -563,17 +512,6 @@ const baseFormItems = computed<AutoFormItems>(() => [
     label: i18n.t("recipe.description"),
     varName: "description",
     type: fieldTypes.TEXT,
-  },
-  {
-    label: i18n.t("data-pages.foods.density"),
-    varName: "density",
-    type: fieldTypes.NUMBER,
-    numberInputConfig: {
-      min: 0,
-      max: undefined,
-      precision: null,
-      controlVariant: "hidden",
-    },
   },
   {
     label: i18n.t("data-pages.foods.tip"),
@@ -588,27 +526,43 @@ const baseFormItems = computed<AutoFormItems>(() => [
     selectReturnValue: "value",
   },
   {
+    label: i18n.t("data-pages.foods.household-food-label-override"),
+    varName: "householdLabelId",
+    type: fieldTypes.SELECT,
+    onlyInMode: "edit",
+    options: labelOptions.value,
+    selectReturnValue: "value",
+  },
+  {
     label: i18n.t("tool.on-hand"),
     varName: "onHand",
     type: fieldTypes.BOOLEAN,
     hint: i18n.t("data-pages.foods.on-hand-checkbox-label"),
   },
-]);
+  {
+    label: i18n.t("data-pages.foods.name-jp"),
+    varName: "nameJp",
+    type: fieldTypes.TEXT,
+  },
+  {
+    label: i18n.t("data-pages.foods.name-jp-kanji"),
+    varName: "nameJpKanji",
+    type: fieldTypes.TEXT,
+  },
+]));
 
-const householdOverrideFormItem = computed<AutoFormItems[number]>(() => ({
-  label: i18n.t("data-pages.foods.household-food-label-override"),
-  varName: "householdLabelId",
-  type: fieldTypes.SELECT,
-  options: labelOptions.value,
-  selectReturnValue: "value",
-}));
+function getFormItems(mode: FormMode): AutoFormItems {
+  return allFormItems.value.filter((item) => {
+    return !item.onlyInMode || item.onlyInMode === mode;
+  }) as AutoFormItems;
+}
 
 // ===============================================================
 // Create
 
 const createForm = reactive({
   get items() {
-    return baseFormItems.value;
+    return getFormItems("create");
   },
   data: {
     name: "",
@@ -618,6 +572,7 @@ const createForm = reactive({
     householdsWithIngredientFood: [],
   } as CreateIngredientFoodWithOnHand,
 });
+const createDensityCalculatorResetKey = ref(0);
 
 async function handleCreate() {
   if (!createForm.data || !createForm.data.name) {
@@ -637,6 +592,7 @@ async function handleCreate() {
     onHand: false,
     householdsWithIngredientFood: [],
   };
+  createDensityCalculatorResetKey.value += 1;
 }
 
 // ===============================================================
@@ -644,33 +600,12 @@ async function handleCreate() {
 
 const editForm = reactive({
   get items() {
-    return [...baseFormItems.value.filter(item => item.varName !== "density"), householdOverrideFormItem.value];
+    return getFormItems("edit");
   },
   data: {} as IngredientFoodWithOnHand,
 });
 
-// ============================================================
-// Density Calculator
-
-const showDensityCalculator = ref(false);
-const densityCalcVolumeQty = ref<number | null>(null);
-const densityCalcVolumeUnit = ref<IngredientUnit | null>(null);
-const densityCalcMassQty = ref<number | null>(null);
-const densityCalcMassUnit = ref<IngredientUnit | null>(null);
-
-watch(
-  [densityCalcVolumeQty, densityCalcVolumeUnit, densityCalcMassQty, densityCalcMassUnit],
-  () => {
-    if (!densityCalcVolumeQty.value || !densityCalcVolumeUnit.value || !densityCalcMassQty.value || !densityCalcMassUnit.value) {
-      return;
-    }
-    const ml = convertToMilliliter(densityCalcVolumeQty.value, densityCalcVolumeUnit.value);
-    const grams = convertToGram(densityCalcMassQty.value, densityCalcMassUnit.value);
-    if (ml && grams) {
-      editForm.data.density = Math.round((grams / ml) * 1000) / 1000;
-    }
-  },
-);
+const editDensityCalculatorResetKey = computed(() => editForm.data?.id ?? "");
 
 async function handleEdit() {
   if (!editForm.data) {
@@ -851,25 +786,6 @@ watch(
   () => editForm.data?.id,
   (foodId) => {
     hydrateSubstitutionFields(foodId);
-
-    // Reset density calculator state
-    showDensityCalculator.value = false;
-    densityCalcVolumeQty.value = null;
-    densityCalcVolumeUnit.value = null;
-    densityCalcMassQty.value = null;
-
-    // Default mass unit to smallest household preferred mass unit
-    const primaryMassUnits = household.value?.preferences?.primaryMassUnits ?? [];
-    if (primaryMassUnits.length > 0) {
-      const sorted = [...primaryMassUnits].sort(
-        (a, b) => (a.standardQuantity ?? Infinity) - (b.standardQuantity ?? Infinity),
-      );
-      const lowestUnit = sorted.at(0);
-      densityCalcMassUnit.value = lowestUnit ? (massUnits.value.find(u => u.id === lowestUnit.id) ?? null) : null;
-    }
-    else {
-      densityCalcMassUnit.value = null;
-    }
   },
 );
 

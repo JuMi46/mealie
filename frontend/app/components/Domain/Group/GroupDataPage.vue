@@ -19,6 +19,7 @@
         :items="createForm.items"
         class="py-2"
       />
+      <slot name="create-dialog-bottom" />
     </div>
   </BaseDialog>
 

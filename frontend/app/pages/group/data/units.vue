@@ -198,7 +198,7 @@ const tableHeaders: TableHeaders[] = [
   {
     text: i18n.t("data-pages.units.use-abbv"),
     value: "useAbbreviation",
-    show: true,
+    show: false,
     sortable: true,
   },
   {
@@ -209,18 +209,20 @@ const tableHeaders: TableHeaders[] = [
   {
     text: i18n.t("data-pages.units.fraction"),
     value: "fraction",
-    show: true,
+    show: false,
     sortable: true,
   },
   {
     text: i18n.t("data-pages.units.standard-quantity"),
     value: "standardQuantity",
     show: false,
+    sortable: true,
   },
   {
     text: i18n.t("data-pages.units.standard-unit"),
     value: "standardUnit",
     show: false,
+    sortable: true,
   },
   {
     text: i18n.t("general.position"),
@@ -275,6 +277,18 @@ const formItems = computed<AutoFormItems>(() => [
     label: i18n.t("data-pages.units.description"),
     varName: "description",
     type: fieldTypes.TEXT,
+  },
+  {
+    cols: 4,
+    label: i18n.t("general.position"),
+    varName: "position",
+    type: fieldTypes.NUMBER,
+    numberInputConfig: {
+      min: 0,
+      max: undefined,
+      precision: undefined,
+      controlVariant: "hidden",
+    },
   },
   {
     section: i18n.t("data-pages.units.standardization"),
@@ -350,18 +364,6 @@ const formItems = computed<AutoFormItems>(() => [
       min: 0,
       max: undefined,
       precision: null,
-      controlVariant: "hidden",
-    },
-  },
-  {
-    cols: 4,
-    label: i18n.t("general.position"),
-    varName: "position",
-    type: fieldTypes.NUMBER,
-    numberInputConfig: {
-      min: 0,
-      max: undefined,
-      precision: undefined,
       controlVariant: "hidden",
     },
   },
