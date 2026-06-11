@@ -21,6 +21,8 @@ class CategorySummary(BaseModel):
     id: UUID4
     slug: str
     name: str
+    position: int
+    position_recipe: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -85,6 +87,7 @@ class RecipeCategoryController(BaseCrudController):
     def update_one(self, item_id: UUID4, update_data: CategoryIn):
         """Updates an existing Tag in the database"""
         self.checks.can_organize()
+        # existing = self.mixins.get_one(item_id)
         save_data = mapper.cast(update_data, CategorySave, group_id=self.group_id)
         category = self.mixins.update_one(save_data, item_id)
 
@@ -137,5 +140,7 @@ class RecipeCategoryController(BaseCrudController):
             id=category.id,
             slug=category.slug,
             name=category.name,
+            position=category.position,
+            position_recipe=category.position_recipe,
             recipes=recipe_data.items,
         )

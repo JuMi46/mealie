@@ -20,6 +20,7 @@
 
     <v-spacer />
     <div v-if="!open" class="custom-btn-group ma-1">
+      <RecipeOpenInCombinedView v-if="loggedIn" color="info" button-style :recipe-slug="recipe.slug!" show-always />
       <RecipeFavoriteBadge v-if="loggedIn" color="info" button-style :recipe-id="recipe.id!" show-always />
       <RecipeTimelineBadge
         v-if="loggedIn"
@@ -111,7 +112,7 @@
 import RecipeContextMenu from "./RecipeContextMenu/RecipeContextMenu.vue";
 import RecipeFavoriteBadge from "./RecipeFavoriteBadge.vue";
 import RecipeTimelineBadge from "./RecipeTimelineBadge.vue";
-import RecipeTimerMenu from "./RecipeTimerMenu.vue";
+// import RecipeTimerMenu from "./RecipeTimerMenu.vue";
 import { usePageState } from "~/composables/recipe-page/shared-state";
 import type { Recipe } from "~/lib/api/types/recipe";
 

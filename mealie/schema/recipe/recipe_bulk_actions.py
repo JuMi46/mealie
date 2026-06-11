@@ -1,4 +1,5 @@
 import enum
+from datetime import datetime
 
 from mealie.schema._mealie import MealieModel
 from mealie.schema.recipe.recipe_category import CategoryBase, TagBase
@@ -31,3 +32,7 @@ class AssignSettings(ExportBase):
 
 class DeleteRecipes(ExportBase):
     pass
+
+
+class MarkRecipesMade(ExportBase):
+    timestamp: datetime

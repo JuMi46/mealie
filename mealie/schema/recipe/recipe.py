@@ -76,7 +76,8 @@ class RecipeTagPagination(PaginationBase):
 
 
 class RecipeCategory(RecipeTag):
-    pass
+    position: int = 0
+    position_recipe: int = 0
 
 
 class RecipeCategoryPagination(PaginationBase):
@@ -116,6 +117,15 @@ class CreateRecipe(MealieModel):
     name: str
 
 
+class RecipeRecommendation(MealieModel):
+    id: UUID4 | None = None
+    name: str | None = None
+    slug: str = ""
+    image: Any | None = None
+    recipe_category: Annotated[list[RecipeCategory] | None, Field(validate_default=True)] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
 class RecipeSummary(MealieModel):
     id: UUID4 | None = None
     _normalize_search: ClassVar[bool] = True
@@ -143,6 +153,7 @@ class RecipeSummary(MealieModel):
     tools: list[RecipeTool] = []
     rating: float | None = None
     org_url: str | None = Field(None, alias="orgURL")
+    recommended_side_dishes: list[RecipeRecommendation] = []
 
     date_added: datetime.date | None = None
     date_updated: datetime.datetime | None = None
@@ -179,6 +190,7 @@ class RecipeSummary(MealieModel):
             joinedload(RecipeModel.tools),
             joinedload(RecipeModel.recipe_yield_unit),
             joinedload(RecipeModel.user).load_only(User.household_id),
+            selectinload(RecipeModel.recommended_side_dishes).joinedload(RecipeModel.recipe_category),
         ]
 
 

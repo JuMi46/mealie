@@ -1,8 +1,10 @@
 <template>
   <div>
     <RecipeIngredients
-      :value="recipe.recipeIngredient"
-      :scale="scale"
+      :value="[{
+        recipeName: recipe.name || '',
+        recipeIngredient: recipe.recipeIngredient,
+        scale: scale } as IngredientsByRecipe]"
       :is-cook-mode="isCookMode"
     />
     <div v-if="!isEditMode && recipe.tools && recipe.tools.length > 0">
@@ -42,6 +44,7 @@ import { useToolStore } from "~/composables/store";
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import type { Recipe, RecipeTool } from "~/lib/api/types/recipe";
 import RecipeIngredients from "~/components/Domain/Recipe/RecipeIngredients.vue";
+import type { IngredientsByRecipe } from "~/components/Domain/Recipe/RecipeIngredients.vue";
 
 interface RecipeToolWithOnHand extends RecipeTool {
   onHand: boolean;
@@ -51,16 +54,18 @@ interface Props {
   recipe: NoUndefinedField<Recipe>;
   scale: number;
   isCookMode?: boolean;
+  isCombinedView?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   isCookMode: false,
+  isCombinedView: false,
 });
 
 const { isOwnGroup } = useLoggedInState();
 
 const toolStore = isOwnGroup.value ? useToolStore() : null;
 const { user } = usePageUser();
-const { isEditMode } = usePageState(props.recipe.slug);
+const { isEditMode } = usePageState(!props.isCombinedView ? props.recipe.slug : "combined-view");
 
 const recipeTools = ref<RecipeToolWithOnHand[]>([]);
 watch(() => props.recipe.tools, () => {

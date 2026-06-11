@@ -1224,6 +1224,45 @@ def test_update_existing_instruction_ingredient_references_persist(api_client: T
     assert persisted_refs[0]["referenceId"] == ingredient_ref_id
 
 
+def test_update_recipe_with_recommended_side_dish_payload(api_client: TestClient, unique_user: TestUser):
+    database = unique_user.repos
+
+    side_dish = database.recipes.create(
+        Recipe(
+            name=random_string(10),
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+        )
+    )
+
+    main_recipe = database.recipes.create(
+        Recipe(
+            name=random_string(10),
+            user_id=unique_user.user_id,
+            group_id=unique_user.group_id,
+        )
+    )
+
+    main_recipe_url = api_routes.recipes_slug(main_recipe.slug)
+    side_dish_url = api_routes.recipes_slug(side_dish.slug)
+
+    main_recipe_response = api_client.get(main_recipe_url, headers=unique_user.token)
+    assert main_recipe_response.status_code == 200
+    main_recipe_data = main_recipe_response.json()
+
+    side_dish_response = api_client.get(side_dish_url, headers=unique_user.token)
+    assert side_dish_response.status_code == 200
+    side_dish_data = side_dish_response.json()
+
+    main_recipe_data["recommendedSideDishes"] = [side_dish_data]
+
+    update_response = api_client.put(main_recipe_url, json=main_recipe_data, headers=unique_user.token)
+    assert update_response.status_code == 200
+
+    updated_recipe_data = update_response.json()
+    assert [recipe["slug"] for recipe in updated_recipe_data["recommendedSideDishes"]] == [side_dish.slug]
+
+
 def test_duplicate(api_client: TestClient, unique_user: TestUser):
     recipe_data = recipe_test_data[0]
 

@@ -535,11 +535,41 @@ class RecipeService(RecipeServiceBase):
 
         return update_data
 
+    def _resolve_recommended_side_dishes(self, update_data: Recipe) -> Recipe:
+        """Resolve recommended side dishes to existing recipes within the current group."""
+        if update_data.recommended_side_dishes is None:
+            return update_data
+
+        resolved_recommendations = []
+        current_recipe_id = str(update_data.id) if update_data.id else None
+
+        for recommendation in update_data.recommended_side_dishes:
+            recommendation_id = recommendation.id
+            recommendation_slug = recommendation.slug
+
+            recipe: Recipe | None = None
+            if recommendation_id:
+                recipe = self.group_recipes.get_one(recommendation_id, key="id")
+            elif recommendation_slug:
+                recipe = self.group_recipes.get_by_slug(self.user.group_id, recommendation_slug)
+
+            if recipe is None:
+                continue
+
+            if current_recipe_id and str(recipe.id) == current_recipe_id:
+                continue
+
+            resolved_recommendations.append(recipe.cast(type(recommendation)))
+
+        update_data.recommended_side_dishes = resolved_recommendations
+        return update_data
+
     def update_one(self, slug_or_id: str | UUID, update_data: Recipe) -> Recipe:
         recipe = self._pre_update_check(slug_or_id, update_data)
 
         update_data = self._remove_non_existent_ingredient_references(update_data)
         update_data = self._resolve_ingredient_sub_recipes(update_data)
+        update_data = self._resolve_recommended_side_dishes(update_data)
 
         new_data = self.group_recipes.update(recipe.slug, update_data)
         self.check_assets(new_data, recipe.slug)

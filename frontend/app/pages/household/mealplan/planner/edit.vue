@@ -200,6 +200,12 @@
                     text: $t('meal-plan.dessert'),
                     event: 'randomDessert',
                   },
+                  {
+                    icon: $globals.icons.diceMultiple,
+                    text: $t('meal-plan.recommended'),
+                    event: 'randomRecommended',
+                    isVisible: dayHasRecommendedSideDishes(mealplansByDate[plan.date.toString()] ?? []),
+                  },
                 ],
               },
               {
@@ -226,6 +232,7 @@
             @random-snack="randomMeal(plan.date, 'snack')"
             @random-drink="randomMeal(plan.date, 'drink')"
             @random-dessert="randomMeal(plan.date, 'dessert')"
+            @random-recommended="randomMeal(plan.date, 'recommended')"
           />
         </div>
       </v-col>
@@ -311,6 +318,28 @@ function onMoveCallback(evt: SortableEvent) {
 
 const todaysDate = computed(() => new Date());
 
+const dayHasRecommendedSideDishes = (
+  meals: Array<{
+    recipe?: {
+      slug?: string;
+      recommendedSideDishes?: Array<{
+        slug?: string;
+      } | null> | null;
+    } | null;
+  }>,
+) => {
+  const dayRecipeSlugs = new Set(
+    meals
+      .map(meal => meal.recipe?.slug)
+      .filter((slug): slug is string => !!slug),
+  );
+
+  return meals.some((meal) => {
+    return meal.recipe?.recommendedSideDishes?.some((recommended) => {
+      return !!recommended?.slug && !dayRecipeSlugs.has(recommended.slug);
+    }) ?? false;
+  });
+};
 // =====================================================
 // New Meal Dialog
 

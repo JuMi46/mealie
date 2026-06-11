@@ -366,8 +366,10 @@
         <v-card flat>
           <v-card-title>{{ $t("recipe.not-linked-ingredients") }}</v-card-title>
           <RecipeIngredients
-            :value="notLinkedIngredients"
-            :scale="scale"
+            :value="[{
+              recipeName: recipe.name || '',
+              recipeIngredient: notLinkedIngredients,
+              scale: scale } as IngredientsByRecipe]"
             :is-cook-mode="isCookMode"
           />
         </v-card>
@@ -389,6 +391,7 @@
 import { invoke, until } from "@vueuse/core";
 import type { RouteLocationNormalized } from "vue-router";
 import RecipeIngredients from "../RecipeIngredients.vue";
+import type { IngredientsByRecipe } from "../RecipeIngredients.vue";
 import RecipePageEditorToolbar from "./RecipePageParts/RecipePageEditorToolbar.vue";
 import RecipePageFooter from "./RecipePageParts/RecipePageFooter.vue";
 import RecipePageHeader from "./RecipePageParts/RecipePageHeader.vue";

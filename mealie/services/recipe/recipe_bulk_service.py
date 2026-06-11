@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 from pydantic import UUID4
@@ -5,6 +6,7 @@ from pydantic import UUID4
 from mealie.core.exceptions import UnexpectedNone
 from mealie.repos.repository_factory import AllRepositories
 from mealie.schema.group.group_exports import GroupDataExport
+from mealie.schema.household.household import HouseholdRecipeUpdate
 from mealie.schema.recipe import CategoryBase
 from mealie.schema.recipe.recipe_category import TagBase
 from mealie.schema.recipe.recipe_settings import RecipeSettings
@@ -12,6 +14,7 @@ from mealie.schema.response.pagination import PaginationQuery
 from mealie.schema.user.user import GroupInDB, PrivateUser
 from mealie.services._base_service import BaseService
 from mealie.services.exporter import Exporter, RecipeExporter
+from mealie.services.household_services.household_service import HouseholdService
 
 
 class RecipeBulkActionsService(BaseService):
@@ -110,3 +113,8 @@ class RecipeBulkActionsService(BaseService):
             except Exception as e:
                 self.logger.error(f"Failed to categorize recipe {slug}")
                 self.logger.error(e)
+
+    def mark_recipes_made(self, recipes: list[str], timestamp: datetime) -> None:
+        household_service = HouseholdService(self.user.group_id, self.user.household_id, self.repos)
+        for slug in recipes:
+            household_service.set_household_recipe(slug, HouseholdRecipeUpdate(last_made=timestamp))

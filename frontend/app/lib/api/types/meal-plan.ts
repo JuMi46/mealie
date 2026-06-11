@@ -5,7 +5,7 @@
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
-export type PlanEntryType = "breakfast" | "lunch" | "dinner" | "side" | "snack" | "drink" | "dessert";
+export type PlanEntryType = "breakfast" | "lunch" | "dinner" | "side" | "snack" | "drink" | "dessert" | "recommended";
 export type PlanRulesDay = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday" | "unset";
 export type PlanRulesType = "breakfast" | "lunch" | "dinner" | "side" | "snack" | "drink" | "dessert" | "unset";
 export type LogicalOperator = "AND" | "OR";

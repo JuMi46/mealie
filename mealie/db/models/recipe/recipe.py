@@ -22,7 +22,7 @@ from ..household.household_to_recipe import HouseholdToRecipe
 from ..users.user_to_recipe import UserToRecipe
 from .api_extras import ApiExtras, api_extras
 from .assets import RecipeAsset
-from .category import recipes_to_categories
+from .category import Category, recipes_to_categories
 from .comment import RecipeComment
 from .instruction import RecipeInstruction
 from .note import Note
@@ -37,7 +37,16 @@ if TYPE_CHECKING:
     from ..group import Group, GroupMealPlan
     from ..household import Household, ShoppingListItemRecipeReference, ShoppingListRecipeReference
     from ..users import User
-    from . import Category, Tag, Tool
+    from . import Tag, Tool
+
+
+recipes_to_recommended_side_dishes = sa.Table(
+    "recipes_to_recommended_side_dishes",
+    SqlAlchemyBase.metadata,
+    sa.Column("recipe_id", GUID, sa.ForeignKey("recipes.id", ondelete="CASCADE"), index=True),
+    sa.Column("recommended_recipe_id", GUID, sa.ForeignKey("recipes.id", ondelete="CASCADE"), index=True),
+    sa.UniqueConstraint("recipe_id", "recommended_recipe_id", name="recipe_id_recommended_recipe_id_key"),
+)
 
 
 class RecipeModel(SqlAlchemyBase, BaseMixins):
@@ -108,7 +117,10 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
     assets: Mapped[list[RecipeAsset]] = orm.relationship("RecipeAsset", cascade="all, delete-orphan")
     nutrition: Mapped[Nutrition] = orm.relationship("Nutrition", uselist=False, cascade="all, delete-orphan")
     recipe_category: Mapped[list["Category"]] = orm.relationship(
-        "Category", secondary=recipes_to_categories, back_populates="recipes"
+        "Category",
+        secondary=recipes_to_categories,
+        back_populates="recipes",
+        order_by=(Category.position, Category.name),
     )
     tools: Mapped[list["Tool"]] = orm.relationship("Tool", secondary=recipes_to_tools, back_populates="recipes")
 
@@ -148,6 +160,20 @@ class RecipeModel(SqlAlchemyBase, BaseMixins):
         "RecipeSettings", uselist=False, cascade="all, delete-orphan"
     )
     tags: Mapped[list["Tag"]] = orm.relationship("Tag", secondary=recipes_to_tags, back_populates="recipes")
+    recommended_side_dishes: Mapped[list["RecipeModel"]] = orm.relationship(
+        "RecipeModel",
+        secondary="recipes_to_recommended_side_dishes",
+        primaryjoin="RecipeModel.id==recipes_to_recommended_side_dishes.c.recipe_id",
+        secondaryjoin="RecipeModel.id==recipes_to_recommended_side_dishes.c.recommended_recipe_id",
+        back_populates="recommended_for_recipes",
+    )
+    recommended_for_recipes: Mapped[list["RecipeModel"]] = orm.relationship(
+        "RecipeModel",
+        secondary="recipes_to_recommended_side_dishes",
+        primaryjoin="RecipeModel.id==recipes_to_recommended_side_dishes.c.recommended_recipe_id",
+        secondaryjoin="RecipeModel.id==recipes_to_recommended_side_dishes.c.recipe_id",
+        back_populates="recommended_side_dishes",
+    )
     notes: Mapped[list[Note]] = orm.relationship("Note", cascade="all, delete-orphan")
     org_url: FilterableColumn[str | None] = mapped_column(sa.String)
     primary_unit_system: FilterableColumn[str | None] = mapped_column(sa.String)

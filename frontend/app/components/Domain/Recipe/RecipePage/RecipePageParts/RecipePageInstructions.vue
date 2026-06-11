@@ -296,11 +296,14 @@
                       >
                         <div class="ml-n4">
                           <RecipeIngredients
-                            :value="recipe.recipeIngredient.filter((ing) => {
-                              if (!step.ingredientReferences) return false
-                              return step.ingredientReferences.map((ref) => ref.referenceId).includes(ing.referenceId || '')
-                            })"
-                            :scale="scale"
+                            :value="[{
+                              recipeName: recipe.name || '',
+                              recipeIngredient:
+                                recipe.recipeIngredient.filter((ing) => {
+                                  if (!step.ingredientReferences) return false
+                                  return step.ingredientReferences.map((ref) => ref.referenceId).includes(ing.referenceId || '')
+                                }),
+                              scale: scale } as IngredientsByRecipe]"
                             :is-cook-mode="isCookMode"
                           />
                         </div>
@@ -351,6 +354,7 @@ import { useIngredientTextParser } from "~/composables/recipes/use-recipe-ingred
 import type { NoUndefinedField } from "~/lib/api/types/non-generated";
 import DropZone from "~/components/global/DropZone.vue";
 import RecipeIngredients from "~/components/Domain/Recipe/RecipeIngredients.vue";
+import type { IngredientsByRecipe } from "~/components/Domain/Recipe/RecipeIngredients.vue";
 import RecipeIngredientHtml from "~/components/Domain/Recipe/RecipeIngredientHtml.vue";
 import RecipePageInstructionsTimer from "./RecipePageInstructionsTimer.vue";
 import RecipeEditTimers from "./RecipeEditTimers.vue";
@@ -384,6 +388,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isCombinedView: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["click-instruction-field", "update:assets"]);
@@ -391,7 +399,7 @@ const i18n = useI18n();
 const { $globals } = useNuxtApp();
 const { household } = useHouseholdSelf();
 
-const { isCookMode, toggleCookMode, isEditForm } = usePageState(props.recipe.slug);
+const { isCookMode, toggleCookMode, isEditForm } = usePageState(!props.isCombinedView ? props.recipe.slug : "combined-view");
 const { extractIngredientReferences } = useExtractIngredientReferences();
 const { ingredientToParserString } = useIngredientTextParser();
 

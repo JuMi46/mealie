@@ -24,6 +24,7 @@ class PlanEntryType(StrEnum):
     snack = "snack"
     drink = "drink"
     dessert = "dessert"
+    recommended = "recommended"
 
 
 class CreateRandomEntry(MealieModel):

@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from functools import cached_property
 
+import sqlalchemy as sa
 from pydantic import UUID4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -98,6 +99,11 @@ class RepositoryCategories(GroupRepositoryGeneric[CategoryOut, Category]):
         stmt = select(Category).filter(~Category.recipes.any())
 
         return self.session.execute(stmt).scalars().all()
+
+    def next_position(self) -> int:
+        stmt = select(sa.func.max(Category.position)).filter_by(**self._filter_builder())
+        max_position = self.session.scalar(stmt)
+        return int(max_position) + 1 if max_position is not None else 0
 
 
 class RepositoryTags(GroupRepositoryGeneric[TagOut, Tag]):

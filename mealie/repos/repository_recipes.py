@@ -201,12 +201,34 @@ class RepositoryRecipes(HouseholdRepositoryGeneric[Recipe, RecipeModel]):
         additional_ids = self.session.execute(sa.select(model.id).filter(model.slug.in_(slugs))).scalars().all()
         return ids + additional_ids
 
+    def _normalize_recommended_side_dishes(self, new_data: dict) -> None:
+        recommendations = new_data.get("recommended_side_dishes")
+        if recommendations is None:
+            return
+
+        normalized_recommendations: list[str] = []
+        for recommendation in recommendations:
+            if isinstance(recommendation, str) and recommendation:
+                normalized_recommendations.append(recommendation)
+                continue
+
+            if not isinstance(recommendation, dict):
+                continue
+
+            recommendation_slug = recommendation.get("slug")
+            if recommendation_slug:
+                normalized_recommendations.append(recommendation_slug)
+
+        new_data["recommended_side_dishes"] = normalized_recommendations
+
     def update(self, match_value: str | int | UUID4, new_data: dict | Recipe) -> Recipe:
         new_data = new_data if isinstance(new_data, dict) else new_data.model_dump()
         entry = self._query_one(match_value=match_value)
 
         if new_name := new_data.get("name"):
             new_data["slug"] = entry.slug if new_name == entry.name else create_recipe_slug(new_name)
+
+        self._normalize_recommended_side_dishes(new_data)
 
         # Handle explicit group_id injection for related items that require it
         for organizer_field in ["tags", "recipe_category", "tools"]:

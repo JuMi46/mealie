@@ -338,3 +338,67 @@ def test_get_mealplan_with_rules_households_filter_includes_any_households(
         assert response.json()["recipe"]["slug"] == recipe.slug
     finally:
         unique_user.repos.group_meal_plan_rules.delete(rule.id)
+
+
+def test_get_random_recommended_meal_uses_recommendations_from_existing_day_entries(
+    api_client: TestClient, unique_user: TestUser
+):
+    plan_date = "2023-02-25"
+    main_recipe = create_recipe(unique_user)
+    side_recipe = create_recipe(unique_user)
+
+    unique_user.repos.recipes.update(
+        main_recipe.id,
+        {"recommended_side_dishes": [{"slug": side_recipe.slug}]},
+    )
+
+    create_response = api_client.post(
+        api_routes.households_mealplans,
+        json={
+            "date": plan_date,
+            "entryType": "dinner",
+            "recipeId": str(main_recipe.id),
+        },
+        headers=unique_user.token,
+    )
+    assert create_response.status_code == 201
+
+    random_response = api_client.post(
+        api_routes.households_mealplans_random,
+        json={"date": plan_date, "entryType": "recommended"},
+        headers=unique_user.token,
+    )
+
+    assert random_response.status_code == 200
+    assert random_response.json()["recipe"]["slug"] == side_recipe.slug
+
+
+def test_get_random_recommended_meal_excludes_recipes_already_in_day(api_client: TestClient, unique_user: TestUser):
+    plan_date = "2023-02-25"
+    main_recipe = create_recipe(unique_user)
+    side_recipe = create_recipe(unique_user)
+
+    unique_user.repos.recipes.update(
+        main_recipe.id,
+        {"recommended_side_dishes": [{"slug": side_recipe.slug}]},
+    )
+
+    for recipe in [main_recipe, side_recipe]:
+        create_response = api_client.post(
+            api_routes.households_mealplans,
+            json={
+                "date": plan_date,
+                "entryType": "dinner",
+                "recipeId": str(recipe.id),
+            },
+            headers=unique_user.token,
+        )
+        assert create_response.status_code == 201
+
+    random_response = api_client.post(
+        api_routes.households_mealplans_random,
+        json={"date": plan_date, "entryType": "recommended"},
+        headers=unique_user.token,
+    )
+
+    assert random_response.status_code == 404

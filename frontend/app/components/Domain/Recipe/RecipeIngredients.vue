@@ -28,7 +28,7 @@
             color="secondary"
             density="compact"
             hide-details
-            :label="$t('recipe.sort-by-label')"
+            :label="$t('shopping-list.label')"
           />
           <v-checkbox
             v-model="sortIngredientsBySection"
@@ -43,115 +43,127 @@
     </template>
     <div>
       <div
-        v-for="[sectionName, ingredientsByPlace] in ingredients"
-        :key="'section' + sectionName"
+        v-for="[recipeName, ingredientsByRecipe] in ingredients"
+        :key="'recipe' + recipeName"
       >
         <h3
-          v-if="sectionName"
+          v-if="recipeName"
           class="mt-4 mb-0"
         >
-          {{ sectionName }}
+          {{ recipeName }}
         </h3>
-        <v-divider v-if="sectionName" thickness="3" class="my-2" />
+        <v-divider v-if="recipeName" thickness="3" class="my-2" />
         <div
-          v-for="[placeName, place] in ingredientsByPlace"
-          :key="'place' + placeName"
+          v-for="[sectionName, ingredientsByPlace] in ingredientsByRecipe"
+          :key="'section' + sectionName"
         >
           <h3
-            v-if="placeName && placeName !== 'all'"
+            v-if="sectionName"
             class="mt-4 mb-0"
           >
-            {{ placeName }}
+            {{ sectionName }}
           </h3>
-          <v-divider v-if="placeName && placeName !== 'all'" thickness="2" gradient class="my-2" />
-
-          <v-list>
-            <template
-              v-for="(ingredient, ingredientIndex) in place"
-              :key="ingredient.referenceId || ('ingredient' + ingredientIndex)"
+          <v-divider v-if="sectionName" thickness="3" class="my-2" />
+          <div
+            v-for="[placeName, place] in ingredientsByPlace"
+            :key="'place' + placeName"
+          >
+            <h3
+              v-if="placeName && placeName !== 'all'"
+              class="mt-4 mb-0"
             >
-              <v-list-item
-                v-if="!ingredient.referencedRecipe || (ingredient.referencedRecipe?.recipeInstructions?.length || 0 > 0)"
-                density="compact"
-                class="pa-0"
-              >
-                <template #prepend>
-                  <v-checkbox
-                    v-if="showIngredientCheckboxesInRecipe"
-                    :model-value="isIngredientChecked(sectionName, placeName, ingredient, ingredientIndex)"
-                    hide-details
-                    class="pt-0 my-auto py-auto"
-                    color="secondary"
-                    density="comfortable"
-                    @update:model-value="setIngredientChecked(sectionName, placeName, ingredient, ingredientIndex, !!$event)"
-                  />
-                </template>
-                <v-list-item-title>
-                  <RecipeIngredientListItem
-                    :ingredient="ingredient"
-                    :scale="scale"
-                  />
-                </v-list-item-title>
-              </v-list-item>
+              {{ placeName }}
+            </h3>
+            <v-divider v-if="placeName && placeName !== 'all'" thickness="2" gradient class="my-2" />
 
-              <v-list-group
-                v-else
-                density="compact"
-                class="pa-0"
+            <v-list>
+              <template
+                v-for="(ingredient, ingredientIndex) in place"
+                :key="ingredient.referenceId || ('ingredient' + ingredientIndex)"
               >
-                <template #activator="{ props: groupProps }">
-                  <v-list-item
-                    v-bind="groupProps"
-                    density="compact"
-                    class="pa-0"
-                  >
-                    <template #prepend>
-                      <v-checkbox
-                        v-if="showIngredientCheckboxesInRecipe"
-                        :model-value="isGroupedIngredientChecked(sectionName, placeName, ingredient, ingredientIndex)"
-                        hide-details
-                        class="pt-0 my-auto py-auto"
-                        color="secondary"
-                        density="comfortable"
-                        @update:model-value="setGroupedIngredientChecked(sectionName, placeName, ingredient, ingredientIndex, !!$event)"
-                      />
-                    </template>
-                    <v-list-item-title>
-                      <RecipeIngredientListItem
-                        :ingredient="ingredient"
-                        :scale="scale"
-                      />
-                    </v-list-item-title>
-                  </v-list-item>
-                </template>
                 <v-list-item
-                  v-for="(refIngredient, refIngredientIndex) in ingredient.referencedRecipe?.recipeIngredient"
-                  :key="'refIngredient' + refIngredientIndex"
+                  v-if="!ingredient.referencedRecipe || (ingredient.referencedRecipe?.recipeInstructions?.length || 0 > 0)"
                   density="compact"
                   class="pa-0"
-                  style="padding-left: 10px;"
                 >
                   <template #prepend>
                     <v-checkbox
                       v-if="showIngredientCheckboxesInRecipe"
-                      :model-value="isReferencedIngredientChecked(sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex)"
+                      :model-value="isIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex)"
                       hide-details
                       class="pt-0 my-auto py-auto"
                       color="secondary"
                       density="comfortable"
-                      @update:model-value="setReferencedIngredientChecked(sectionName, placeName, ingredient, ingredientIndex, refIngredient, refIngredientIndex, !!$event)"
+                      @update:model-value="setIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex, !!$event)"
                     />
                   </template>
                   <v-list-item-title>
                     <RecipeIngredientListItem
-                      :ingredient="refIngredient"
-                      :scale="(ingredient.quantity || 1) * scale / (ingredient.referencedRecipe.recipeServings || 1)"
+                      :ingredient="ingredient"
+                      :scale="1"
                     />
                   </v-list-item-title>
                 </v-list-item>
-              </v-list-group>
-            </template>
-          </v-list>
+
+                <v-list-group
+                  v-else
+                  density="compact"
+                  class="pa-0"
+                >
+                  <template #activator="{ props: groupProps }">
+                    <v-list-item
+                      v-bind="groupProps"
+                      density="compact"
+                      class="pa-0"
+                    >
+                      <template #prepend>
+                        <v-checkbox
+                          v-if="showIngredientCheckboxesInRecipe"
+                          :model-value="isGroupedIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex)"
+                          hide-details
+                          class="pt-0 my-auto py-auto"
+                          color="secondary"
+                          density="comfortable"
+                          @update:model-value="setGroupedIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex, !!$event)"
+                        />
+                      </template>
+                      <v-list-item-title>
+                        <RecipeIngredientListItem
+                          :ingredient="ingredient"
+                          :scale="1"
+                        />
+                      </v-list-item-title>
+                    </v-list-item>
+                  </template>
+                  <v-list-item
+                    v-for="(refIngredient, refIngredientIndex) in ingredient.referencedRecipe?.recipeIngredient"
+                    :key="'refIngredient' + refIngredientIndex"
+                    density="compact"
+                    class="pa-0"
+                    style="padding-left: 10px;"
+                  >
+                    <template #prepend>
+                      <v-checkbox
+                        v-if="showIngredientCheckboxesInRecipe"
+                        :model-value="isReferencedIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex, refIngredient, refIngredientIndex)"
+                        hide-details
+                        class="pt-0 my-auto py-auto"
+                        color="secondary"
+                        density="comfortable"
+                        @update:model-value="setReferencedIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex, refIngredient, refIngredientIndex, !!$event)"
+                      />
+                    </template>
+                    <v-list-item-title>
+                      <RecipeIngredientListItem
+                        :ingredient="refIngredient"
+                        :scale="(ingredient.quantity || 1) / (ingredient.referencedRecipe.recipeServings || 1)"
+                      />
+                    </v-list-item-title>
+                  </v-list-item>
+                </v-list-group>
+              </template>
+            </v-list>
+          </div>
         </div>
       </div>
     </div>
@@ -168,14 +180,18 @@ import { reduceIngredients } from "~/composables/recipes/use-recipe";
 const { household } = useHouseholdSelf();
 const substitutions = computed(() => getHouseholdFoodSubstitutions(household.value));
 
+export interface IngredientsByRecipe {
+  recipeName: string;
+  scale: number;
+  recipeIngredient: RecipeIngredient[];
+}
+
 interface Props {
-  value?: RecipeIngredient[];
-  scale?: number;
+  value?: IngredientsByRecipe[];
   isCookMode?: boolean;
 }
 const props = withDefaults(defineProps<Props>(), {
   value: () => [],
-  scale: 1,
   isCookMode: false,
 });
 
@@ -195,63 +211,76 @@ const showIngredientCheckboxesInRecipe = computed(() => ingredientPreferences.va
 
 const ingredientCopyText = computed(() => {
   const components: string[] = [];
-  props.value.forEach((ingredient) => {
-    if (ingredient.title) {
+  props.value.forEach((ingredientByRecipe) => {
+    if (props.value.length > 1) {
       if (components.length) {
         components.push("");
       }
 
-      components.push(`[${ingredient.title}]`);
+      components.push(`[${ingredientByRecipe.recipeName}]`);
     }
+    ingredientByRecipe.recipeIngredient.forEach((ingredient) => {
+      if (ingredient.title) {
+        if (components.length) {
+          components.push("");
+        }
 
-    components.push(parseIngredientText(ingredient, props.scale, false));
+        components.push(`[${ingredient.title}]`);
+      }
+
+      components.push(parseIngredientText(ingredient, ingredientByRecipe.scale, false));
+    });
   });
 
   return components.join("\n");
 });
 
-function getIngredientCheckboxKey(sectionName: string, placeName: string, ingredient: RecipeIngredient, ingredientIndex: number): string {
-  return ingredient.referenceId || `${sectionName}:${placeName}:${ingredientIndex}`;
+function getIngredientCheckboxKey(recipeName: string, sectionName: string, placeName: string, ingredient: RecipeIngredient, ingredientIndex: number): string {
+  return ingredient.referenceId || `${recipeName}:${sectionName}:${placeName}:${ingredientIndex}`;
 }
 
-function isIngredientChecked(sectionName: string, placeName: string, ingredient: RecipeIngredient, ingredientIndex: number): boolean {
-  const key = getIngredientCheckboxKey(sectionName, placeName, ingredient, ingredientIndex);
+function isIngredientChecked(recipeName: string, sectionName: string, placeName: string, ingredient: RecipeIngredient, ingredientIndex: number): boolean {
+  const key = getIngredientCheckboxKey(recipeName, sectionName, placeName, ingredient, ingredientIndex);
   return !!checkedByReferenceId.value[key];
 }
 
 function setIngredientChecked(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredient: RecipeIngredient,
   ingredientIndex: number,
   value: boolean,
 ) {
-  const key = getIngredientCheckboxKey(sectionName, placeName, ingredient, ingredientIndex);
+  const key = getIngredientCheckboxKey(recipeName, sectionName, placeName, ingredient, ingredientIndex);
   checkedByReferenceId.value[key] = value;
 }
 
 function getReferencedIngredientCheckboxKey(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredientIndex: number,
   refIngredient: RecipeIngredient,
   refIngredientIndex: number,
 ): string {
-  return refIngredient.referenceId || `${sectionName}:${placeName}:${ingredientIndex}:ref:${refIngredientIndex}`;
+  return refIngredient.referenceId || `${recipeName}:${sectionName}:${placeName}:${ingredientIndex}:ref:${refIngredientIndex}`;
 }
 
 function isReferencedIngredientChecked(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredientIndex: number,
   refIngredient: RecipeIngredient,
   refIngredientIndex: number,
 ): boolean {
-  const key = getReferencedIngredientCheckboxKey(sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex);
+  const key = getReferencedIngredientCheckboxKey(recipeName, sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex);
   return !!checkedByReferenceId.value[key];
 }
 
 function areAllReferencedIngredientsChecked(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredient: RecipeIngredient,
@@ -263,6 +292,7 @@ function areAllReferencedIngredientsChecked(
   }
 
   return referencedIngredients.every((refIngredient, refIngredientIndex) => isReferencedIngredientChecked(
+    recipeName,
     sectionName,
     placeName,
     ingredientIndex,
@@ -272,26 +302,28 @@ function areAllReferencedIngredientsChecked(
 }
 
 function isGroupedIngredientChecked(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredient: RecipeIngredient,
   ingredientIndex: number,
 ): boolean {
   if (ingredient.referencedRecipe?.recipeIngredient?.length) {
-    return areAllReferencedIngredientsChecked(sectionName, placeName, ingredient, ingredientIndex);
+    return areAllReferencedIngredientsChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex);
   }
 
-  return isIngredientChecked(sectionName, placeName, ingredient, ingredientIndex);
+  return isIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex);
 }
 
 function setGroupedIngredientChecked(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredient: RecipeIngredient,
   ingredientIndex: number,
   value: boolean,
 ) {
-  setIngredientChecked(sectionName, placeName, ingredient, ingredientIndex, value);
+  setIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex, value);
 
   const referencedIngredients = ingredient.referencedRecipe?.recipeIngredient;
   if (!referencedIngredients || referencedIngredients.length === 0) {
@@ -299,12 +331,13 @@ function setGroupedIngredientChecked(
   }
 
   referencedIngredients.forEach((refIngredient, refIngredientIndex) => {
-    const key = getReferencedIngredientCheckboxKey(sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex);
+    const key = getReferencedIngredientCheckboxKey(recipeName, sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex);
     checkedByReferenceId.value[key] = value;
   });
 }
 
 function setReferencedIngredientChecked(
+  recipeName: string,
   sectionName: string,
   placeName: string,
   ingredient: RecipeIngredient,
@@ -313,11 +346,11 @@ function setReferencedIngredientChecked(
   refIngredientIndex: number,
   value: boolean,
 ) {
-  const key = getReferencedIngredientCheckboxKey(sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex);
+  const key = getReferencedIngredientCheckboxKey(recipeName, sectionName, placeName, ingredientIndex, refIngredient, refIngredientIndex);
   checkedByReferenceId.value[key] = value;
 
-  const parentValue = areAllReferencedIngredientsChecked(sectionName, placeName, ingredient, ingredientIndex);
-  setIngredientChecked(sectionName, placeName, ingredient, ingredientIndex, parentValue);
+  const parentValue = areAllReferencedIngredientsChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex);
+  setIngredientChecked(recipeName, sectionName, placeName, ingredient, ingredientIndex, parentValue);
 }
 
 function sortSectionIngredientsByPlace(ingredientsByPlace: Map<string, RecipeIngredient[]>) {
@@ -389,41 +422,62 @@ function transformToIngredientsByPlace(ingredients: RecipeIngredient[]): Map<str
 }
 
 const substitutedIngredients = computed(() => {
-  return props.value.map(ingredient => applyHouseholdFoodSubstitution(
-    ingredient,
-    substitutions.value,
-  ) as RecipeIngredient);
+  return props.value.map(recipe => ({
+    ...recipe,
+    recipeIngredient: recipe.recipeIngredient.map(ingredient => applyHouseholdFoodSubstitution(
+      ingredient,
+      substitutions.value,
+    ) as RecipeIngredient),
+  }));
+});
+
+const scaledSubstitutedIngredients = computed(() => {
+  return substitutedIngredients.value.map(recipe => ({
+    ...recipe,
+    recipeIngredient: recipe.recipeIngredient.map(ingredient => ({
+      ...ingredient,
+      quantity: ingredient.quantity ? ingredient.quantity * recipe.scale : undefined,
+    })),
+  }));
 });
 
 const ingredients = computed(() => {
-  const ingredientsBySection = new Map<string, Map<string, RecipeIngredient[]>>();
-
+  const ingredientsByRecipe = new Map<string, Map<string, Map<string, RecipeIngredient[]>>>();
   if (sortIngredientsBySection.value && !props.isCookMode) {
-    let ingredientTitle = "";
-    let ingredientsInSection: RecipeIngredient[] = [];
+    let recipeName = "";
+    scaledSubstitutedIngredients.value.forEach((ingredientByRecipe) => {
+      recipeName = scaledSubstitutedIngredients.value.length > 1 ? ingredientByRecipe.recipeName : "";
 
-    substitutedIngredients.value.forEach((ingredient, index) => {
-      if (index === 0) {
-        ingredientTitle = sortIngredientsBySection.value ? ingredient.title || "" : "";
-      }
-      else if (ingredient.title) {
+      const ingredientsBySection = new Map<string, Map<string, RecipeIngredient[]>>();
+
+      let ingredientTitle = "";
+      let ingredientsInSection: RecipeIngredient[] = [];
+
+      ingredientByRecipe.recipeIngredient.forEach((ingredient, index) => {
+        if (index === 0) {
+          ingredientTitle = sortIngredientsBySection.value ? ingredient.title || "" : "";
+        }
+        else if (ingredient.title) {
+          ingredientsBySection.set(ingredientTitle, transformToIngredientsByPlace(ingredientsInSection));
+          ingredientTitle = ingredient.title || "";
+          ingredientsInSection = [];
+        }
+
+        ingredientsInSection.push(ingredient);
+      });
+
+      if (ingredientsInSection.length > 0) {
         ingredientsBySection.set(ingredientTitle, transformToIngredientsByPlace(ingredientsInSection));
-        ingredientTitle = ingredient.title || "";
-        ingredientsInSection = [];
+        ingredientsByRecipe.set(recipeName, ingredientsBySection);
       }
-
-      ingredientsInSection.push(ingredient);
     });
-
-    if (ingredientsInSection.length > 0) {
-      ingredientsBySection.set(ingredientTitle, transformToIngredientsByPlace(ingredientsInSection));
-    }
   }
   else {
-    ingredientsBySection.set("", transformToIngredientsByPlace(substitutedIngredients.value));
+    ingredientsByRecipe.set("", new Map<string, Map<string, RecipeIngredient[]>>([
+      ["", transformToIngredientsByPlace(scaledSubstitutedIngredients.value.flatMap(recipe => recipe.recipeIngredient))],
+    ]));
   }
-
-  return ingredientsBySection;
+  return ingredientsByRecipe;
 });
 </script>
 

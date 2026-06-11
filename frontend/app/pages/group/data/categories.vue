@@ -44,6 +44,18 @@ const tableHeaders: TableHeaders[] = [
     show: true,
     sortable: true,
   },
+  {
+    text: i18n.t("general.position"),
+    value: "position",
+    show: true,
+    sortable: true,
+  },
+  {
+    text: i18n.t("general.position_recipe"),
+    value: "position_recipe",
+    show: true,
+    sortable: true,
+  },
 ];
 const categoryStore = useCategoryStore();
 
@@ -56,18 +68,32 @@ const formItems = [
     type: fieldTypes.TEXT,
     rules: [validators.required],
   },
+  {
+    label: i18n.t("general.position"),
+    varName: "position",
+    type: fieldTypes.NUMBER,
+    rules: [validators.required],
+  },
+  {
+    label: i18n.t("general.position_recipe"),
+    varName: "position_recipe",
+    type: fieldTypes.NUMBER,
+    rules: [validators.required],
+  },
 ] as AutoFormItems;
 
 // ============================================================
 // Create
 const createForm = reactive({
   items: formItems,
-  data: { name: "" } as RecipeCategory,
+  data: { name: "", position: 0, position_recipe: 0 } as RecipeCategory,
 });
 
 async function handleCreate(createFormData: RecipeCategory) {
   await categoryStore.actions.createOne(createFormData);
   createForm.data.name = "";
+  createForm.data.position = 0;
+  createForm.data.position_recipe = 0;
 }
 
 // ============================================================

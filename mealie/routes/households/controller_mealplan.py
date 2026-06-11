@@ -1,3 +1,4 @@
+import random
 from datetime import date
 from functools import cached_property
 
@@ -14,7 +15,7 @@ from mealie.schema import mapper
 from mealie.schema.meal_plan import CreatePlanEntry, ReadPlanEntry, SavePlanEntry, UpdatePlanEntry
 from mealie.schema.meal_plan.new_meal import CreateRandomEntry, PlanEntryPagination, PlanEntryType
 from mealie.schema.meal_plan.plan_rules import PlanRulesDay
-from mealie.schema.recipe.recipe import Recipe
+from mealie.schema.recipe.recipe import Recipe, RecipeRecommendation
 from mealie.schema.response.pagination import PaginationQuery
 from mealie.schema.response.responses import ErrorResponse
 from mealie.services.event_bus_service.event_types import (
@@ -61,7 +62,21 @@ class GroupMealplanController(BaseCrudController):
             self.session, group_id=self.group_id, household_id=None
         ).recipes.by_user(self.user.id)
 
-        qf_string = " AND ".join([f"({rule.query_filter_string})" for rule in rules if rule.query_filter_string])
+        day_entries = self.repo.page_all(
+            pagination=PaginationQuery(
+                page=1,
+                per_page=-1,
+                query_filter=f"date = {plan_date}",
+            )
+        ).items
+        existing_recipe_ids = {entry.recipe.id for entry in day_entries if entry.recipe and entry.recipe.id}
+
+        qf_parts = [f"({rule.query_filter_string})" for rule in rules if rule.query_filter_string]
+        if existing_recipe_ids:
+            quoted_ids = ", ".join([f'"{recipe_id}"' for recipe_id in existing_recipe_ids])
+            qf_parts.append(f"(id NOT IN [{quoted_ids}])")
+
+        qf_string = " AND ".join(qf_parts)
         recipes_data = cross_household_recipes.page_all(
             pagination=PaginationQuery(
                 page=1,
@@ -72,6 +87,31 @@ class GroupMealplanController(BaseCrudController):
             )
         )
         return recipes_data.items
+
+    def _get_random_recommended_side_dishes_from_day(
+        self, plan_date: date, limit: int = 1
+    ) -> list[RecipeRecommendation]:
+        day_entries = self.repo.page_all(
+            pagination=PaginationQuery(
+                page=1,
+                per_page=-1,
+                query_filter=f"date = {plan_date}",
+            )
+        ).items
+
+        existing_recipe_ids = {entry.recipe.id for entry in day_entries if entry.recipe and entry.recipe.id}
+        candidates_by_id = {}
+        for entry in day_entries:
+            if not entry.recipe:
+                continue
+
+            for recommendation in entry.recipe.recommended_side_dishes:
+                if recommendation.id and recommendation.id not in existing_recipe_ids:
+                    candidates_by_id[recommendation.id] = recommendation
+
+        candidates = list(candidates_by_id.values())
+        random.Random(self.repo._random_seed()).shuffle(candidates)
+        return candidates[:limit]
 
     @router.get("", response_model=PlanEntryPagination)
     def get_all(
@@ -136,13 +176,18 @@ class GroupMealplanController(BaseCrudController):
         Refer to the mealplan settings routes for more information on how rules can be applied
         to the random meal selector.
         """
-        random_recipes = self._get_random_recipes_from_mealplan(data.date, data.entry_type)
-        if not random_recipes:
+        if data.entry_type == PlanEntryType.recommended:
+            recommended_side_dishes = self._get_random_recommended_side_dishes_from_day(data.date)
+            recipe = recommended_side_dishes[0] if recommended_side_dishes else None
+        else:
+            random_recipes = self._get_random_recipes_from_mealplan(data.date, data.entry_type)
+            recipe = random_recipes[0] if random_recipes else None
+
+        if not recipe:
             raise HTTPException(
                 status_code=404, detail=ErrorResponse.respond(message=self.t("mealplan.no-recipes-match-your-rules"))
             )
 
-        recipe = random_recipes[0]
         result = self.mixins.create_one(
             SavePlanEntry(
                 date=data.date,

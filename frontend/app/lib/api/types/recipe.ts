@@ -18,6 +18,8 @@ export interface AssignCategories {
 }
 export interface CategoryBase {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   id: string;
   groupId?: string | null;
   slug: string;
@@ -40,21 +42,29 @@ export interface AssignTags {
 }
 export interface TagBase {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   id: string;
   groupId?: string | null;
   slug: string;
 }
 export interface CategoryIn {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
 }
 export interface CategoryOut {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   id: string;
   groupId: string;
   slug: string;
 }
 export interface CategorySave {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   groupId: string;
 }
 export interface CreateIngredientFood {
@@ -112,6 +122,8 @@ export interface RecipeCategory {
   groupId?: string | null;
   name: string;
   slug: string;
+  position?: number;
+  positionRecipe?: number | null;
 }
 export interface RecipeTag {
   id?: string | null;
@@ -206,6 +218,10 @@ export interface IngredientsRequest {
   parser?: RegisteredParser;
   ingredients: string[];
 }
+export interface MarkRecipesMade {
+  recipes: string[];
+  timestamp: string;
+}
 export interface MergeFood {
   fromFood: string;
   toFood: string;
@@ -282,6 +298,7 @@ export interface Recipe {
   } | null;
   comments?: RecipeCommentOut[] | null;
   timersActive?: RecipeTimerActive[] | null;
+  recommendedSideDishes?: RecipeRecommendation[];
 }
 export interface RecipeTool {
   id: string;
@@ -339,8 +356,16 @@ export interface UserBase {
   admin: boolean;
   fullName?: string | null;
 }
+export interface RecipeRecommendation {
+  id?: string | null;
+  name?: string | null;
+  slug?: string;
+  image?: unknown;
+  recipeCategory?: RecipeCategory[] | null;
+}
 export interface RecipeCategoryResponse {
   name: string;
+  position?: number | null;
   id: string;
   groupId?: string | null;
   slug: string;
@@ -368,6 +393,7 @@ export interface RecipeSummary {
   tools?: RecipeTool[];
   rating?: number | null;
   orgURL?: string | null;
+  recommendedSideDishes?: RecipeRecommendation[];
   dateAdded?: string | null;
   dateUpdated?: string | null;
   createdAt?: string | null;
@@ -450,6 +476,8 @@ export interface RecipeSuggestionResponseItem {
 }
 export interface RecipeTagResponse {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   id: string;
   groupId?: string | null;
   slug: string;
@@ -613,15 +641,21 @@ export interface ScrapeRecipeTest {
 export interface SlugResponse {}
 export interface TagIn {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
 }
 export interface TagOut {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   groupId: string;
   id: string;
   slug: string;
 }
 export interface TagSave {
   name: string;
+  position?: number | null;
+  positionRecipe?: number | null;
   groupId: string;
 }
 export interface UnitFoodBase {

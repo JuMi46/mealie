@@ -15,6 +15,7 @@ from mealie.schema.recipe.recipe_bulk_actions import (
     AssignTags,
     DeleteRecipes,
     ExportRecipes,
+    MarkRecipesMade,
 )
 from mealie.schema.response.responses import ErrorResponse, SuccessResponse
 from mealie.services.recipe.recipe_bulk_service import RecipeBulkActionsService
@@ -56,6 +57,10 @@ class RecipeBulkActionsController(BaseUserController):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail=ErrorResponse.respond(message="Permission Denied")
             ) from e
+
+    @router.post("/mark-made")
+    def bulk_mark_recipes_made(self, mark_recipes_made: MarkRecipesMade):
+        self.service.mark_recipes_made(mark_recipes_made.recipes, mark_recipes_made.timestamp)
 
     @router.post("/export", status_code=202)
     def bulk_export_recipes(self, export_recipes: ExportRecipes):

@@ -8,6 +8,8 @@ from mealie.schema._mealie import MealieModel
 
 class CategoryIn(MealieModel):
     name: str
+    position: int | None = None
+    position_recipe: int | None = None
 
 
 class CategorySave(CategoryIn):

@@ -8,11 +8,11 @@ from .recipe import (
     RecipeCategoryPagination,
     RecipeLastMade,
     RecipePagination,
+    RecipeRecommendation,
     RecipeSummary,
     RecipeTag,
     RecipeTagPagination,
     RecipeTool,
-    RecipeToolPagination,
 )
 from .recipe_asset import RecipeAsset
 from .recipe_bulk_actions import (
@@ -23,6 +23,7 @@ from .recipe_bulk_actions import (
     ExportBase,
     ExportRecipes,
     ExportTypes,
+    MarkRecipesMade,
 )
 from .recipe_category import (
     CategoryBase,
@@ -69,6 +70,7 @@ from .recipe_ingredient import (
     SaveIngredientUnit,
     StandardizedUnitType,
     UnitFoodBase,
+    UpdateIngredientFood,
 )
 from .recipe_notes import RecipeNote
 from .recipe_nutrition import Nutrition
@@ -94,7 +96,7 @@ from .recipe_timer_active import (
     RecipeTimerActiveSave,
     RecipeTimerActiveUpdate,
 )
-from .recipe_tool import RecipeToolCreate, RecipeToolOut, RecipeToolResponse, RecipeToolSave
+from .recipe_tool import RecipeToolCreate, RecipeToolOut, RecipeToolPagination, RecipeToolResponse, RecipeToolSave
 from .request_helpers import RecipeDuplicate, RecipeSlug, SlugResponse, UpdateImageResponse
 
 __all__ = [
@@ -118,11 +120,11 @@ __all__ = [
     "RecipeCategoryPagination",
     "RecipeLastMade",
     "RecipePagination",
+    "RecipeRecommendation",
     "RecipeSummary",
     "RecipeTag",
     "RecipeTagPagination",
     "RecipeTool",
-    "RecipeToolPagination",
     "RecipeAsset",
     "RecipeCommentCreate",
     "RecipeCommentOut",
@@ -135,6 +137,7 @@ __all__ = [
     "RecipeSuggestionResponseItem",
     "RecipeToolCreate",
     "RecipeToolOut",
+    "RecipeToolPagination",
     "RecipeToolResponse",
     "RecipeToolSave",
     "RecipeImageTypes",
@@ -167,6 +170,7 @@ __all__ = [
     "SaveIngredientUnit",
     "StandardizedUnitType",
     "UnitFoodBase",
+    "UpdateIngredientFood",
     "RecipeShareToken",
     "RecipeShareTokenCreate",
     "RecipeShareTokenSave",
@@ -178,6 +182,7 @@ __all__ = [
     "ExportBase",
     "ExportRecipes",
     "ExportTypes",
+    "MarkRecipesMade",
     "RecipeDuplicate",
     "RecipeSlug",
     "SlugResponse",

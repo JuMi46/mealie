@@ -60,6 +60,8 @@ class Category(SqlAlchemyBase, BaseMixins):
     id: FilterableColumn[GUID] = mapped_column(GUID, primary_key=True, default=GUID.generate)
     name: FilterableColumn[str] = mapped_column(sa.String, index=True, nullable=False)
     slug: FilterableColumn[str] = mapped_column(sa.String, index=True, nullable=False)
+    position: FilterableColumn[int] = mapped_column(sa.Integer, nullable=False, default=0, index=True)
+    position_recipe: FilterableColumn[int] = mapped_column(sa.Integer, nullable=False, default=0, index=True)
     recipes: Mapped[list["RecipeModel"]] = orm.relationship(
         "RecipeModel", secondary=recipes_to_categories, back_populates="recipe_category"
     )
@@ -69,7 +71,9 @@ class Category(SqlAlchemyBase, BaseMixins):
         assert name != ""
         return name
 
-    def __init__(self, name, group_id, **_) -> None:
+    def __init__(self, name, group_id, position=0, position_recipe=0, **_) -> None:
         self.group_id = group_id
         self.name = name.strip()
         self.slug = slugify(name)
+        self.position = position
+        self.position_recipe = position_recipe

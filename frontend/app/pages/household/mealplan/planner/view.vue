@@ -20,7 +20,17 @@
                   {{ isSameDay(day.date, todaysDate) ? $t("general.today") : $d(day.date, "short") }}
                 </p>
               </v-col>
-              <v-col class="d-flex align-center" cols="2">
+              <v-col class="d-flex align-center justify-end ga-1" cols="2">
+                <v-btn
+                  v-if="day.recipes.length"
+                  icon
+                  size="x-small"
+                  variant="text"
+                  :title="$t('recipe.open-in-combined-view')"
+                  @click="openCombinedRecipesPicker(day)"
+                >
+                  <v-icon>{{ $globals.icons.potSteam }}</v-icon>
+                </v-btn>
                 <GroupMealPlanDayContextMenu v-if="day.recipes.length" :recipes="day.recipes" />
               </v-col>
             </v-row>
@@ -48,6 +58,30 @@
         </div>
       </v-col>
     </v-row>
+
+    <BaseDialog
+      v-model="showCombinedPicker"
+      :title="$t('recipe.open-in-combined-view')"
+      :icon="$globals.icons.potSteam"
+      can-confirm
+      @confirm="openSelectedCombinedRecipes"
+    >
+      <v-card-text>
+        <p class="text-body-2 mb-3">
+          {{ selectedDayLabel }}
+        </p>
+
+        <v-checkbox
+          v-for="recipe in selectableCombinedRecipes"
+          :key="recipe.slug"
+          v-model="selectedCombinedRecipeSlugs"
+          density="compact"
+          hide-details
+          :label="recipe.name"
+          :value="recipe.slug"
+        />
+      </v-card-text>
+    </BaseDialog>
   </v-container>
 </template>
 
@@ -67,6 +101,10 @@ export type MealsByDate = {
 const props = defineProps<{
   mealplans: MealsByDate[];
 }>();
+
+const router = useRouter();
+const auth = useMealieAuth();
+const groupSlug = computed(() => auth.user.value?.groupSlug);
 
 type DaySection = {
   title: string;
@@ -93,6 +131,7 @@ const plan = computed<Days[]>(() => {
         { title: i18n.t("meal-plan.snack"), meals: [] },
         { title: i18n.t("meal-plan.drink"), meals: [] },
         { title: i18n.t("meal-plan.dessert"), meals: [] },
+        { title: i18n.t("meal-plan.recommended"), meals: [] },
       ],
       recipes: [],
     };
@@ -119,6 +158,9 @@ const plan = computed<Days[]>(() => {
       else if (meal.entryType === "dessert") {
         out.sections[6].meals.push(meal);
       }
+      else if (meal.entryType === "recommended") {
+        out.sections[7].meals.push(meal);
+      }
 
       if (meal.recipe) {
         out.recipes.push(meal.recipe);
@@ -139,4 +181,42 @@ const isToday = (date: Date) => {
 };
 
 const todaysDate = computed(() => new Date());
+
+const showCombinedPicker = ref(false);
+const selectableCombinedRecipes = ref<RecipeSummary[]>([]);
+const selectedCombinedRecipeSlugs = ref<string[]>([]);
+const selectedDayLabel = ref("");
+
+function toCombinedView(slugs: string[]) {
+  if (!slugs.length || !groupSlug.value) {
+    return;
+  }
+
+  const recipes = slugs.join(";");
+  router.push(`/g/${groupSlug.value}/recipes/combined?recipes=${recipes}`);
+}
+
+function openCombinedRecipesPicker(day: Days) {
+  const uniqueRecipes = day.recipes.filter((recipe, index, arr) => {
+    if (!recipe.slug) {
+      return false;
+    }
+    return arr.findIndex(item => item.slug === recipe.slug) === index;
+  });
+
+  if (uniqueRecipes.length === 1 && uniqueRecipes[0].slug) {
+    toCombinedView([uniqueRecipes[0].slug]);
+    return;
+  }
+
+  selectableCombinedRecipes.value = uniqueRecipes;
+  selectedCombinedRecipeSlugs.value = uniqueRecipes.map(recipe => recipe.slug).filter(Boolean) as string[];
+  selectedDayLabel.value = i18n.d(day.date, "short");
+  showCombinedPicker.value = true;
+}
+
+function openSelectedCombinedRecipes() {
+  toCombinedView(selectedCombinedRecipeSlugs.value);
+  showCombinedPicker.value = false;
+}
 </script>

@@ -1,5 +1,5 @@
 import { BaseAPI } from "../base/base-clients";
-import type { AssignCategories, AssignSettings, AssignTags, DeleteRecipes, ExportRecipes } from "~/lib/api/types/recipe";
+import type { AssignCategories, AssignSettings, AssignTags, DeleteRecipes, ExportRecipes, MarkRecipesMade } from "~/lib/api/types/recipe";
 import type { GroupDataExport } from "~/lib/api/types/group";
 
 // Many bulk actions return nothing
@@ -15,6 +15,7 @@ const routes = {
   bulkTag: prefix + "/recipes/bulk-actions/tag",
   bulkDelete: prefix + "/recipes/bulk-actions/delete",
   bulkSettings: prefix + "/recipes/bulk-actions/settings",
+  bulkMarkMade: prefix + "/recipes/bulk-actions/mark-made",
 };
 
 export class BulkActionsAPI extends BaseAPI {
@@ -36,6 +37,10 @@ export class BulkActionsAPI extends BaseAPI {
 
   async bulkDelete(payload: DeleteRecipes) {
     return await this.requests.post<BulkActionResponse>(routes.bulkDelete, payload);
+  }
+
+  async bulkMarkMade(payload: MarkRecipesMade) {
+    return await this.requests.post<BulkActionResponse>(routes.bulkMarkMade, payload);
   }
 
   async fetchExports() {
