@@ -24,6 +24,8 @@
       >
         <v-number-input
           v-model="model.quantity"
+          group-separator=","
+          decimal-separator="."
           variant="solo"
           :precision="null"
           :min="0"

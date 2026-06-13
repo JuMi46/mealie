@@ -13,6 +13,8 @@
         <v-col cols="2">
           <v-number-input
             :model-value="recipe.recipeServings"
+            group-separator=","
+            decimal-separator="."
             :min="0"
             :precision="null"
             density="compact"
@@ -25,6 +27,8 @@
         <v-col cols="2">
           <v-number-input
             :model-value="recipe.recipeYieldQuantity"
+            group-separator=","
+            decimal-separator="."
             :min="0"
             :precision="null"
             density="compact"

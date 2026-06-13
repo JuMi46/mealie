@@ -2,6 +2,8 @@
   <div class="d-flex ga-3">
     <v-number-input
       v-model="listItem.quantity"
+      group-separator=","
+      decimal-separator="."
       hide-details
       :label="$t('form.quantity-label-abbreviated')"
       :min="0"

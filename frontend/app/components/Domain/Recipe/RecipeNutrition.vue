@@ -25,6 +25,8 @@
         >
           <v-number-input
             :model-value="modelValue[key]"
+            group-separator=","
+            decimal-separator="."
             :label="labels[key].label"
             :suffix="labels[key].suffix"
             density="compact"
