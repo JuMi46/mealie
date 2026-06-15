@@ -155,7 +155,7 @@
           </v-list-item>
         </v-list>
         <div class="d-flex flex-wrap ga-2 align-center">
-          <BaseButton v-if="openRecipes.length > 0" @click="showPicker = !showPicker">
+          <BaseButton v-if="openRecipes.length > 0" @click="addRecipe">
             <template #icon>
               {{ $globals.icons.plus }}
             </template>
@@ -185,9 +185,11 @@
               </v-list-item>
             </template>
           </v-autocomplete>
-          <BaseButton :disabled="!selectedRecipeSlug" @click="addSelectedRecipe">
-            {{ $t("recipe.open-recipe") }}
-          </BaseButton>
+          <div ref="openRecipeButton">
+            <BaseButton :disabled="!selectedRecipeSlug" @click="addSelectedRecipe">
+              {{ $t("recipe.open-recipe") }}
+            </BaseButton>
+          </div>
         </div>
       </v-card>
 
@@ -251,6 +253,8 @@ const scalesBySlug = ref<Record<string, number>>({});
 
 const madeTheseDialog = ref(false);
 const madeTheseAt = ref<string>(new Date().toISOString().slice(0, 16));
+
+const openRecipeButton = ref<HTMLElement | null>(null);
 
 /** =============================================================
  * onMounted and query handling
@@ -474,6 +478,13 @@ function firstCategoryName(categories: Array<{ name?: string; position?: number 
 /** =============================================================
  * Recipe loading logic
  */
+
+async function addRecipe() {
+  showPicker.value = true;
+  await nextTick();
+  openRecipeButton.value?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 async function loadRecipe(slug: string) {
   const response = await api.recipes.getOne(slug);
   return response.data;
