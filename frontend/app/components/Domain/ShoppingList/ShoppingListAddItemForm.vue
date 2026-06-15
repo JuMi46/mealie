@@ -20,8 +20,9 @@
             :style="rail ? 'margin-inline: 3px;' : undefined"
             :search="rail"
             :placeholder="$t('shopping-list.quick-entry')"
-            @keyup.enter.stop.prevent="parseQuickEntry"
-            @blur="parseQuickEntry"
+            @keyup.enter.stop.prevent="(e) => e.target.blur()"
+            @blur="() => parseQuickEntry(false)"
+            @update:model-value="() => parseQuickEntry(true)"
           />
           <!-- Intercept clicks when collapsed so the drawer expands before the autocomplete opens -->
           <div

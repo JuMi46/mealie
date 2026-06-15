@@ -37,7 +37,11 @@ export function useShoppingListQuickEntry(options: UseShoppingListQuickEntryOpti
     }) || null;
   }
 
-  async function assignFoodByName(foodName: string) {
+  async function assignFoodByName(foodName: string, onInput: boolean = false) {
+    if (onInput && foodName.length < 2) {
+      return false;
+    }
+
     const normalized = normalizeTerm(foodName);
 
     if (!normalized) {
@@ -63,47 +67,35 @@ export function useShoppingListQuickEntry(options: UseShoppingListQuickEntryOpti
 
     listItem.value.food = null;
     listItem.value.foodId = null;
-    await nextTick();
-    setTimeout(() => {
+    if (!onInput) {
       foodInputRef.value?.focusWithSearch(foodName);
-    }, 0);
+    }
     return false;
   }
 
-  async function parseQuickEntry() {
+  async function parseQuickEntry(onInput: boolean = false) {
     const rawText = quickEntry.value.trim();
 
     if (!rawText) {
-      return;
-    }
-
-    const quantityMatch = rawText.match(/^(\d+(?:[.,]\d+)?)(?:\s*)(.+)$/);
-
-    if (!quantityMatch) {
-      const hasExistingFood = await assignFoodByName(rawText);
-      if (hasExistingFood) {
-        quickEntry.value = "";
+      if (!listItem.value.food && !listItem.value.unit) {
+        listItem.value.quantity = undefined;
       }
       return;
     }
 
-    const quantityText = quantityMatch[1];
-    const remainderText = quantityMatch[2];
-
-    if (!quantityText || !remainderText) {
-      const hasExistingFood = await assignFoodByName(rawText);
-      if (hasExistingFood) {
-        quickEntry.value = "";
-      }
-      return;
+    const quantityMatch = rawText.match(/^\d+(?:[.,]\d+)?/);
+    let quantityText: string = "";
+    if (quantityMatch) {
+      quantityText = quantityMatch[0];
     }
+
+    const remainder = quantityText.length > 0 ? rawText.slice(quantityText.length).trim() : rawText;
 
     const quantity = Number(quantityText.replace(",", "."));
     if (!Number.isNaN(quantity)) {
       listItem.value.quantity = quantity;
     }
 
-    const remainder = remainderText.trim();
     const tokens = remainder.split(/\s+/).filter(Boolean);
 
     let unitMatch: IngredientUnit | null = null;
@@ -133,14 +125,16 @@ export function useShoppingListQuickEntry(options: UseShoppingListQuickEntryOpti
     const foodName = tokens.slice(unitTokenLength).join(" ").trim();
 
     if (foodName) {
-      const hasExistingFood = await assignFoodByName(foodName);
-      if (hasExistingFood) {
+      const hasExistingFood = await assignFoodByName(foodName, onInput);
+      if (hasExistingFood && !onInput) {
         quickEntry.value = "";
       }
       return;
     }
 
-    quickEntry.value = "";
+    if (!onInput) {
+      quickEntry.value = "";
+    }
   }
 
   return {

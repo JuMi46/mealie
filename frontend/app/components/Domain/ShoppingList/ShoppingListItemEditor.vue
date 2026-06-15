@@ -6,8 +6,10 @@
         hide-details
         clearable
         :placeholder="$t('shopping-list.quick-entry')"
-        @keyup.enter.stop.prevent="parseQuickEntry"
-        @blur="parseQuickEntry"
+        :autofocus="autoFocus === 'food'"
+        @keyup.enter.stop.prevent="(e) => e.target.blur()"
+        @blur="() => parseQuickEntry(false)"
+        @update:model-value="() => parseQuickEntry(true)"
       />
       <InputLabelType
         ref="foodInputRef"
@@ -16,7 +18,6 @@
         :items="foods"
         :label="$t('shopping-list.food')"
         :icon="$globals.icons.foods"
-        :autofocus="autoFocus === 'food'"
         create
         @create="createAssignFood"
       />
