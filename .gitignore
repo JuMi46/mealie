@@ -179,3 +179,8 @@ dev/code-generation/openapi.json
 frontend/eslint.config.deprecated.js
 branch-db-switch.sh
 .devcontainer/devcontainer-lock.json
+
+
+.continueignore
+.continue/
+PROJECT_CONTEXT.md
