@@ -1,0 +1,33 @@
+{
+  "resources": [
+    {
+      "filePath": "mealie/alembic/versions",
+      "group": "Add Database"
+    },
+    {
+      "filePath": "mealie/repos",
+      "group": "Add Database"
+    },
+    {
+      "filePath": "mealie/routes",
+      "group": "Add Database"
+    },
+    {
+      "filePath": "mealie/schema",
+      "group": "Add Database"
+    },
+    {
+      "filePath": "mealie/db/models",
+      "group": "Add Database"
+    },
+    {
+      "filePath": "frontend/app/lib/api",
+      "group": "Add Database"
+    }
+  ],
+  "groups": [
+    "Default",
+    "Add Database"
+  ],
+  "currentGroup": "Add Database"
+}

@@ -77,5 +77,6 @@
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.tabSize": 4
-  }
+  },
+  "favorites.sortOrder": "ASC"
 }
