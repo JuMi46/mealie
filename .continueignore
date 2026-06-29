@@ -179,3 +179,19 @@ dev/code-generation/openapi.json
 frontend/eslint.config.deprecated.js
 branch-db-switch.sh
 .devcontainer/devcontainer-lock.json
+
+
+
+
+# Continue
+.devcontainer/
+.dockerignore
+cliff.toml
+docker/
+.vscode/
+data/
+docs/
+frontend/public/
+frontend/server/
+mealie/core/
+mealie/pkgs/
