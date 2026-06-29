@@ -1,20 +1,81 @@
 services:
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: mealie_dev_mailpit
-    restart: no
-    environment:
-      - "MP_SMTP_AUTH_ACCEPT_ANY=true"
-      - "MP_SMTP_AUTH_ALLOW_INSECURE=true"
-    ports:
-      - "8025:8025"
-      - "1025:1025"
   postgres:
     container_name: mealie_dev_postgres
     image: postgres:15
-    restart: no
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: mealie
+      POSTGRES_DB: mealie
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    container_name: mealie_dev_backend
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: python-base
+    working_dir: /app
+    restart: unless-stopped
+    volumes:
+      - ..:/app
     environment:
-      POSTGRES_PASSWORD: mealie
+      PRODUCTION: "false"
+      TESTING: "false"
+      LOG_LEVEL: DEBUG
+      HOST: 0.0.0.0
+      APP_PORT: 9000
+
+      DB_ENGINE: postgres
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
       POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: mealie
+      POSTGRES_DB: mealie
+
+      PYTHONUNBUFFERED: "1"
+    command: >
+      sh -c "
+      apt-get update &&
+      apt-get install -y --no-install-recommends build-essential libpq-dev libldap2-dev libsasl2-dev libssl-dev &&
+      rm -rf /var/lib/apt/lists/* &&
+      pip install uv &&
+      uv sync --extra pgsql --group dev &&
+      uv run uvicorn mealie.app:app --host 0.0.0.0 --port 9000 --reload
+      "
+    ports:
+      - "9300:9000"
+    depends_on:
+      - postgres
+
+  frontend:
+    container_name: mealie_dev_frontend
+    image: node:24
+    working_dir: /app/frontend
+    restart: unless-stopped
+    volumes:
+      - ..:/app
+      - frontend_node_modules:/app/frontend/node_modules
+    environment:
+      NODE_ENV: development
+      API_URL: http://backend:9000
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    command: >
+      sh -c "
+      corepack enable &&
+      cd /app/frontend &&
+      yarn install &&
+      yarn dev --host 0.0.0.0 --port 3000
+      "
+    ports:
+      - "3300:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  frontend_node_modules:
